@@ -1,1 +1,19 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Outfit:wght@100..900&family=Poppins:ital,wght@0,700;1,700&family=Roboto:ital,wght@0,100..900;1,100..900&family=Space+Grotesk:wght@300..700&display=swap");
+@import "swiper/css";
+@import "swiper/css/navigation";
 @import "tailwindcss";
+
+:root {
+  --font-poppins: "Poppins", sans-serif;
+  --font-roboto: "Roboto", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-outfit: "Outfit", sans-serif;
+  --font-grotesk: "Space Grotesk", sans-serif;
+}
+@theme {
+  --font-poppins: var(--font-poppins);
+  --font-roboto: var(--font-roboto);
+  --font-montserrat: var(--font-montserrat);
+  --font-outfit: var(--font-outfit);
+  --font-grotesk: var(--font-grotesk);
+}
