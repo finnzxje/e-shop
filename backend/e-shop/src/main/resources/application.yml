@@ -7,6 +7,10 @@ spring:
     hibernate:
       ddl-auto: validate
     show-sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true   # if DB already has tables
+    locations: classpath:db/migration
 
 management:
   endpoints:
