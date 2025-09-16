@@ -1,5 +1,15 @@
+import { Footer } from "./components/footer";
+import { Header } from "./components/header";
+import Home from "./pages/home";
+
 function App() {
-  return <div className="text-amber-500 text-xl font-semibold">Hello word</div>;
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+      <Home />
+      <Footer />
+    </div>
+  );
 }
 
 export default App;
