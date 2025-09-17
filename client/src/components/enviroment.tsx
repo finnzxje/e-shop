@@ -1,5 +1,3 @@
-import hero from "../assets/heroimage.avif";
-
 export const Enviroment = () => {
   return (
     <section

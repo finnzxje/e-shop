@@ -1,4 +1,5 @@
-import { User, Heart, ShoppingBag, Search } from "lucide-react";
+import { User, ShoppingBag, Search } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const Header = () => {
   return (
@@ -6,7 +7,9 @@ export const Header = () => {
       {/* Menu */}
       <nav>
         <ul className="flex gap-6 text-sm font-montserrat text-gray-700">
-          <li className="hover:text-black cursor-pointer">Home</li>
+          <Link to={"/"} className="hover:text-black cursor-pointer">
+            Home
+          </Link>
           <li className="hover:text-black cursor-pointer">Activism</li>
           <li className="hover:text-black cursor-pointer">Sports</li>
           <li className="hover:text-black cursor-pointer">Contact</li>
@@ -30,7 +33,9 @@ export const Header = () => {
         </div>
 
         <div className="flex gap-6 text-2xl text-gray-700">
-          <User className="cursor-pointer hover:text-black" />
+          <Link to="/login">
+            <User className="cursor-pointer hover:text-black" />
+          </Link>
           <ShoppingBag className="cursor-pointer hover:text-black" />
         </div>
       </div>
