@@ -1,41 +1,41 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
-
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import zina from "../assets/zina.jpg";
+import yvon from "../assets/yvon.jpg";
+import ryan from "../assets/ryan.jpg";
+import microbeta from "../assets/microbeta.jpg";
+import luke from "../assets/luke.jpg";
 const stories = [
   {
     title: "A Letter from Yvon Chouinard",
     author: "Yvon Chouinard",
     time: "2 min Read",
-    image:
-      "https://www.patagonia.com/on/demandware.static/-/Library-Sites-PatagoniaShared/default/dw2af7ec2f/2024/12-2024/Homepage/2024-12-HP-tile-ylc.jpg",
+    image: yvon,
   },
   {
     title: "“We Are Not Political Pawns.”",
     author: "Zina Rodriguez",
     time: "12 min Read",
-    image:
-      "https://www.patagonia.com/on/demandware.static/-/Library-Sites-PatagoniaShared/default/dwfd4b3e37/2024/12-2024/Homepage/2024-12-HP-tile-zina.jpg",
+    image: zina,
   },
   {
     title: "The Extinction of Dave Rastovich",
     author: "Derek Hynd",
     time: "9 min Read",
-    image:
-      "https://www.patagonia.com/blog/wp-content/uploads/2022/09/home-yvon-chouinard-portraits-campbell-brewer-37-final-768x373.jpg.webp",
+    image: ryan,
   },
   {
     title: "Microbeta",
     author: "Patagonia",
     time: "2 min Read",
-    image:
-      "https://www.patagonia.com/blog/wp-content/uploads/2022/09/home-yvon-chouinard-portraits-campbell-brewer-37-final-768x373.jpg.webp",
+    image: microbeta,
   },
   {
     title: "The Last Nomads",
     author: "Luke Griffin",
     time: "7 min Read",
-    image:
-      "https://www.patagonia.com/blog/wp-content/uploads/2022/09/home-yvon-chouinard-portraits-campbell-brewer-37-final-768x373.jpg.webpg",
+    image: luke,
   },
 ];
 
@@ -102,10 +102,10 @@ export const LatestStories = () => {
 
         {/* Custom Nav Buttons */}
         <div className="custom-prev absolute left-0 top-1/2 -translate-y-1/2 bg-white text-black w-12 h-12 rounded-full shadow flex items-center justify-center cursor-pointer z-10">
-          ◀
+          <ChevronLeft size={28} strokeWidth={2.5} />
         </div>
         <div className="custom-next absolute right-0 top-1/2 -translate-y-1/2 bg-white text-black w-12 h-12 rounded-full shadow flex items-center justify-center cursor-pointer z-10">
-          ▶
+          <ChevronRight size={28} strokeWidth={2.5} />
         </div>
       </div>
     </section>

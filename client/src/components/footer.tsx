@@ -8,33 +8,33 @@ export const Footer = () => {
         <div>
           <h2 className="text-2xl font-bold text-white">MyBrand</h2>
           <p className="mt-4 text-sm text-gray-400 leading-6">
-            Chúng tôi cam kết mang đến sản phẩm bền vững, thân thiện với môi
-            trường và chất lượng cao.
+            We are committed to delivering sustainable, eco-friendly, and
+            high-quality products.
           </p>
         </div>
 
         {/* Links */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4">Danh mục</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Categories</h3>
           <ul className="space-y-3">
             <li>
               <a href="#" className="hover:text-white">
-                Nam
+                Men
               </a>
             </li>
             <li>
               <a href="#" className="hover:text-white">
-                Nữ
+                Women
               </a>
             </li>
             <li>
               <a href="#" className="hover:text-white">
-                Trẻ em
+                Kids
               </a>
             </li>
             <li>
               <a href="#" className="hover:text-white">
-                Phụ kiện
+                Accessories
               </a>
             </li>
           </ul>
@@ -42,11 +42,11 @@ export const Footer = () => {
 
         {/* Support */}
         <div>
-          <h3 className="text-lg font-semibold text-white mb-4">Hỗ trợ</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Support</h3>
           <ul className="space-y-3">
             <li>
               <a href="#" className="hover:text-white">
-                Liên hệ
+                Contact
               </a>
             </li>
             <li>
@@ -56,12 +56,12 @@ export const Footer = () => {
             </li>
             <li>
               <a href="#" className="hover:text-white">
-                Chính sách đổi trả
+                Return Policy
               </a>
             </li>
             <li>
               <a href="#" className="hover:text-white">
-                Bảo hành
+                Warranty
               </a>
             </li>
           </ul>
@@ -70,13 +70,13 @@ export const Footer = () => {
         {/* Newsletter */}
         <div>
           <h3 className="text-lg font-semibold text-white mb-4">
-            Đăng ký nhận tin
+            Subscribe to Newsletter
           </h3>
           <form className="flex flex-col gap-3">
             <div className="flex items-center bg-gray-800 rounded-full overflow-hidden">
               <input
                 type="email"
-                placeholder="Email của bạn"
+                placeholder="Your email"
                 className="w-full px-4 py-2 bg-gray-800 text-gray-300 focus:outline-none"
               />
               <button
