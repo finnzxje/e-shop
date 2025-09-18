@@ -1,27 +1,36 @@
-import { User, ShoppingBag, Search } from "lucide-react";
+import { useState } from "react";
+import { User, ShoppingBag, Search, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export const Header = () => {
+  const [open, setOpen] = useState(false);
+
   return (
-    <header className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-200 bg-white shadow-sm">
-      {/* Menu */}
-      <nav>
+    <header className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-200 bg-white shadow-sm relative">
+      {/* Desktop Menu */}
+      <nav className="hidden md:block">
         <ul className="flex gap-6 text-sm font-montserrat text-gray-700">
-          <Link to={"/"} className="hover:text-black cursor-pointer">
+          <Link to="/" className="hover:text-black cursor-pointer">
             Home
           </Link>
-          <li className="hover:text-black cursor-pointer">Activism</li>
+          <Link to="/all-products" className="hover:text-black cursor-pointer">
+            All Products
+          </Link>
           <li className="hover:text-black cursor-pointer">Sports</li>
           <li className="hover:text-black cursor-pointer">Contact</li>
         </ul>
       </nav>
-
+      <button
+        className="md:hidden text-gray-700 text-2xl"
+        onClick={() => setOpen(!open)}
+      >
+        {open ? <X /> : <Menu />}
+      </button>
       {/* Logo */}
       <div className="text-xl font-bold font-poppins tracking-wide cursor-pointer">
         patagonia
       </div>
-
-      {/* Search + Icons */}
+      {/* Search + Icons (luôn hiện, không responsive) */}
       <div className="flex items-center gap-6">
         <div className="relative hidden md:block">
           <input
@@ -38,7 +47,27 @@ export const Header = () => {
           </Link>
           <ShoppingBag className="cursor-pointer hover:text-black" />
         </div>
+
+        {/* Hamburger chỉ cho menu */}
       </div>
+
+      {/* Mobile Menu */}
+      {open && (
+        <div className="absolute top-full left-0 w-48 min-h-screen z-10 bg-white border border-gray-200 shadow-md md:hidden">
+          <ul className="flex flex-col p-4 space-y-4 text-sm font-montserrat text-gray-700">
+            <Link
+              to="/"
+              onClick={() => setOpen(false)}
+              className="hover:text-black"
+            >
+              Home
+            </Link>
+            <li className="hover:text-black cursor-pointer">Activism</li>
+            <li className="hover:text-black cursor-pointer">Sports</li>
+            <li className="hover:text-black cursor-pointer">Contact</li>
+          </ul>
+        </div>
+      )}
     </header>
   );
 };
