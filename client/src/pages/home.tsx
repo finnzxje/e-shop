@@ -1,5 +1,5 @@
 import { CategoryCarousel } from "../components/categories";
-import { Enviroment } from "../components/enviroment";
+import { Environment } from "../components/enviroment";
 import { HeroSection } from "../components/herosection";
 import { LatestStories } from "../components/story";
 
@@ -8,7 +8,7 @@ const Home = () => {
     <div>
       <HeroSection />
       <CategoryCarousel />
-      <Enviroment />
+      <Environment />
       <LatestStories />
     </div>
   );
