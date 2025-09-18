@@ -17,3 +17,9 @@ management:
     web:
       exposure:
         include: "health"
+app:
+  base-url: /api/v1
+  jwt:
+    secret: ${JWT_SECRET:b@N3OeiLg$!bG9l!$^FHS*D(!*jasd(!@FHASD}
+    access-expiration-seconds: 3600
+    refresh-expiration-seconds: 1296000
