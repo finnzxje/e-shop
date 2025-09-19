@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,24 +23,37 @@ import java.util.Map;
 @AllArgsConstructor
 public class JwtService {
 
+    public static final String CLAIM_ROLES = "roles";
+    private static final String CLAIM_TOKEN_TYPE = "tokenType";
+    private static final String TOKEN_TYPE_ACCESS = "ACCESS";
+    private static final String TOKEN_TYPE_REFRESH = "REFRESH";
+
     private final AppEnv appEnv;
 
-    public String generateAccessToken(TokenPayload tokenPayload) {
+    public String generateAccessToken(String subject, List<String> roles) {
         log.info("Generating Access Token...");
-        return createJwtToken(tokenPayload);
+        return createJwtToken(subject, roles, appEnv.getJwt().getAccessExpirationSeconds(), TOKEN_TYPE_ACCESS);
     }
 
-    public String generateRefreshToken(TokenPayload tokenPayload) {
+    public String generateRefreshToken(String subject, List<String> roles) {
         log.info("Generating Refresh Token...");
-        return createJwtToken(tokenPayload);
+        return createJwtToken(subject, roles, appEnv.getJwt().getRefreshExpirationSeconds(), TOKEN_TYPE_REFRESH);
     }
 
-    private String createJwtToken(TokenPayload tokenPayload) {
+    private String createJwtToken(String subject, List<String> roles, long expirationSeconds, String tokenType) {
+        Instant now = Instant.now();
+        Date issuedAt = Date.from(now);
+        Date expiration = Date.from(now.plusSeconds(expirationSeconds));
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(CLAIM_ROLES, roles);
+        claims.put(CLAIM_TOKEN_TYPE, tokenType);
+
         return Jwts.builder()
-                .claims(tokenPayload.getClaims())
-                .subject(tokenPayload.getSubject())
-                .issuedAt(tokenPayload.getIssuedAt())
-                .expiration(tokenPayload.getExpiration())
+                .claims(claims)
+                .subject(subject)
+                .issuedAt(issuedAt)
+                .expiration(expiration)
                 .signWith(getSignatureKey())
                 .compact();
     }
@@ -71,7 +86,7 @@ public class JwtService {
     }
 
     public List<String> getUserRoles(Claims claims) {
-        Object rolesObj = claims.get(TokenPayload.CLAIM_ROLES);
+        Object rolesObj = claims.get(CLAIM_ROLES);
         if (rolesObj instanceof List) {
             return (List<String>) rolesObj;
         } else if (rolesObj instanceof String) {
@@ -90,23 +105,11 @@ public class JwtService {
         return claims.getIssuedAt();
     }
 
-    public String getBrowserName(Claims claims) {
-        return claims.get(TokenPayload.CLAIM_BROWSER_NAME, String.class);
+    public boolean isRefreshToken(Claims claims) {
+        return TOKEN_TYPE_REFRESH.equals(claims.get(CLAIM_TOKEN_TYPE, String.class));
     }
 
-    public String getSecChUaPlatform(Claims claims) {
-        return claims.get(TokenPayload.CLAIM_SEC_CH_UA_PLATFORM, String.class);
-    }
-
-    public String getSecChUaMobile(Claims claims) {
-        return claims.get(TokenPayload.CLAIM_SEC_CH_UA_MOBILE, String.class);
-    }
-
-    public String getJwtId(Claims claims) {
-        return claims.get(TokenPayload.CLAIM_JWT_ID, String.class);
-    }
-
-    public String getUserAgent(Claims claims) {
-        return claims.get(TokenPayload.CLAIM_USER_AGENT, String.class);
+    public boolean isAccessToken(Claims claims) {
+        return TOKEN_TYPE_ACCESS.equals(claims.get(CLAIM_TOKEN_TYPE, String.class));
     }
 }

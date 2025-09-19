@@ -1,13 +1,19 @@
 package com.eshop.api.auth;
 
 import com.eshop.api.auth.dto.AuthResponse;
+import com.eshop.api.auth.dto.AuthStatusResponse;
 import com.eshop.api.auth.dto.LoginRequest;
+import com.eshop.api.auth.dto.RefreshTokenRequest;
 import com.eshop.api.auth.dto.RegisterRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -30,5 +36,30 @@ public class AuthController {
                                               @RequestHeader(value = "sec-ch-ua-mobile", required = false) String secChUaMobile) {
         AuthResponse response = authenticationService.login(request);
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        AuthResponse response = authenticationService.refresh(request.refreshToken());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/test-token")
+    public ResponseEntity<AuthStatusResponse> testToken(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthStatusResponse(false, null, List.of()));
+        }
+
+        AuthStatusResponse body = new AuthStatusResponse(
+                true,
+                authentication.getName(),
+                authentication.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .map(authority -> authority.startsWith("ROLE_") ? authority.substring(5) : authority)
+                        .toList()
+        );
+
+        return ResponseEntity.ok(body);
     }
 }

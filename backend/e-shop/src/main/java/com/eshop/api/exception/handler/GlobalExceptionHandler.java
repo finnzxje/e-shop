@@ -1,6 +1,7 @@
 package com.eshop.api.exception.handler;
 
 import com.eshop.api.exception.ApiException;
+import com.eshop.api.exception.InvalidJwtException;
 import com.eshop.api.exception.RoleNotFoundException;
 import com.eshop.api.exception.UserAlreadyExistsException;
 import com.eshop.api.exception.dto.ErrorResponse;
@@ -108,6 +109,21 @@ public class GlobalExceptionHandler {
             Instant.now(),
             request.getDescription(false).replace("uri=", "")
         );
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(InvalidJwtException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidJwtException(InvalidJwtException ex, WebRequest request) {
+        log.warn("Invalid JWT: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.UNAUTHORIZED.value(),
+            "Unauthorized",
+            ex.getMessage(),
+            Instant.now(),
+            request.getDescription(false).replace("uri=", "")
+        );
+
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
     }
     

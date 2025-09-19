@@ -3,27 +3,28 @@ package com.eshop.api.auth;
 import com.eshop.api.auth.dto.AuthResponse;
 import com.eshop.api.auth.dto.LoginRequest;
 import com.eshop.api.auth.dto.RegisterRequest;
+import com.eshop.api.exception.InvalidJwtException;
 import com.eshop.api.exception.RoleNotFoundException;
 import com.eshop.api.exception.UserAlreadyExistsException;
 import com.eshop.api.security.JwtService;
-import com.eshop.api.security.TokenPayload;
 import com.eshop.api.user.Role;
+import com.eshop.api.user.RoleRepository;
 import com.eshop.api.user.User;
 import com.eshop.api.user.UserRepository;
-import com.eshop.api.user.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -62,7 +63,7 @@ public class AuthenticationService {
                 user.getLastName(),
                 user.getEnabled(),
                 user.getCreatedAt(),
-                user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
+                getRoleNames(user));
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -81,23 +82,53 @@ public class AuthenticationService {
         User user = userRepository.findByEmailIgnoreCase(request.getEmail()).orElseThrow(() -> new RuntimeException(
                 "User not found"));
 
-        List<String> roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toList());
+        List<String> roles = getRoleNames(user);
 
-        TokenPayload tokenPayload = TokenPayload.create().setSubject(user.getEmail()).setIssuedAt(Date.from(Instant.now())).setExpiration(
-                        Date.from(Instant.now().plusSeconds(86400)))
-                .roles(roles).build();
-
-        String token = jwtService.generateAccessToken(tokenPayload);
+        String accessToken = jwtService.generateAccessToken(user.getEmail(), roles);
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail(), roles);
 
         log.info("Successfully authenticated user: {}", user.getEmail());
 
+        return buildAuthResponse(user, accessToken, refreshToken, roles);
+    }
+
+    public AuthResponse refresh(String refreshToken) {
+        log.info("Refreshing tokens");
+
+        try {
+            var claims = jwtService.extractClaimsOrThrow(refreshToken);
+            if (!jwtService.isRefreshToken(claims)) {
+                throw new InvalidJwtException("Provided token is not a refresh token");
+            }
+
+            String email = jwtService.getUsername(claims);
+            User user = userRepository.findByEmailIgnoreCase(email)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found for refresh token"));
+
+            List<String> roles = getRoleNames(user);
+            String newAccessToken = jwtService.generateAccessToken(email, roles);
+            String newRefreshToken = jwtService.generateRefreshToken(email, roles);
+
+            return buildAuthResponse(user, newAccessToken, newRefreshToken, roles);
+        } catch (InvalidJwtException e) {
+            log.error("Failed to refresh token: {}", e.getMessage());
+            throw e;
+        }
+    }
+
+    private List<String> getRoleNames(User user) {
+        return user.getRoles().stream().map(Role::getName).toList();
+    }
+
+    private AuthResponse buildAuthResponse(User user, String accessToken, String refreshToken, List<String> roles) {
         return new AuthResponse(user.getId(),
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEnabled(),
                 user.getCreatedAt(),
-                token,
+                accessToken,
+                refreshToken,
                 roles);
     }
 }

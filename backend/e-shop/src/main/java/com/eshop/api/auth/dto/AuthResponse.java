@@ -1,6 +1,5 @@
 package com.eshop.api.auth.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,7 +9,6 @@ import java.util.UUID;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class AuthResponse {
     private UUID id;
     private String email;
@@ -19,6 +17,7 @@ public class AuthResponse {
     private Boolean enabled;
     private Instant createdAt;
     private String token;
+    private String refreshToken;
     private List<String> roles;
 
     public AuthResponse(UUID id, String email, String firstName, String lastName, Boolean enabled, Instant createdAt, List<String> roles) {
@@ -29,5 +28,19 @@ public class AuthResponse {
         this.enabled = enabled;
         this.createdAt = createdAt;
         this.roles = roles;
+    }
+
+    public AuthResponse(UUID id,
+                        String email,
+                        String firstName,
+                        String lastName,
+                        Boolean enabled,
+                        Instant createdAt,
+                        String token,
+                        String refreshToken,
+                        List<String> roles) {
+        this(id, email, firstName, lastName, enabled, createdAt, roles);
+        this.token = token;
+        this.refreshToken = refreshToken;
     }
 }

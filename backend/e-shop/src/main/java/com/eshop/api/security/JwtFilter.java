@@ -29,19 +29,19 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        
+
         try {
             String jwt = parseJwt(request);
             if (jwt != null && validateJwtToken(jwt)) {
                 Claims claims = jwtService.extractClaimsOrThrow(jwt);
                 String username = jwtService.getUsername(claims);
                 List<String> roles = jwtService.getUserRoles(claims);
-                
+
                 List<SimpleGrantedAuthority> authorities = roles.stream()
                         .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                         .collect(Collectors.toList());
-                
-                UsernamePasswordAuthenticationToken authentication = 
+
+                UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(username, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
@@ -67,6 +67,10 @@ public class JwtFilter extends OncePerRequestFilter {
     private boolean validateJwtToken(String authToken) {
         try {
             Claims claims = jwtService.extractClaimsOrThrow(authToken);
+            if (!jwtService.isAccessToken(claims)) {
+                log.warn("Rejected non-access token for authentication");
+                return false;
+            }
             return !jwtService.getExpiry(claims).before(new java.util.Date());
         } catch (Exception e) {
             log.error("Invalid JWT token: {}", e.getMessage());
