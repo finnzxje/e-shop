@@ -17,5 +17,19 @@ services:
     #   interval: 5s
     #   timeout: 3s
     #   retries: 10
+
+  api:
+    build:
+      context: ./backend/e-shop
+    container_name: eshop-api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/eshop
+      SPRING_DATASOURCE_USERNAME: app
+      SPRING_DATASOURCE_PASSWORD: secret
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    restart: unless-stopped
 volumes:
   postgres_data:
