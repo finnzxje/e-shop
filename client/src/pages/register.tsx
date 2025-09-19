@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import axios from "axios";
+import { useAppProvider } from "../context/useContex";
+import { useNavigate } from "react-router-dom";
+
 export default function Register() {
-  const [name, setName] = useState<string>("");
+  const navigate = useNavigate();
+  const { setUser } = useAppProvider();
+  const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [confirmPassword, setConfirmPassword] = useState<string>("");
@@ -10,17 +17,19 @@ export default function Register() {
     email?: string;
     password?: string;
     resetEmail?: string;
-    name?: string;
+    firstName?: string;
+    lastName?: string;
     confirmPassword?: string;
   }>({});
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: {
       email?: string;
       password?: string;
       resetEmail?: string;
-      name?: string;
+      firstName?: string;
+      lastName?: string;
       confirmPassword?: string;
     } = {};
 
@@ -32,8 +41,11 @@ export default function Register() {
     if (!password.trim()) {
       newErrors.password = "Please enter your password";
     }
-    if (!name.trim()) {
-      newErrors.name = "Please enter your name";
+    if (!firstName.trim()) {
+      newErrors.firstName = "Please enter your fist name";
+    }
+    if (!lastName.trim()) {
+      newErrors.lastName = "Please enter your last name";
     }
     if (!confirmPassword.trim()) {
       newErrors.confirmPassword = "Please enter your conrirm password";
@@ -41,11 +53,19 @@ export default function Register() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      console.log("Login with:", { email, password, name });
-      alert("Login successful!");
+      console.log("Login with:", { email, password });
+      const data = await axios.post("http://localhost:8080/api/auth/register", {
+        email: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+      });
+      navigate("/login");
+      // alert("Login successful!");
       setEmail("");
       setPassword("");
-      setName("");
+      setFirstName("");
+      setLastName("");
       setConfirmPassword("");
     }
   };
@@ -56,30 +76,56 @@ export default function Register() {
         <h1 className="text-4xl font-bold">Create an Account.</h1>
 
         <form className="space-y-7" noValidate onSubmit={handleLogin}>
-          {/* Name   */}
+          {/*First  Name   */}
           <div>
             <label
               className={`block text-lg font-medium ${
-                errors.name ? "text-red-500" : ""
+                errors.firstName ? "text-red-500" : ""
               }`}
             >
-              Name
+              First Name
             </label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
               className={`mt-2 block w-full border-b focus:outline-none text-lg py-3 ${
-                errors.name
+                errors.firstName
                   ? "border-red-500 placeholder-red-400"
                   : "border-black"
               }`}
               placeholder="Enter your name"
             />
-            {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+            {errors.firstName && (
+              <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
             )}
           </div>
+
+          {/*Last  Name   */}
+          <div>
+            <label
+              className={`block text-lg font-medium ${
+                errors.lastName ? "text-red-500" : ""
+              }`}
+            >
+              Last Name
+            </label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className={`mt-2 block w-full border-b focus:outline-none text-lg py-3 ${
+                errors.lastName
+                  ? "border-red-500 placeholder-red-400"
+                  : "border-black"
+              }`}
+              placeholder="Enter your name"
+            />
+            {errors.lastName && (
+              <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
+            )}
+          </div>
+
           {/* Email */}
           <div>
             <label className="block text-lg font-medium">Email</label>
