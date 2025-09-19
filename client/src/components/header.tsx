@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { User, ShoppingBag, Search, Menu, X } from "lucide-react";
+import { User, ShoppingBag, Search, Menu, X, LogOut } from "lucide-react";
 import { Link } from "react-router-dom";
-
+import { useAppProvider } from "../context/useContex";
+import profile from "../assets/profile_icon.png";
 export const Header = () => {
   const [open, setOpen] = useState(false);
-
+  const { user, setUser } = useAppProvider();
+  const handlLogout = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+  };
   return (
     <header className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-200 bg-white shadow-sm relative">
       {/* Desktop Menu */}
@@ -42,9 +47,26 @@ export const Header = () => {
         </div>
 
         <div className="flex gap-6 text-2xl text-gray-700">
-          <Link to="/login">
-            <User className="cursor-pointer hover:text-black" />
-          </Link>
+          {!user ? (
+            <Link to="/login">
+              <User className="cursor-pointer hover:text-black" />
+            </Link>
+          ) : (
+            <div className="relative group">
+              <img src={profile} alt="profile" className="w-10" />
+              <ul className="hidden group-hover:block absolute top-10 right-0 bg-white border border-gray-200 shadow w-30 z-40 rounded-md py-2.5 text-sm">
+                <li className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer">
+                  My Orders
+                </li>
+                <li
+                  onClick={handlLogout}
+                  className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer"
+                >
+                  Logout
+                </li>
+              </ul>
+            </div>
+          )}
           <ShoppingBag className="cursor-pointer hover:text-black" />
         </div>
 

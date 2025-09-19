@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import axios from "axios";
+import { useAppProvider } from "../context/useContex";
 export default function Login() {
+  const navigate = useNavigate();
+  const { setUser } = useAppProvider();
   const [openEmail, setOpenEmail] = useState<boolean>(false);
   const [resetEmail, setResetEmail] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -13,7 +17,7 @@ export default function Login() {
     resetEmail?: string;
   }>({});
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { email?: string; password?: string } = {};
 
@@ -27,10 +31,25 @@ export default function Login() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      console.log("Login with:", { email, password });
-      alert("Login successful!");
-      setEmail("");
-      setPassword("");
+      try {
+        const data: any = await axios.post(
+          "http://localhost:8080/api/auth/login",
+          {
+            email: email,
+            password: password,
+          }
+        );
+        // console.log(data.status);
+
+        localStorage.setItem("user", JSON.stringify(data.data));
+        // alert("Login successful!");
+        setUser(data.data);
+        setEmail("");
+        setPassword("");
+        navigate("/");
+      } catch (error: any) {
+        alert("wrong password or email");
+      }
     }
   };
 
