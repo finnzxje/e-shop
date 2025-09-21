@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
-import { useAppProvider } from "../context/useContex";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import api from "../config/axios";
 
 export default function Register() {
   const navigate = useNavigate();
-  const { setUser } = useAppProvider();
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -53,20 +53,23 @@ export default function Register() {
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length === 0) {
-      console.log("Login with:", { email, password });
-      const data = await axios.post("http://localhost:8080/api/auth/register", {
-        email: email,
-        password: password,
-        firstName: firstName,
-        lastName: lastName,
-      });
-      navigate("/login");
-      // alert("Login successful!");
-      setEmail("");
-      setPassword("");
-      setFirstName("");
-      setLastName("");
-      setConfirmPassword("");
+      try {
+        await api.post("/api/auth/register", {
+          email: email,
+          password: password,
+          firstName: firstName,
+          lastName: lastName,
+        });
+        navigate("/login");
+        toast.success("Account created successfully!");
+        setEmail("");
+        setPassword("");
+        setFirstName("");
+        setLastName("");
+        setConfirmPassword("");
+      } catch (error: any) {
+        toast.error(error.response.data.message);
+      }
     }
   };
 

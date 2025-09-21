@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, X } from "lucide-react";
+import { X } from "lucide-react";
 
 const product = {
   name: "Men's Better Sweater® Fleece Jacket",

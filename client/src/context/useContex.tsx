@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import api from "../config/axios";
 
 interface User {
   email: string;
@@ -24,10 +25,9 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
     if (!savedUser) return;
     const parsedUser: any = JSON.parse(savedUser);
     try {
-      const authUser: any = await axios.get(
-        "http://localhost:8080/api/auth/test-token",
-        { headers: { Authorization: `Bearer ${parsedUser.token}` } }
-      );
+      const authUser: any = await api.get("/api/auth/test-token", {
+        headers: { Authorization: `Bearer ${parsedUser.token}` },
+      });
 
       if (authUser.data.authenticated) {
         setUser(parsedUser);

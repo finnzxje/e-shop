@@ -1,3 +1,4 @@
+import BestSeller from "../components/bestSeller";
 import { CategoryCarousel } from "../components/categories";
 import { Environment } from "../components/enviroment";
 import { HeroSection } from "../components/herosection";
@@ -8,6 +9,7 @@ const Home = () => {
     <div>
       <HeroSection />
       <CategoryCarousel />
+      <BestSeller />
       <Environment />
       <LatestStories />
     </div>
