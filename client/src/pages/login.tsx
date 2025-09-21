@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import { useAppProvider } from "../context/useContex";
+import toast from "react-hot-toast";
+import api from "../config/axios";
 export default function Login() {
   const navigate = useNavigate();
   const { setUser } = useAppProvider();
@@ -32,23 +34,19 @@ export default function Login() {
 
     if (Object.keys(newErrors).length === 0) {
       try {
-        const data: any = await axios.post(
-          "http://localhost:8080/api/auth/login",
-          {
-            email: email,
-            password: password,
-          }
-        );
-        // console.log(data.status);
-
+        const data: any = await api.post("/api/auth/login", {
+          email: email,
+          password: password,
+        });
         localStorage.setItem("user", JSON.stringify(data.data));
-        // alert("Login successful!");
+        toast.success("Login successful!");
         setUser(data.data);
         setEmail("");
         setPassword("");
         navigate("/");
       } catch (error: any) {
-        alert("wrong password or email");
+        // toast.error(error.response.data.message);
+        toast.error("Incorrect email or password");
       }
     }
   };

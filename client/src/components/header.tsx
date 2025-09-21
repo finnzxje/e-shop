@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { User, ShoppingBag, Search, Menu, X, LogOut } from "lucide-react";
+import { User, ShoppingBag, Search, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppProvider } from "../context/useContex";
 import profile from "../assets/profile_icon.png";
+import toast from "react-hot-toast";
 export const Header = () => {
   const [open, setOpen] = useState(false);
   const { user, setUser } = useAppProvider();
   const handlLogout = () => {
     setUser(null);
     localStorage.removeItem("user");
+    toast.success("Logout success!");
   };
   return (
     <header className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-200 bg-white shadow-sm relative">
@@ -67,7 +69,9 @@ export const Header = () => {
               </ul>
             </div>
           )}
-          <ShoppingBag className="cursor-pointer hover:text-black" />
+          <Link to={"/cart"}>
+            <ShoppingBag className="cursor-pointer hover:text-black" />
+          </Link>
         </div>
 
         {/* Hamburger chỉ cho menu */}
