@@ -46,14 +46,8 @@ public class Product {
     @Column(name = "slug", length = 255, unique = true)
     private String slug;
 
-    @Column(name = "sku", length = 128, unique = true)
-    private String sku;
-
     @Column(name = "description")
     private String description;
-
-    @Column(name = "long_description")
-    private String longDescription;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
