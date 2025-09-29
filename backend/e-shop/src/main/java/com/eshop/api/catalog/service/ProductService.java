@@ -5,6 +5,8 @@ import com.eshop.api.catalog.model.*;
 import com.eshop.api.catalog.repository.ProductRepository;
 import com.eshop.api.exception.ProductNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +20,23 @@ import java.util.Set;
 public class ProductService {
 
     private final ProductRepository productRepository;
+
+    public PageResponse<ProductSummaryResponse> getProducts(Pageable pageable) {
+        Page<Product> page = productRepository.findBy(pageable);
+        List<ProductSummaryResponse> items = page.stream()
+            .map(this::mapToSummary)
+            .toList();
+
+        return PageResponse.<ProductSummaryResponse>builder()
+            .content(items)
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .page(page.getNumber())
+            .size(page.getSize())
+            .hasNext(page.hasNext())
+            .hasPrevious(page.hasPrevious())
+            .build();
+    }
 
     public ProductResponse getProductBySlug(String slug) throws ProductNotFoundException {
         Product product = productRepository.findWithDetailsBySlug(slug)
@@ -43,6 +62,23 @@ public class ProductService {
             .tags(mapTags(product.getTags()))
             .variants(mapVariants(product.getVariants()))
             .images(mapImages(product.getImages()))
+            .build();
+    }
+
+    private ProductSummaryResponse mapToSummary(Product product) {
+        return ProductSummaryResponse.builder()
+            .id(product.getId())
+            .name(product.getName())
+            .slug(product.getSlug())
+            .description(product.getDescription())
+            .basePrice(product.getBasePrice())
+            .status(product.getStatus())
+            .featured(product.getFeatured())
+            .gender(product.getGender())
+            .productType(product.getProductType())
+            .createdAt(product.getCreatedAt())
+            .updatedAt(product.getUpdatedAt())
+            .category(mapCategorySummary(product.getCategory()))
             .build();
     }
 
