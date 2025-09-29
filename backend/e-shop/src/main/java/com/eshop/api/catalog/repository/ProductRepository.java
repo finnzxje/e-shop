@@ -2,6 +2,8 @@ package com.eshop.api.catalog.repository;
 
 import com.eshop.api.catalog.enums.ProductStatus;
 import com.eshop.api.catalog.model.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -25,4 +27,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
         "images.color"
     })
     Optional<Product> findWithDetailsBySlug(String slug);
+
+    @EntityGraph(attributePaths = "category")
+    Page<Product> findBy(Pageable pageable);
 }
