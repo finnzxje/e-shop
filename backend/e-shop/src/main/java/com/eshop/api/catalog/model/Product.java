@@ -3,11 +3,12 @@ package com.eshop.api.catalog.model;
 import com.eshop.api.catalog.enums.Gender;
 import com.eshop.api.catalog.enums.ProductStatus;
 import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Index;
+import jakarta.persistence.Table;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.annotations.*;
+import org.hibernate.dialect.PostgreSQLEnumJdbcType;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
@@ -66,6 +67,8 @@ public class Product {
     private Boolean featured = false;
 
     @Column(name = "gender", columnDefinition = "gender")
+    @JdbcType(PostgreSQLEnumJdbcType.class)
+    @Enumerated(EnumType.STRING)
     private Gender gender;
 
     @Column(name = "taxonomy_path", columnDefinition = "text[]")

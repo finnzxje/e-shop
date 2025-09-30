@@ -6,11 +6,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum Gender {
-    MENS("mens"),
-    WOMENS("womens"),
-    UNISEX("unisex"),
-    KIDS("kids"),
-    UNKNOWN("unknown");
+    mens("mens"),
+    womens("womens"),
+    unisex("unisex"),
+    kids("kids"),
+    unknown("unknown");
 
     private final String value;
 
