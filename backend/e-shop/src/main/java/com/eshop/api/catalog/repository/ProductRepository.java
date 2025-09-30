@@ -1,5 +1,6 @@
 package com.eshop.api.catalog.repository;
 
+import com.eshop.api.catalog.enums.Gender;
 import com.eshop.api.catalog.enums.ProductStatus;
 import com.eshop.api.catalog.model.Product;
 import org.springframework.data.domain.Page;
@@ -30,4 +31,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     @EntityGraph(attributePaths = "category")
     Page<Product> findBy(Pageable pageable);
+
+    @EntityGraph(attributePaths = "category")
+    Page<Product> findByGender(Gender gender, Pageable pageable);
 }

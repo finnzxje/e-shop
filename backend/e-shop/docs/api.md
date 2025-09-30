@@ -52,6 +52,39 @@ Content-Type: application/json
 }
 ```
 
+### GET `/products/gender/{gender}`
+
+Returns a paginated list of products filtered by the provided gender segment.
+
+#### Path Parameters
+
+- `gender` — accepted values: `mens`, `womens`, `unisex`, `kids`, `unknown`.
+
+#### Query Parameters
+
+Supports the same pageable parameters as `GET /products`.
+
+#### Response
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "content": [],
+  "totalElements": 0,
+  "totalPages": 0,
+  "page": 0,
+  "size": 20,
+  "hasNext": false,
+  "hasPrevious": false
+}
+```
+
+If an unsupported gender value is provided the API responds with `400 Bad Request`.
+
 ### GET `/products/{slug}`
 
 Fetches the full detail for a single product, including tags, variants, and images.

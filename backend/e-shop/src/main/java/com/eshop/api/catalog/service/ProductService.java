@@ -1,6 +1,7 @@
 package com.eshop.api.catalog.service;
 
 import com.eshop.api.catalog.dto.*;
+import com.eshop.api.catalog.enums.Gender;
 import com.eshop.api.catalog.model.*;
 import com.eshop.api.catalog.repository.ProductRepository;
 import com.eshop.api.exception.ProductNotFoundException;
@@ -23,19 +24,12 @@ public class ProductService {
 
     public PageResponse<ProductSummaryResponse> getProducts(Pageable pageable) {
         Page<Product> page = productRepository.findBy(pageable);
-        List<ProductSummaryResponse> items = page.stream()
-            .map(this::mapToSummary)
-            .toList();
+        return buildPageResponse(page);
+    }
 
-        return PageResponse.<ProductSummaryResponse>builder()
-            .content(items)
-            .totalElements(page.getTotalElements())
-            .totalPages(page.getTotalPages())
-            .page(page.getNumber())
-            .size(page.getSize())
-            .hasNext(page.hasNext())
-            .hasPrevious(page.hasPrevious())
-            .build();
+    public PageResponse<ProductSummaryResponse> getProductsByGender(Gender gender, Pageable pageable) {
+        Page<Product> page = productRepository.findByGender(gender, pageable);
+        return buildPageResponse(page);
     }
 
     public ProductResponse getProductBySlug(String slug) throws ProductNotFoundException {
@@ -79,6 +73,22 @@ public class ProductService {
             .createdAt(product.getCreatedAt())
             .updatedAt(product.getUpdatedAt())
             .category(mapCategorySummary(product.getCategory()))
+            .build();
+    }
+
+    private PageResponse<ProductSummaryResponse> buildPageResponse(Page<Product> page) {
+        List<ProductSummaryResponse> items = page.stream()
+            .map(this::mapToSummary)
+            .toList();
+
+        return PageResponse.<ProductSummaryResponse>builder()
+            .content(items)
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .page(page.getNumber())
+            .size(page.getSize())
+            .hasNext(page.hasNext())
+            .hasPrevious(page.hasPrevious())
             .build();
     }
 
