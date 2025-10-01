@@ -13,7 +13,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -40,10 +42,12 @@ public class ProductService {
             throw new CategoryNotFoundException(categorySlug);
         }
 
-        categoryRepository.findBySlug(categorySlug)
+        Category category = categoryRepository.findBySlug(categorySlug)
             .orElseThrow(() -> new CategoryNotFoundException(categorySlug));
 
-        Page<Product> page = productRepository.findByCategorySlug(categorySlug, pageable);
+        List<Integer> categoryIds = collectCategoryIds(category);
+
+        Page<Product> page = productRepository.findByCategory_IdIn(categoryIds, pageable);
         return buildPageResponse(page);
     }
 
@@ -105,6 +109,28 @@ public class ProductService {
             .hasNext(page.hasNext())
             .hasPrevious(page.hasPrevious())
             .build();
+    }
+
+    private List<Integer> collectCategoryIds(Category root) {
+        List<Integer> ids = new ArrayList<>();
+        collectCategoryIds(root, ids, new HashSet<>());
+        return ids;
+    }
+
+    private void collectCategoryIds(Category category, List<Integer> ids, Set<Integer> visited) {
+        if (category == null || category.getId() == null) {
+            return;
+        }
+        if (!visited.add(category.getId())) {
+            return;
+        }
+
+        ids.add(category.getId());
+        if (category.getChildren() == null || category.getChildren().isEmpty()) {
+            return;
+        }
+
+        category.getChildren().forEach(child -> collectCategoryIds(child, ids, visited));
     }
 
     private CategorySummary mapCategorySummary(Category category) {

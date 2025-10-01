@@ -87,7 +87,7 @@ If an unsupported gender value is provided the API responds with `400 Bad Reques
 
 ### GET `/products/category/{slug}`
 
-Returns a paginated list of products belonging to the specified category.
+Returns a paginated list of products belonging to the specified category and all of its descendant categories.
 
 #### Path Parameters
 
