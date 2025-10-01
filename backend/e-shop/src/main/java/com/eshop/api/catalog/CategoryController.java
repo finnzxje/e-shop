@@ -24,6 +24,12 @@ public class CategoryController {
         return ResponseEntity.ok(categories);
     }
 
+    @GetMapping("/common")
+    public ResponseEntity<List<CategoryResponse>> listCommonCategories() {
+        List<CategoryResponse> categories = categoryService.getCommonCategories();
+        return ResponseEntity.ok(categories);
+    }
+
     @GetMapping("/{slug}")
     public ResponseEntity<CategoryResponse> getCategory(@PathVariable String slug) {
         CategoryResponse category = categoryService.getCategoryBySlug(slug);

@@ -216,3 +216,72 @@ Content-Type: application/json
 ---
 
 Use the sample payloads as references. Real responses depend on data present in the catalog.
+
+## Categories
+
+### GET `/categories`
+
+Returns all categories ordered by `displayOrder` then `name`.
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+[
+  {
+    "id": 3,
+    "name": "Apparel",
+    "slug": "apparel",
+    "displayOrder": 0,
+    "active": true,
+    "parentCategoryId": null,
+    "createdAt": "2025-02-18T09:12:44.280Z"
+  }
+]
+```
+
+### GET `/categories/common`
+
+Returns categories that have exactly one parent (second-level categories). Top-level categories are excluded.
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+[
+  {
+    "id": 12,
+    "name": "Tops",
+    "slug": "tops",
+    "displayOrder": 10,
+    "active": true,
+    "parentCategoryId": 3,
+    "createdAt": "2025-02-18T09:12:44.280Z"
+  }
+]
+```
+
+### GET `/categories/{slug}`
+
+Fetches a category by slug.
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "id": 12,
+  "name": "Tops",
+  "slug": "tops",
+  "displayOrder": 10,
+  "active": true,
+  "parentCategoryId": 3,
+  "createdAt": "2025-02-18T09:12:44.280Z"
+}
+```
