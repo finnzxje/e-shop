@@ -3,7 +3,9 @@ package com.eshop.api.catalog.service;
 import com.eshop.api.catalog.dto.*;
 import com.eshop.api.catalog.enums.Gender;
 import com.eshop.api.catalog.model.*;
+import com.eshop.api.catalog.repository.CategoryRepository;
 import com.eshop.api.catalog.repository.ProductRepository;
+import com.eshop.api.exception.CategoryNotFoundException;
 import com.eshop.api.exception.ProductNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,7 +13,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -21,6 +25,7 @@ import java.util.Set;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
     public PageResponse<ProductSummaryResponse> getProducts(Pageable pageable) {
         Page<Product> page = productRepository.findBy(pageable);
@@ -29,6 +34,20 @@ public class ProductService {
 
     public PageResponse<ProductSummaryResponse> getProductsByGender(Gender gender, Pageable pageable) {
         Page<Product> page = productRepository.findByGender(gender, pageable);
+        return buildPageResponse(page);
+    }
+
+    public PageResponse<ProductSummaryResponse> getProductsByCategorySlug(String categorySlug, Pageable pageable) {
+        if (categorySlug == null || categorySlug.isBlank()) {
+            throw new CategoryNotFoundException(categorySlug);
+        }
+
+        Category category = categoryRepository.findBySlug(categorySlug)
+            .orElseThrow(() -> new CategoryNotFoundException(categorySlug));
+
+        List<Integer> categoryIds = collectCategoryIds(category);
+
+        Page<Product> page = productRepository.findByCategory_IdIn(categoryIds, pageable);
         return buildPageResponse(page);
     }
 
@@ -90,6 +109,28 @@ public class ProductService {
             .hasNext(page.hasNext())
             .hasPrevious(page.hasPrevious())
             .build();
+    }
+
+    private List<Integer> collectCategoryIds(Category root) {
+        List<Integer> ids = new ArrayList<>();
+        collectCategoryIds(root, ids, new HashSet<>());
+        return ids;
+    }
+
+    private void collectCategoryIds(Category category, List<Integer> ids, Set<Integer> visited) {
+        if (category == null || category.getId() == null) {
+            return;
+        }
+        if (!visited.add(category.getId())) {
+            return;
+        }
+
+        ids.add(category.getId());
+        if (category.getChildren() == null || category.getChildren().isEmpty()) {
+            return;
+        }
+
+        category.getChildren().forEach(child -> collectCategoryIds(child, ids, visited));
     }
 
     private CategorySummary mapCategorySummary(Category category) {

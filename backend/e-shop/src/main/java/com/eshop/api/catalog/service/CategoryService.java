@@ -27,6 +27,16 @@ public class CategoryService {
             .toList();
     }
 
+    public List<CategoryResponse> getCommonCategories() {
+        List<Category> categories = categoryRepository
+            .findByParentCategoryIsNotNullAndParentCategory_ParentCategoryIsNull(
+                Sort.by(Sort.Direction.ASC, "parentCategory.displayOrder", "displayOrder", "name"));
+
+        return categories.stream()
+            .map(this::toResponse)
+            .toList();
+    }
+
     public CategoryResponse getCategoryBySlug(String slug) {
         Category category = categoryRepository.findBySlug(slug)
             .orElseThrow(() -> new CategoryNotFoundException(slug));
