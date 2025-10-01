@@ -3,7 +3,9 @@ package com.eshop.api.catalog.service;
 import com.eshop.api.catalog.dto.*;
 import com.eshop.api.catalog.enums.Gender;
 import com.eshop.api.catalog.model.*;
+import com.eshop.api.catalog.repository.CategoryRepository;
 import com.eshop.api.catalog.repository.ProductRepository;
+import com.eshop.api.exception.CategoryNotFoundException;
 import com.eshop.api.exception.ProductNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,6 +23,7 @@ import java.util.Set;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
     public PageResponse<ProductSummaryResponse> getProducts(Pageable pageable) {
         Page<Product> page = productRepository.findBy(pageable);
@@ -29,6 +32,18 @@ public class ProductService {
 
     public PageResponse<ProductSummaryResponse> getProductsByGender(Gender gender, Pageable pageable) {
         Page<Product> page = productRepository.findByGender(gender, pageable);
+        return buildPageResponse(page);
+    }
+
+    public PageResponse<ProductSummaryResponse> getProductsByCategorySlug(String categorySlug, Pageable pageable) {
+        if (categorySlug == null || categorySlug.isBlank()) {
+            throw new CategoryNotFoundException(categorySlug);
+        }
+
+        categoryRepository.findBySlug(categorySlug)
+            .orElseThrow(() -> new CategoryNotFoundException(categorySlug));
+
+        Page<Product> page = productRepository.findByCategorySlug(categorySlug, pageable);
         return buildPageResponse(page);
     }
 

@@ -39,6 +39,14 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/category/{slug}")
+    public ResponseEntity<PageResponse<ProductSummaryResponse>> listProductsByCategory(
+        @PathVariable("slug") String categorySlug,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PageResponse<ProductSummaryResponse> response = productService.getProductsByCategorySlug(categorySlug, pageable);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/{slug}")
     public ResponseEntity<ProductResponse> getProductBySlug(@PathVariable String slug) {
         ProductResponse response = productService.getProductBySlug(slug);
