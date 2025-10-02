@@ -14,6 +14,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -36,6 +37,21 @@ public class ProductController {
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
         Gender gender = resolveGender(genderValue);
         PageResponse<ProductSummaryResponse> response = productService.getProductsByGender(gender, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<PageResponse<ProductSummaryResponse>> filterProducts(
+        @RequestParam(value = "gender", required = false) String genderValue,
+        @RequestParam(value = "category", required = false) String categorySlug,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        Gender gender = null;
+        if (genderValue != null) {
+            gender = resolveGender(genderValue);
+        }
+
+        PageResponse<ProductSummaryResponse> response = productService.getProductsByFilters(gender, categorySlug, pageable);
         return ResponseEntity.ok(response);
     }
 

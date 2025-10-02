@@ -118,6 +118,37 @@ Content-Type: application/json
 
 If the category slug does not exist the API responds with `404 Not Found`.
 
+### GET `/products/filter`
+
+Filters products by optional gender and/or category slug. When a category is supplied, products in descendant categories are included.
+
+#### Query Parameters
+
+- `gender` — optional; accepted values: `mens`, `womens`, `unisex`, `kids`, `unknown`.
+- `category` — optional; category slug. If provided, products in descendant categories are returned.
+- Supports the same pageable parameters as `GET /products`.
+
+#### Response
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "content": [],
+  "totalElements": 0,
+  "totalPages": 0,
+  "page": 0,
+  "size": 20,
+  "hasNext": false,
+  "hasPrevious": false
+}
+```
+
+If an unsupported gender is provided the API responds with `400 Bad Request`. If the category slug does not exist the API responds with `404 Not Found`.
+
 ### GET `/products/{slug}`
 
 Fetches the full detail for a single product, including tags, variants, and images.
