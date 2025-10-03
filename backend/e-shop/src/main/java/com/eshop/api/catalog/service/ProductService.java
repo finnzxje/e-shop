@@ -42,13 +42,31 @@ public class ProductService {
             throw new CategoryNotFoundException(categorySlug);
         }
 
-        Category category = categoryRepository.findBySlug(categorySlug)
-            .orElseThrow(() -> new CategoryNotFoundException(categorySlug));
-
-        List<Integer> categoryIds = collectCategoryIds(category);
+        List<Integer> categoryIds = resolveCategoryHierarchy(categorySlug);
 
         Page<Product> page = productRepository.findByCategory_IdIn(categoryIds, pageable);
         return buildPageResponse(page);
+    }
+
+    public PageResponse<ProductSummaryResponse> getProductsByFilters(Gender gender, String categorySlug, Pageable pageable) {
+        boolean hasGender = gender != null;
+        boolean hasCategory = categorySlug != null && !categorySlug.isBlank();
+
+        if (!hasGender && !hasCategory) {
+            return getProducts(pageable);
+        }
+
+        if (hasGender && hasCategory) {
+            List<Integer> categoryIds = resolveCategoryHierarchy(categorySlug);
+            Page<Product> page = productRepository.findByGenderAndCategory_IdIn(gender, categoryIds, pageable);
+            return buildPageResponse(page);
+        }
+
+        if (hasGender) {
+            return getProductsByGender(gender, pageable);
+        }
+
+        return getProductsByCategorySlug(categorySlug, pageable);
     }
 
     public ProductResponse getProductBySlug(String slug) throws ProductNotFoundException {
@@ -109,6 +127,17 @@ public class ProductService {
             .hasNext(page.hasNext())
             .hasPrevious(page.hasPrevious())
             .build();
+    }
+
+    private List<Integer> resolveCategoryHierarchy(String categorySlug) {
+        if (categorySlug == null || categorySlug.isBlank()) {
+            throw new CategoryNotFoundException(categorySlug);
+        }
+
+        Category category = categoryRepository.findBySlug(categorySlug)
+            .orElseThrow(() -> new CategoryNotFoundException(categorySlug));
+
+        return collectCategoryIds(category);
     }
 
     private List<Integer> collectCategoryIds(Category root) {
