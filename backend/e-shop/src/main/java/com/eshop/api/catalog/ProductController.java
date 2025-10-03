@@ -55,6 +55,14 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<PageResponse<ProductSummaryResponse>> searchProducts(
+        @RequestParam("q") String query,
+        @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        PageResponse<ProductSummaryResponse> response = productService.searchProducts(query, pageable);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/category/{slug}")
     public ResponseEntity<PageResponse<ProductSummaryResponse>> listProductsByCategory(
         @PathVariable("slug") String categorySlug,

@@ -149,6 +149,36 @@ Content-Type: application/json
 
 If an unsupported gender is provided the API responds with `400 Bad Request`. If the category slug does not exist the API responds with `404 Not Found`.
 
+### GET `/products/search`
+
+Searches for products by a free-text query. Matching is performed against the product name, slug, and description.
+
+#### Query Parameters
+
+- `q` — required search term.
+- Supports the same pageable parameters as `GET /products`.
+
+#### Response
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "content": [],
+  "totalElements": 0,
+  "totalPages": 0,
+  "page": 0,
+  "size": 20,
+  "hasNext": false,
+  "hasPrevious": false
+}
+```
+
+If the search term is blank the API responds with `400 Bad Request`.
+
 ### GET `/products/{slug}`
 
 Fetches the full detail for a single product, including tags, variants, and images.
