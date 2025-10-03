@@ -3,7 +3,7 @@ import { Navigation } from "swiper/modules";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "../config/axios";
-
+import { useNavigate } from "react-router-dom";
 interface Category {
   id: number;
   name: string;
@@ -29,7 +29,12 @@ const gradients = [
 
 export const CategoryCarousel = () => {
   const [categories, setCategories] = useState<Category[]>([]);
-
+  const navigate = useNavigate();
+  const params = new URLSearchParams();
+  const handlOnclick = (slug: string) => {
+    params.set("category", slug);
+    navigate(`/all-products?${params.toString()}`);
+  };
   useEffect(() => {
     async function fetchData() {
       try {
@@ -104,7 +109,10 @@ export const CategoryCarousel = () => {
                   </p>
                 </div>
 
-                <button className="relative overflow-hidden bg-black text-white px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 group-hover:bg-white group-hover:text-black shadow-lg group-hover:shadow-xl transform group-hover:scale-105">
+                <button
+                  onClick={() => handlOnclick(cat.slug)}
+                  className="relative overflow-hidden bg-black text-white px-6 py-3 rounded-full text-sm font-semibold transition-all duration-300 group-hover:bg-white group-hover:text-black shadow-lg group-hover:shadow-xl transform group-hover:scale-105"
+                >
                   <span className="relative z-10">Shop Now</span>
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </button>
