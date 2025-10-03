@@ -1,5 +1,12 @@
 import hero from "../assets/heroimage.avif";
+import { useNavigate } from "react-router-dom";
 export const HeroSection = () => {
+  const navigate = useNavigate();
+  const params = new URLSearchParams();
+  const handlOnclick = (gender: string) => {
+    params.set("gender", gender);
+    navigate(`/all-products?${params.toString()}`);
+  };
   return (
     <section className="relative min-h-screen w-full overflow-hidden py-5">
       {/* Background Image with Parallax Effect */}
@@ -56,7 +63,10 @@ export const HeroSection = () => {
             className="flex flex-wrap justify-center gap-6 opacity-0 translate-y-6 animate-pulse"
             style={{ animation: "slideUp 0.8s ease-out 0.3s forwards" }}
           >
-            <button className="group relative px-8 py-4 bg-white text-black font-bold rounded-full overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-2xl transform">
+            <button
+              onClick={() => handlOnclick("mens")}
+              className="group relative px-8 py-4 bg-white text-black font-bold rounded-full overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-2xl transform"
+            >
               <span className="relative z-10">Shop Men's</span>
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="absolute inset-0 z-10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-bold">
@@ -64,19 +74,15 @@ export const HeroSection = () => {
               </span>
             </button>
 
-            <button className="group relative px-8 py-4 bg-white text-black font-bold rounded-full overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-2xl transform">
+            <button
+              onClick={() => handlOnclick("womens")}
+              className="group relative px-8 py-4 bg-white text-black font-bold rounded-full overflow-hidden transition-all duration-300 hover:scale-110 hover:shadow-2xl transform"
+            >
               <span className="relative z-10">Shop Women's</span>
               <div className="absolute inset-0 bg-gradient-to-r from-pink-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               <span className="absolute inset-0 z-10 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-bold">
                 Shop Women's
               </span>
-            </button>
-
-            <button className="group relative px-8 py-4 bg-transparent border-2 border-white text-white font-bold rounded-full overflow-hidden transition-all duration-300 hover:scale-110 backdrop-blur-sm">
-              <span className="relative z-10 group-hover:text-black transition-colors duration-300">
-                Explore Collection
-              </span>
-              <div className="absolute inset-0 bg-white transform -translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
             </button>
           </div>
         </div>
