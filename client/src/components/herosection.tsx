@@ -1,5 +1,4 @@
 import hero from "../assets/heroimage.avif";
-
 export const HeroSection = () => {
   return (
     <section className="relative min-h-screen w-full overflow-hidden py-5">
