@@ -6,6 +6,7 @@ import com.eshop.api.catalog.model.*;
 import com.eshop.api.catalog.repository.CategoryRepository;
 import com.eshop.api.catalog.repository.ProductRepository;
 import com.eshop.api.exception.CategoryNotFoundException;
+import com.eshop.api.exception.InvalidSearchQueryException;
 import com.eshop.api.exception.ProductNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -67,6 +68,20 @@ public class ProductService {
         }
 
         return getProductsByCategorySlug(categorySlug, pageable);
+    }
+
+    public PageResponse<ProductSummaryResponse> searchProducts(String query, Pageable pageable) {
+        String normalizedQuery = normalizeQuery(query);
+
+        Page<Product> page = productRepository
+            .findByNameContainingIgnoreCaseOrSlugContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                normalizedQuery,
+                normalizedQuery,
+                normalizedQuery,
+                pageable
+            );
+
+        return buildPageResponse(page);
     }
 
     public ProductResponse getProductBySlug(String slug) throws ProductNotFoundException {
@@ -160,6 +175,19 @@ public class ProductService {
         }
 
         category.getChildren().forEach(child -> collectCategoryIds(child, ids, visited));
+    }
+
+    private String normalizeQuery(String query) {
+        if (query == null) {
+            throw new InvalidSearchQueryException(null);
+        }
+
+        String normalized = query.trim();
+        if (normalized.isEmpty()) {
+            throw new InvalidSearchQueryException(query);
+        }
+
+        return normalized;
     }
 
     private CategorySummary mapCategorySummary(Category category) {

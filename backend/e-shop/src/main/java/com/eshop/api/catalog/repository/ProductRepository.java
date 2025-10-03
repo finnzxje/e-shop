@@ -41,4 +41,11 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     @EntityGraph(attributePaths = "category")
     Page<Product> findByGenderAndCategory_IdIn(Gender gender, List<Integer> categoryIds, Pageable pageable);
+
+    @EntityGraph(attributePaths = "category")
+    Page<Product> findByNameContainingIgnoreCaseOrSlugContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+        String name,
+        String slug,
+        String description,
+        Pageable pageable);
 }
