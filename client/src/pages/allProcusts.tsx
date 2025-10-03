@@ -2,39 +2,23 @@ import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import api from "../config/axios";
-
-interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  basePrice: number;
-  image?: string;
-  category: {
-    id: number;
-    name: string;
-    slug: string;
-  };
-}
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  displayOrder: number;
-  active: boolean;
-  parentCategoryId: number | null;
-  createdAt: string;
-  image?: string;
-}
+import { useSearchParams } from "react-router-dom";
+import type { Product, Category } from "../config/interface";
 export default function ProductPage() {
+  const [searchParams] = useSearchParams();
+  const categoryParam = searchParams.get("category");
+  const genderParam = searchParams.get("gender");
   const [openFilters, setFileters] = useState<boolean[]>([false, false]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-
   // ✅ filter state
-  const [selectedGender, setSelectedGender] = useState<string | null>(null);
+  const [selectedGender, setSelectedGender] = useState<string | null>(
+    genderParam || null
+  );
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    categoryParam || null
+  );
 
   // ✅ pagination state
   const [page, setPage] = useState(0);
@@ -52,21 +36,25 @@ export default function ProductPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      let url = `/api/catalog/products?page=${page}&size=${size}`;
+      // ✅ Base URL với filter API mới
+      let url = `/api/catalog/products/filter?page=${page}&size=${size}`;
 
-      // ✅ Ưu tiên filter
+      // ✅ Thêm query nếu có filter
       if (selectedGender) {
-        url = `/api/catalog/products/gender/${selectedGender}?page=${page}&size=${size}`;
-      } else if (selectedCategory) {
-        url = `/api/catalog/products/category/${selectedCategory}?page=${page}&size=${size}`;
+        url += `&gender=${selectedGender}`;
+      }
+      if (selectedCategory) {
+        url += `&category=${selectedCategory}`;
       }
 
       const res = await api.get(url);
       const productsData = res.data.content || res.data;
 
+      // ✅ Lấy categories 1 lần (có thể để useEffect riêng)
       const resCategory = await api.get("/api/catalog/categories");
       setCategories(resCategory.data || []);
-      // 2. Lấy ảnh cho từng sản phẩm
+
+      // ✅ Lấy ảnh cho từng sản phẩm
       const productsWithImages = await Promise.all(
         productsData.map(async (p: Product) => {
           try {
@@ -78,6 +66,7 @@ export default function ProductPage() {
           }
         })
       );
+
       setProducts(productsWithImages);
       setTotalPages(res.data.totalPages);
     } catch (err) {
@@ -96,7 +85,9 @@ export default function ProductPage() {
   useEffect(() => {
     setPage(0);
   }, [selectedGender, selectedCategory]);
-
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page, selectedGender, selectedCategory]);
   return (
     <div className="flex px-6 md:px-12 py-10 gap-10 bg-gray-50 min-h-screen">
       {/* Sidebar Filters */}
@@ -124,8 +115,8 @@ export default function ProductPage() {
                 <button
                   key={i}
                   onClick={() => {
-                    setSelectedGender(opt);
-                    setSelectedCategory(null); // reset category
+                    setSelectedGender(selectedGender === opt ? null : opt);
+                    // setSelectedCategory(null); // reset category
                   }}
                   className={`cursor-pointer py-2 rounded-full text-gray-700 transition ${
                     selectedGender === opt
@@ -159,8 +150,10 @@ export default function ProductPage() {
                 <button
                   key={opt.id}
                   onClick={() => {
-                    setSelectedCategory(opt.slug);
-                    setSelectedGender(null); // reset gender
+                    setSelectedCategory(
+                      selectedCategory === opt.slug ? null : opt.slug
+                    );
+                    // setSelectedGender(null); // reset gender
                   }}
                   className={`cursor-pointer py-2 rounded-full text-gray-700 transition ${
                     selectedCategory === opt.slug
