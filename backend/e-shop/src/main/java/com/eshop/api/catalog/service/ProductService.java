@@ -6,6 +6,7 @@ import com.eshop.api.catalog.model.*;
 import com.eshop.api.catalog.repository.CategoryRepository;
 import com.eshop.api.catalog.repository.ProductRepository;
 import com.eshop.api.exception.CategoryNotFoundException;
+import com.eshop.api.exception.InvalidPriceRangeException;
 import com.eshop.api.exception.InvalidSearchQueryException;
 import com.eshop.api.exception.ProductNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -49,25 +52,70 @@ public class ProductService {
         return buildPageResponse(page);
     }
 
-    public PageResponse<ProductSummaryResponse> getProductsByFilters(Gender gender, String categorySlug, Pageable pageable) {
-        boolean hasGender = gender != null;
-        boolean hasCategory = categorySlug != null && !categorySlug.isBlank();
+    public PageResponse<ProductSummaryResponse> getProductsByFilters(
+        Gender gender,
+        String categorySlug,
+        List<String> colorFilters,
+        List<String> sizeFilters,
+        Boolean inStock,
+        BigDecimal priceMin,
+        BigDecimal priceMax,
+        Pageable pageable
+    ) {
+        List<String> normalizedColors = normalizeListParameter(colorFilters);
+        List<String> normalizedSizes = normalizeListParameter(sizeFilters);
 
-        if (!hasGender && !hasCategory) {
+        if (priceMin != null && priceMax != null && priceMin.compareTo(priceMax) > 0) {
+            throw new InvalidPriceRangeException();
+        }
+
+        if (categorySlug != null && categorySlug.isBlank()) {
+            throw new CategoryNotFoundException(categorySlug);
+        }
+
+        boolean hasCategory = categorySlug != null && !categorySlug.isBlank();
+        List<Integer> categoryIds = hasCategory ? resolveCategoryHierarchy(categorySlug) : List.of();
+
+        boolean hasAnyFilter = gender != null
+            || hasCategory
+            || !normalizedColors.isEmpty()
+            || !normalizedSizes.isEmpty()
+            || Boolean.TRUE.equals(inStock)
+            || priceMin != null
+            || priceMax != null;
+
+        if (!hasAnyFilter) {
             return getProducts(pageable);
         }
 
-        if (hasGender && hasCategory) {
-            List<Integer> categoryIds = resolveCategoryHierarchy(categorySlug);
-            Page<Product> page = productRepository.findByGenderAndCategory_IdIn(gender, categoryIds, pageable);
-            return buildPageResponse(page);
+        boolean requiresAdvancedFiltering = !normalizedColors.isEmpty()
+            || !normalizedSizes.isEmpty()
+            || Boolean.TRUE.equals(inStock)
+            || priceMin != null
+            || priceMax != null;
+
+        Page<Product> page;
+
+        if (requiresAdvancedFiltering) {
+            page = productRepository.findByFilters(
+                gender,
+                categoryIds,
+                normalizedColors,
+                normalizedSizes,
+                Boolean.TRUE.equals(inStock) ? Boolean.TRUE : null,
+                priceMin,
+                priceMax,
+                pageable
+            );
+        } else if (gender != null && hasCategory) {
+            page = productRepository.findByGenderAndCategory_IdIn(gender, categoryIds, pageable);
+        } else if (gender != null) {
+            page = productRepository.findByGender(gender, pageable);
+        } else {
+            page = productRepository.findByCategory_IdIn(categoryIds, pageable);
         }
 
-        if (hasGender) {
-            return getProductsByGender(gender, pageable);
-        }
-
-        return getProductsByCategorySlug(categorySlug, pageable);
+        return buildPageResponse(page);
     }
 
     public PageResponse<ProductSummaryResponse> searchProducts(String query, Pageable pageable) {
@@ -188,6 +236,20 @@ public class ProductService {
         }
 
         return normalized;
+    }
+
+    private List<String> normalizeListParameter(List<String> rawValues) {
+        if (rawValues == null || rawValues.isEmpty()) {
+            return List.of();
+        }
+
+        return rawValues.stream()
+            .flatMap(value -> Arrays.stream(value.split(",")))
+            .map(String::trim)
+            .filter(token -> !token.isEmpty())
+            .map(String::toLowerCase)
+            .distinct()
+            .toList();
     }
 
     private CategorySummary mapCategorySummary(Category category) {

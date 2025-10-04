@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/catalog/products")
 @RequiredArgsConstructor
@@ -44,6 +47,11 @@ public class ProductController {
     public ResponseEntity<PageResponse<ProductSummaryResponse>> filterProducts(
         @RequestParam(value = "gender", required = false) String genderValue,
         @RequestParam(value = "category", required = false) String categorySlug,
+        @RequestParam(value = "color", required = false) List<String> colors,
+        @RequestParam(value = "size", required = false) List<String> sizes,
+        @RequestParam(value = "inStock", required = false) Boolean inStock,
+        @RequestParam(value = "priceMin", required = false) BigDecimal priceMin,
+        @RequestParam(value = "priceMax", required = false) BigDecimal priceMax,
         @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 
         Gender gender = null;
@@ -51,7 +59,16 @@ public class ProductController {
             gender = resolveGender(genderValue);
         }
 
-        PageResponse<ProductSummaryResponse> response = productService.getProductsByFilters(gender, categorySlug, pageable);
+        PageResponse<ProductSummaryResponse> response = productService.getProductsByFilters(
+            gender,
+            categorySlug,
+            colors,
+            sizes,
+            inStock,
+            priceMin,
+            priceMax,
+            pageable
+        );
         return ResponseEntity.ok(response);
     }
 
