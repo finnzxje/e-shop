@@ -14,6 +14,12 @@ Returns a paginated list of catalog products. Results are ordered by `createdAt`
 - `size` — page size (default `20`).
 - `sort` — property to sort by, optionally suffixed with direction (e.g. `sort=createdAt,desc`). Multiple values allowed.
 
+**Example**
+
+```
+GET http://localhost:8080/api/catalog/products?sort=createdAt,desc&page=1&size=12
+```
+
 #### Response
 
 ```
@@ -64,6 +70,12 @@ Returns a paginated list of products filtered by the provided gender segment.
 
 Supports the same pageable parameters as `GET /products`.
 
+**Example**
+
+```
+GET http://localhost:8080/api/catalog/products/gender/mens?sort=updatedAt,desc
+```
+
 #### Response
 
 ```
@@ -97,6 +109,12 @@ Returns a paginated list of products belonging to the specified category and all
 
 Supports the same pageable parameters as `GET /products`.
 
+**Example**
+
+```
+GET http://localhost:8080/api/catalog/products/category/tops?sort=basePrice,asc
+```
+
 #### Response
 
 ```
@@ -128,6 +146,12 @@ Filters products by optional gender and/or category slug. When a category is sup
 - `category` — optional; category slug. If provided, products in descendant categories are returned.
 - Supports the same pageable parameters as `GET /products`.
 
+**Example**
+
+```
+GET http://localhost:8080/api/catalog/products/filter?gender=unisex&category=outerwear&sort=name,asc
+```
+
 #### Response
 
 ```
@@ -157,6 +181,12 @@ Searches for products by a free-text query. Matching is performed against the pr
 
 - `q` — required search term.
 - Supports the same pageable parameters as `GET /products`.
+
+**Example**
+
+```
+GET http://localhost:8080/api/catalog/products/search?q=denim+jacket&sort=slug,asc
+```
 
 #### Response
 
