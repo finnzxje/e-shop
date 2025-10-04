@@ -382,3 +382,94 @@ Content-Type: application/json
   "createdAt": "2025-02-18T09:12:44.280Z"
 }
 ```
+
+## Cart
+
+### GET `/api/cart`
+
+Returns the authenticated user's active cart. If the cart does not yet exist it is created automatically with zero items.
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "id": "6c2d8df9-5c2d-4c9b-8e93-1b23a1d6f7c1",
+  "userId": "4f09d2e4-76d7-4658-9b32-a1de6e73c241",
+  "totalItems": 1,
+  "totalQuantity": 2,
+  "subtotal": 119.98,
+  "createdAt": "2025-03-01T10:22:11.083Z",
+  "updatedAt": "2025-03-03T19:45:52.411Z",
+  "items": [
+    {
+      "id": "e7a11ca7-17d1-4d7d-a1cb-09db1546d0c6",
+      "variantId": "5f8527fc-9a9a-4f4c-a7b5-7bb79ff58865",
+      "productId": "3f8160d0-9de2-4dee-9ab2-7fa4b030f657",
+      "productName": "Recycled Cotton Tee",
+      "productSlug": "recycled-cotton-tee",
+      "variantSku": "RCTEE-BLACK-M",
+      "size": "M",
+      "fit": "regular",
+      "color": {
+        "id": 5,
+        "code": "black",
+        "name": "Black",
+        "hex": "#000000"
+      },
+      "quantity": 2,
+      "unitPrice": 59.99,
+      "lineTotal": 119.98,
+      "inStock": true,
+      "availableQuantity": 12
+    }
+  ]
+}
+```
+
+### POST `/api/cart/items`
+
+Adds a product variant to the cart or increases the quantity if the variant already exists.
+
+```
+Status: 201 Created
+Content-Type: application/json
+```
+
+```json
+{
+  "variantId": "5f8527fc-9a9a-4f4c-a7b5-7bb79ff58865",
+  "quantity": 2
+}
+```
+
+**Response body**: full cart payload as shown above.
+
+### PUT `/api/cart/items/{itemId}`
+
+Sets the quantity for a specific cart item.
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "quantity": 1
+}
+```
+
+**Response body**: full cart payload.
+
+### DELETE `/api/cart/items/{itemId}`
+
+Removes a single item from the cart and returns the updated cart.
+
+### DELETE `/api/cart`
+
+Clears the cart for the authenticated user.
+
+All cart endpoints require a valid JWT access token.
