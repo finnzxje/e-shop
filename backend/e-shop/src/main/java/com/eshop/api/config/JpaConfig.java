@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @Configuration
-@EntityScan(basePackages = {"com.eshop.api.user", "com.eshop.api.catalog"})
-@EnableJpaRepositories(basePackages = {"com.eshop.api.user", "com.eshop.api.catalog"})
+@EntityScan(basePackages = {"com.eshop.api.user", "com.eshop.api.catalog", "com.eshop.api.cart"})
+@EnableJpaRepositories(basePackages = {"com.eshop.api.user", "com.eshop.api.catalog", "com.eshop.api.cart"})
 public class JpaConfig {
 }
