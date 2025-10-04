@@ -144,12 +144,17 @@ Filters products by optional gender and/or category slug. When a category is sup
 
 - `gender` — optional; accepted values: `mens`, `womens`, `unisex`, `kids`, `unknown`.
 - `category` — optional; category slug. If provided, products in descendant categories are returned.
+- `color` — optional; comma-separated list of color codes or names (e.g. `black,navy`).
+- `size` — optional; comma-separated list of variant sizes (e.g. `M,L`).
+- `inStock` — optional; when `true`, only products with at least one variant in stock are returned.
+- `priceMin` — optional; minimum variant price (defaults to the product base price when a variant price is missing).
+- `priceMax` — optional; maximum variant price (defaults to the product base price when a variant price is missing).
 - Supports the same pageable parameters as `GET /products`.
 
 **Example**
 
 ```
-GET http://localhost:8080/api/catalog/products/filter?gender=unisex&category=outerwear&sort=name,asc
+GET http://localhost:8080/api/catalog/products/filter?gender=unisex&category=outerwear&color=black,navy&size=M,L&inStock=true&priceMin=20&priceMax=80&sort=name,asc
 ```
 
 #### Response
@@ -172,6 +177,7 @@ Content-Type: application/json
 ```
 
 If an unsupported gender is provided the API responds with `400 Bad Request`. If the category slug does not exist the API responds with `404 Not Found`.
+If `priceMin` is greater than `priceMax` the API responds with `400 Bad Request`.
 
 ### GET `/products/search`
 
