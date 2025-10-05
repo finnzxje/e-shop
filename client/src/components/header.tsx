@@ -1,17 +1,21 @@
-import { useState } from "react";
-import { User, ShoppingBag, Search, Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, ShoppingBag, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppProvider } from "../context/useContex";
 import profile from "../assets/profile_icon.png";
 import toast from "react-hot-toast";
+
 export const Header = () => {
   const [open, setOpen] = useState(false);
   const { user, setUser } = useAppProvider();
-  const handlLogout = () => {
+  const { cart } = useAppProvider();
+
+  const handleLogout = () => {
     setUser(null);
     localStorage.removeItem("user");
     toast.success("Logout success!");
   };
+
   return (
     <header className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-200 bg-white shadow-sm relative">
       {/* Desktop Menu */}
@@ -27,54 +31,50 @@ export const Header = () => {
           <li className="hover:text-black cursor-pointer">Contact</li>
         </ul>
       </nav>
+
       <button
         className="md:hidden text-gray-700 text-2xl"
         onClick={() => setOpen(!open)}
       >
         {open ? <X /> : <Menu />}
       </button>
+
       {/* Logo */}
       <div className="text-xl font-bold font-poppins tracking-wide cursor-pointer">
         patagonia
       </div>
-      {/* Search + Icons (luôn hiện, không responsive) */}
+
+      {/* Icons */}
       <div className="flex items-center gap-6">
-        <div className="relative hidden md:block">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-400"
-          />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-        </div>
-
-        <div className="flex gap-6 text-2xl text-gray-700">
-          {!user ? (
-            <Link to="/login">
-              <User className="cursor-pointer hover:text-black" />
-            </Link>
-          ) : (
-            <div className="relative group">
-              <img src={profile} alt="profile" className="w-10" />
-              <ul className="hidden group-hover:block absolute top-10 right-0 bg-white border border-gray-200 shadow w-30 z-40 rounded-md py-2.5 text-sm">
-                <li className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer">
-                  My Orders
-                </li>
-                <li
-                  onClick={handlLogout}
-                  className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer"
-                >
-                  Logout
-                </li>
-              </ul>
-            </div>
-          )}
-          <Link to={"/cart"}>
-            <ShoppingBag className="cursor-pointer hover:text-black" />
+        {!user ? (
+          <Link to="/login">
+            <User className="cursor-pointer hover:text-black text-2xl" />
           </Link>
-        </div>
+        ) : (
+          <div className="relative group">
+            <img src={profile} alt="profile" className="w-10" />
+            <ul className="hidden group-hover:block absolute top-10 right-0 bg-white border border-gray-200 shadow w-30 z-40 rounded-md py-2.5 text-sm">
+              <li className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer">
+                My Orders
+              </li>
+              <li
+                onClick={handleLogout}
+                className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer"
+              >
+                Logout
+              </li>
+            </ul>
+          </div>
+        )}
 
-        {/* Hamburger chỉ cho menu */}
+        <Link to={"/cart"} className="relative">
+          <ShoppingBag className="cursor-pointer hover:text-black text-2xl" />
+          {cart?.totalQuantity > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+              {cart.totalQuantity}
+            </span>
+          )}
+        </Link>
       </div>
 
       {/* Mobile Menu */}

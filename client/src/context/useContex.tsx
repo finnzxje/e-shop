@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import api from "../config/axios";
+import type { Cart } from "../config/interface";
 
 interface User {
   email: string;
@@ -15,9 +16,11 @@ interface User {
   refreshToken: string;
   roles: string[];
 }
-export const AppContext = createContext<any>(undefined);
+export const AppContext = createContext<any>(null);
 export const AppContextProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [cart, setCart] = useState<Cart | null>(null);
+
   //Fetch User Auth Status
   const fetchTestToken = async () => {
     const savedUser = localStorage.getItem("user");
@@ -27,10 +30,8 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
       const authUser: any = await api.get("/api/auth/test-token", {
         headers: { Authorization: `Bearer ${parsedUser.token}` },
       });
-
       if (authUser.data.authenticated) {
         setUser(parsedUser);
-        console.log(parsedUser);
       } else {
         setUser(null);
       }
@@ -38,10 +39,25 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
       console.log(error.message);
     }
   };
+  const fetchCart = async () => {
+    try {
+      const response = await api.get("/api/cart", {
+        headers: { Authorization: `Bearer ${user?.token}` },
+      });
+      setCart(response.data);
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    }
+  };
   useEffect(() => {
     fetchTestToken();
   }, []);
-  const value = { user, setUser };
+  useEffect(() => {
+    if (!user) return;
+    fetchCart();
+  }, [user]);
+
+  const value = { user, setUser, cart, setCart };
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 export const useAppProvider = () => {

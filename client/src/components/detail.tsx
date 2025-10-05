@@ -3,6 +3,7 @@ import { X, Check, ShoppingBag, Zap, Package } from "lucide-react";
 import { useParams } from "react-router-dom";
 import api from "../config/axios";
 import type { productDetail, Color } from "../config/interface";
+import { useAppProvider } from "../context/useContex";
 
 export default function Detail() {
   const { slug } = useParams<{ slug: string }>();
@@ -13,7 +14,7 @@ export default function Detail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-
+  const { user, setCart } = useAppProvider();
   // Fetch product data
   useEffect(() => {
     async function fetchData() {
@@ -96,7 +97,22 @@ export default function Detail() {
   const selectedVariant = product.variants.find(
     (v) => v.color.code === selectedColor?.code && v.size === selectedSize
   );
-
+  const handlAddToCart = async () => {
+    console.log(user?.token);
+    const res = await api.post(
+      "/api/cart/items",
+      {
+        variantId: selectedVariant?.id,
+        quantity: quantity,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      }
+    );
+    setCart(res.data);
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
@@ -344,6 +360,7 @@ export default function Detail() {
             {/* Action Buttons */}
             <div className="sticky bottom-0 bg-white rounded-3xl shadow-2xl p-6 lg:p-8 space-y-3">
               <button
+                onClick={handlAddToCart}
                 disabled={
                   !selectedSize ||
                   !selectedVariant ||
