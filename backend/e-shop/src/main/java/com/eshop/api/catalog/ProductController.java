@@ -48,7 +48,7 @@ public class ProductController {
         @RequestParam(value = "gender", required = false) String genderValue,
         @RequestParam(value = "category", required = false) String categorySlug,
         @RequestParam(value = "color", required = false) List<String> colors,
-        @RequestParam(value = "size", required = false) List<String> sizes,
+        @RequestParam(value = "sizes", required = false) List<String> sizes,
         @RequestParam(value = "inStock", required = false) Boolean inStock,
         @RequestParam(value = "priceMin", required = false) BigDecimal priceMin,
         @RequestParam(value = "priceMax", required = false) BigDecimal priceMax,
