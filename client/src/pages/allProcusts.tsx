@@ -4,7 +4,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import api from "../config/axios";
 import type { Product, Category } from "../config/interface";
 import FilterSidebar from "../components/filterSidebar";
-
+import { Search } from "lucide-react";
 export default function ProductPage() {
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get("category");
@@ -121,16 +121,26 @@ export default function ProductPage() {
 
       {/* Product Grid */}
       <main className="flex-1">
-        <h1 className="text-2xl font-bold mb-8 text-gray-800">
-          Product Listing
-          <input
-            type="text"
-            value={searchProduct}
-            onChange={(e) => setSearchProduct(e.target.value)}
-            placeholder="Search products..."
-            className="border px-3 py-2 rounded-md w-64"
-          />
-        </h1>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+          {/* Tiêu đề */}
+          <h2 className="text-3xl font-semibold text-gray-800 tracking-tight">
+            Product Listing
+          </h2>
+
+          {/* Ô tìm kiếm */}
+          <div className="relative w-full md:w-72">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              value={searchProduct}
+              onChange={(e) => setSearchProduct(e.target.value)}
+              placeholder="Search for products..."
+              className="w-full pl-12 pr-4 py-2.5 text-sm border border-gray-300 rounded-full shadow-sm 
+                 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 
+                 transition duration-200 placeholder:text-gray-400"
+            />
+          </div>
+        </div>
 
         {loading ? (
           <p>Loading...</p>
