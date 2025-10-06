@@ -13,6 +13,7 @@ import com.eshop.api.catalog.enums.ProductStatus;
 import com.eshop.api.catalog.model.Color;
 import com.eshop.api.catalog.model.Product;
 import com.eshop.api.catalog.model.ProductVariant;
+import com.eshop.api.catalog.model.ProductImage;
 import com.eshop.api.catalog.repository.ProductVariantRepository;
 import com.eshop.api.exception.CartItemNotFoundException;
 import com.eshop.api.exception.CartNotFoundException;
@@ -30,10 +31,15 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+record CartItemImagePayload(String imageUrl, String altText) {
+    static final CartItemImagePayload EMPTY = new CartItemImagePayload(null, null);
+}
 
 @Slf4j
 @Service
@@ -263,6 +269,8 @@ public class CartService {
         BigDecimal unitPrice = resolvePrice(variant);
         BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity() != null ? item.getQuantity() : 0));
 
+        CartItemImagePayload imagePayload = resolveImage(variant, product);
+
         return CartItemResponse.builder()
             .id(item.getId())
             .variantId(variant != null ? variant.getId() : null)
@@ -278,7 +286,52 @@ public class CartService {
             .lineTotal(lineTotal)
             .inStock(isVariantAvailableForQuantity(variant, item.getQuantity()))
             .availableQuantity(variant != null ? variant.getQuantityInStock() : null)
+            .imageUrl(imagePayload.imageUrl())
+            .altText(imagePayload.altText())
             .build();
+    }
+
+    private CartItemImagePayload resolveImage(ProductVariant variant, Product product) {
+        // Prefer variant color-specific primary image
+        if (product != null && variant != null && variant.getColor() != null) {
+            String colorCode = variant.getColor().getCode();
+            if (colorCode != null && product.getImages() != null) {
+                Optional<ProductImage> colorImage = product.getImages().stream()
+                    .filter(image -> image.getColor() != null
+                        && colorCode.equalsIgnoreCase(image.getColor().getCode())
+//                        && Boolean.TRUE.equals(image.getPrimary())
+                           )
+                    .findFirst();
+                if (colorImage.isPresent()) {
+                    return toImagePayload(colorImage.get());
+                }
+            }
+        }
+
+        // Fallback to product primary image
+        if (product != null && product.getImages() != null) {
+            Optional<ProductImage> primary = product.getImages().stream()
+                .filter(image -> Boolean.TRUE.equals(image.getPrimary()))
+                .findFirst();
+            if (primary.isPresent()) {
+                return toImagePayload(primary.get());
+            }
+
+            // fallback to first image
+            Optional<ProductImage> first = product.getImages().stream().findFirst();
+            if (first.isPresent()) {
+                return toImagePayload(first.get());
+            }
+        }
+
+        return CartItemImagePayload.EMPTY;
+    }
+
+    private CartItemImagePayload toImagePayload(ProductImage image) {
+        if (image == null) {
+            return CartItemImagePayload.EMPTY;
+        }
+        return new CartItemImagePayload(image.getImageUrl(), image.getAltText());
     }
 
     private boolean isVariantAvailableForQuantity(ProductVariant variant, Integer quantity) {
