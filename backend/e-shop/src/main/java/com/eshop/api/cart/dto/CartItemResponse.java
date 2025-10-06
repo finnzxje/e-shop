@@ -24,4 +24,6 @@ public class CartItemResponse {
     BigDecimal lineTotal;
     Boolean inStock;
     Integer availableQuantity;
+    String imageUrl;
+    String altText;
 }

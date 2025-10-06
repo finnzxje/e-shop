@@ -13,6 +13,7 @@ public interface CartRepository extends JpaRepository<Cart, UUID> {
         "items",
         "items.variant",
         "items.variant.product",
+        "items.variant.product.images",
         "items.variant.product.category",
         "items.variant.color"
     })
@@ -20,4 +21,3 @@ public interface CartRepository extends JpaRepository<Cart, UUID> {
 
     boolean existsByUser_Id(UUID userId);
 }
-
