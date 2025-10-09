@@ -41,7 +41,8 @@ export default function FilterSidebar({
     false,
     false,
   ]);
-
+  const [tempPriceMin, setTempPriceMin] = useState<number | null>(priceMin);
+  const [tempPriceMax, setTempPriceMax] = useState<number | null>(priceMax);
   const toggleFilter = (index: number) => {
     setFilters((pre) => {
       const updated = [...pre];
@@ -49,7 +50,10 @@ export default function FilterSidebar({
       return updated;
     });
   };
-
+  const applyPriceFilter = () => {
+    setPriceMin(tempPriceMin);
+    setPriceMax(tempPriceMax);
+  };
   return (
     <aside className="w-64 hidden md:block space-y-6 bg-white p-4 rounded-xl shadow-sm">
       <h2 className="text-lg font-semibold text-gray-800 border-b pb-3">
@@ -102,31 +106,36 @@ export default function FilterSidebar({
             }`}
           />
         </div>
+
         {openFilters[4] && (
           <div className="pb-3 text-sm text-gray-600 grid grid-cols-2 gap-2">
             <button
               onClick={() => setSort(sort === "asc" ? null : "asc")}
-              className={`cursor-pointer py-2 rounded-full text-gray-700 transition ${
+              className={`flex items-center justify-center gap-1 py-2 rounded-full text-sm transition ${
                 sort === "asc"
                   ? "bg-black text-white"
-                  : "bg-gray-100 hover:text-black hover:bg-gray-200"
+                  : "bg-gray-100 text-gray-700 hover:text-black hover:bg-gray-200"
               }`}
             >
-              <ArrowUp className="w-4 h-4 text-gray-500" />
+              <ArrowUp className="w-4 h-4" />
+              <span>Low</span>
             </button>
+
             <button
               onClick={() => setSort(sort === "desc" ? null : "desc")}
-              className={`cursor-pointer py-2 rounded-full text-gray-700 transition ${
+              className={`flex items-center justify-center gap-1 py-2 rounded-full text-sm transition  ${
                 sort === "desc"
                   ? "bg-black text-white"
-                  : "bg-gray-100 hover:text-black hover:bg-gray-200"
+                  : "bg-gray-100 text-gray-700 hover:text-black hover:bg-gray-200"
               }`}
             >
-              <ArrowDown className="w-4 h-4 text-gray-500" />
+              <ArrowDown className="w-4 h-4" />
+              <span>High</span>
             </button>
           </div>
         )}
       </div>
+
       {/* Size Filter */}
       <div className="border-b border-gray-200">
         <div
@@ -179,9 +188,11 @@ export default function FilterSidebar({
               <label className="text-sm w-20">Min</label>
               <input
                 type="number"
-                value={priceMin ?? ""}
+                value={tempPriceMin ?? ""}
                 onChange={(e) =>
-                  setPriceMin(e.target.value ? Number(e.target.value) : null)
+                  setTempPriceMin(
+                    e.target.value ? Number(e.target.value) : null
+                  )
                 }
                 className="border rounded-md px-2 py-1 w-24"
                 placeholder="0"
@@ -191,14 +202,22 @@ export default function FilterSidebar({
               <label className="text-sm w-20">Max</label>
               <input
                 type="number"
-                value={priceMax ?? ""}
+                value={tempPriceMax ?? ""}
                 onChange={(e) =>
-                  setPriceMax(e.target.value ? Number(e.target.value) : null)
+                  setTempPriceMax(
+                    e.target.value ? Number(e.target.value) : null
+                  )
                 }
                 className="border rounded-md px-2 py-1 w-24"
                 placeholder="1000"
               />
             </div>
+            <button
+              onClick={applyPriceFilter}
+              className="mt-2 px-4 py-1 bg-gray-800 text-white text-sm rounded hover:bg-gray-700 transition"
+            >
+              Apply
+            </button>
           </div>
         )}
       </div>

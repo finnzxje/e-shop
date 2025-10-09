@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Cart } from "../config/interface";
 import api from "../config/axios";
 import { useAppProvider } from "../context/useContex";
@@ -32,7 +32,7 @@ const Cart = () => {
               <div className="cursor-pointer w-24 h-24 flex items-center justify-center border border-gray-300 rounded overflow-hidden">
                 <img
                   className="max-w-full h-full object-cover"
-                  src={`https://via.placeholder.com/150?text=${item.productName}`}
+                  src={item.imageUrl}
                   alt={item.productName}
                 />
               </div>
