@@ -8,10 +8,11 @@ import toast from "react-hot-toast";
 export const Header = () => {
   const [open, setOpen] = useState(false);
   const { user, setUser } = useAppProvider();
-  const { cart } = useAppProvider();
+  const { cart, setCart } = useAppProvider();
 
   const handleLogout = () => {
     setUser(null);
+    setCart(null);
     localStorage.removeItem("user");
     toast.success("Logout success!");
   };

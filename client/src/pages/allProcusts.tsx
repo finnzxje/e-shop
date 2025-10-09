@@ -5,6 +5,7 @@ import api from "../config/axios";
 import type { Product, Category } from "../config/interface";
 import FilterSidebar from "../components/filterSidebar";
 import { Search } from "lucide-react";
+import { ProductCard } from "../components/productCard";
 export default function ProductPage() {
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get("category");
@@ -15,65 +16,102 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
 
   const [selectedGender, setSelectedGender] = useState<string | null>(
-    genderParam || null
+    genderParam
   );
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    categoryParam || null
+    categoryParam
   );
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [priceMin, setPriceMin] = useState<number | null>(null);
   const [priceMax, setPriceMax] = useState<number | null>(null);
   const [sort, setSort] = useState<string | null>(null);
   const [searchProduct, setSearchProduct] = useState<string>("");
+
   // pagination
   const [page, setPage] = useState(0);
   const [size] = useState(20);
   const [totalPages, setTotalPages] = useState(0);
 
-  // fetch data
-  const fetchProducts = async () => {
+  const fetchImagesForProducts = async (productsData: Product[]) => {
+    return await Promise.all(
+      productsData.map(async (p: Product) => {
+        try {
+          const res = await api.get(`/api/catalog/products/${p.slug}`);
+          console.log(res.data);
+          const images = res.data.images || [];
+          return { ...p, images };
+        } catch (err) {
+          console.error(`Failed to fetch images for ${p.slug}`, err);
+          return { ...p, images: [] };
+        }
+      })
+    );
+  };
+
+  const mapProductsWithFirstImage = (productsData: Product[]) =>
+    productsData.map((p: Product) => ({
+      ...p,
+      image: p.images?.[0]?.imageUrl || null, // gắn ảnh đầu tiên
+    }));
+
+  // ======== Fetch products ========
+  const fetchFilteredProducts = async () => {
     setLoading(true);
     try {
       let url = `/api/catalog/products/filter?page=${page}&size=${size}`;
-      if (searchProduct) {
-        url = `/api/catalog/products/search?q=${searchProduct}&page=${page}&size=${size}`;
-      }
       if (selectedGender) url += `&gender=${selectedGender}`;
       if (selectedCategory) url += `&category=${selectedCategory}`;
       if (selectedSize) url += `&sizes=${selectedSize}`;
       if (priceMin !== null) url += `&priceMin=${priceMin}`;
       if (priceMax !== null) url += `&priceMax=${priceMax}`;
       if (sort) url += `&sort=basePrice,${sort}`;
-      const res = await api.get(url);
+
+      const [res, resCategory] = await Promise.all([
+        api.get(url),
+        api.get("/api/catalog/categories"),
+      ]);
+
       const productsData = res.data.content || res.data;
-      // fetch categories
-      const resCategory = await api.get("/api/catalog/categories");
+      const productsWithImages = await fetchImagesForProducts(productsData);
+      setProducts(mapProductsWithFirstImage(productsWithImages));
+
       setCategories(resCategory.data || []);
-
-      // fetch images
-      const productsWithImages = await Promise.all(
-        productsData.map(async (p: Product) => {
-          try {
-            const imgRes = await api.get(`/api/catalog/products/${p.slug}`);
-            const firstImg = imgRes.data.images[0]?.imageUrl || null;
-            return { ...p, image: firstImg };
-          } catch {
-            return { ...p, image: null };
-          }
-        })
-      );
-
-      setProducts(productsWithImages);
       setTotalPages(res.data.totalPages);
     } catch (err) {
-      console.error("Error fetching products:", err);
+      console.error("Error fetching filtered products:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchSearchedProducts = async () => {
+    if (!searchProduct.trim()) return fetchFilteredProducts();
+    setLoading(true);
+    try {
+      const data = await api.get(
+        `/api/catalog/products/search?q=${encodeURIComponent(
+          searchProduct
+        )}&page=${page}&size=${size}`
+      );
+      const productsData = data.data.content || data.data;
+
+      const productsWithImages = await fetchImagesForProducts(productsData);
+      setProducts(mapProductsWithFirstImage(productsWithImages));
+      setTotalPages(data.data.totalPages);
+    } catch (err) {
+      console.error("Error searching products:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSearch = () => {
+    setPage(0);
+    fetchSearchedProducts();
+  };
+
+  // ======== Auto fetch ========
   useEffect(() => {
-    fetchProducts();
+    if (!searchProduct.trim()) fetchFilteredProducts();
   }, [
     selectedGender,
     selectedCategory,
@@ -81,24 +119,12 @@ export default function ProductPage() {
     priceMin,
     priceMax,
     sort,
-    searchProduct,
     page,
   ]);
 
   useEffect(() => {
-    setPage(0);
-  }, [
-    selectedGender,
-    selectedCategory,
-    priceMin,
-    priceMax,
-    selectedSize,
-    sort,
-  ]);
-
-  useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [page, selectedGender, selectedCategory, sort]);
+  }, [page]);
 
   return (
     <div className="flex px-6 md:px-12 py-10 gap-10 bg-gray-50 min-h-screen">
@@ -121,24 +147,31 @@ export default function ProductPage() {
 
       {/* Product Grid */}
       <main className="flex-1">
+        {/* Header + Search */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-          {/* Tiêu đề */}
           <h2 className="text-3xl font-semibold text-gray-800 tracking-tight">
             Product Listing
           </h2>
 
-          {/* Ô tìm kiếm */}
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              value={searchProduct}
-              onChange={(e) => setSearchProduct(e.target.value)}
-              placeholder="Search for products..."
-              className="w-full pl-12 pr-4 py-2.5 text-sm border border-gray-300 rounded-full shadow-sm 
+          <div className="flex items-center gap-3">
+            <div className="relative w-full md:w-72">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                value={searchProduct}
+                onChange={(e) => setSearchProduct(e.target.value)}
+                placeholder="Search for products..."
+                className="w-full pl-12 pr-4 py-2.5 text-sm border border-gray-300 rounded-full shadow-sm 
                  focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 
                  transition duration-200 placeholder:text-gray-400"
-            />
+              />
+            </div>
+            <button
+              onClick={handleSearch}
+              className="px-4 py-2 bg-gray-800 text-white rounded-full hover:bg-gray-700 transition"
+            >
+              Search
+            </button>
           </div>
         </div>
 
@@ -150,26 +183,7 @@ export default function ProductPage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {products.map((p) => (
-                <Link to={`/products/${p.slug}`} key={p.id}>
-                  <div className="group bg-white rounded-xl shadow hover:shadow-lg transition-all cursor-pointer flex flex-col h-full">
-                    <div className="w-full h-full overflow-hidden rounded-t-xl">
-                      <img
-                        src={p.image || "https://via.placeholder.com/300x200"}
-                        alt={p.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div className="p-4 flex flex-col flex-1 space-y-2">
-                      <h3 className="text-gray-800 font-medium group-hover:underline text-[15px] line-clamp-2">
-                        {p.name}
-                      </h3>
-                      <p className="text-gray-900 font-semibold">
-                        ${p.basePrice}
-                      </p>
-                      <p className="text-sm text-gray-500">{p.category.name}</p>
-                    </div>
-                  </div>
-                </Link>
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
 

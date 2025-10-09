@@ -24,7 +24,9 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
   //Fetch User Auth Status
   const fetchTestToken = async () => {
     const savedUser = localStorage.getItem("user");
-    if (!savedUser) return;
+    if (!savedUser) {
+      return;
+    }
     const parsedUser: any = JSON.parse(savedUser);
     try {
       const authUser: any = await api.get("/api/auth/test-token", {
@@ -34,6 +36,7 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
         setUser(parsedUser);
       } else {
         setUser(null);
+        setCart(null);
       }
     } catch (error: any) {
       console.log(error.message);
