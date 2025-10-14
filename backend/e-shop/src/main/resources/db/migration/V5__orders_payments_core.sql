@@ -244,6 +244,7 @@ CREATE TABLE IF NOT EXISTS payment_transactions (
   order_id                   UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   provider                   VARCHAR(64) NOT NULL,
   provider_transaction_id    VARCHAR(128),
+  idempotency_key            VARCHAR(128),
   amount                     NUMERIC(12,2) NOT NULL CHECK (amount >= 0),
   currency                   VARCHAR(8) NOT NULL,
   status                     payment_status_enum NOT NULL DEFAULT 'pending',
@@ -264,6 +265,10 @@ CREATE INDEX IF NOT EXISTS idx_payment_transactions_status ON payment_transactio
 CREATE UNIQUE INDEX IF NOT EXISTS uq_payment_transactions_provider_ref
   ON payment_transactions(provider, provider_transaction_id)
   WHERE provider_transaction_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_payment_transactions_idempotency
+  ON payment_transactions(idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
 
 DROP TRIGGER IF EXISTS trg_payment_transactions_updated_at ON payment_transactions;
 CREATE TRIGGER trg_payment_transactions_updated_at
