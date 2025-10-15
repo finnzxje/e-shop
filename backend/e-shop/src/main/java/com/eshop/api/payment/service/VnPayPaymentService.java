@@ -129,7 +129,7 @@ public class VnPayPaymentService {
         return builder.toString();
     }
 
-    private String hmacSHA512(String key, String data) {
+    public static String hmacSHA512(String key, String data) {
         try {
             Mac mac = Mac.getInstance("HmacSHA512");
             SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA512");

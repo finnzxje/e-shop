@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransaction, UUID> {
 
     Optional<PaymentTransaction> findByIdempotencyKey(String idempotencyKey);
+
+    Optional<PaymentTransaction> findTopByOrder_OrderNumberOrderByCreatedAtDesc(String orderNumber);
 }
