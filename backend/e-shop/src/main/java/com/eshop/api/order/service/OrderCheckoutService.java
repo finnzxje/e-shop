@@ -140,7 +140,7 @@ public class OrderCheckoutService {
         order.addPaymentTransaction(transaction);
         transaction = paymentTransactionRepository.save(transaction);
 
-        clearCart(cart);
+//        clearCart(cart);
 
         VnPayInitResponse vnPayInit = vnPayPaymentService.createPaymentUrl(order, transaction, clientIp);
 

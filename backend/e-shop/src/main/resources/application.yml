@@ -9,9 +9,8 @@ spring:
     show-sql: true
   flyway:
     enabled: true
-    baseline-on-migrate: true   # if DB already has tables
+    baseline-on-migrate: true # if DB already has tables
     locations: classpath:db/migration
-
 management:
   endpoints:
     web:
@@ -23,3 +22,16 @@ app:
     secret: ${JWT_SECRET:b@N3OeiLg$!bG9l!$^FHS*D(!*jasd(!@FHASD}
     access-expiration-seconds: 360000
     refresh-expiration-seconds: 1296000
+  payment:
+    vnpay:
+      version: ${VNPAY_VERSION:2.1.0}
+      command: ${VNPAY_COMMAND:pay}
+      tmn-code: ${VNPAY_TMN_CODE:82TFXA73}
+      hash-secret: ${VNPAY_HASH_SECRET:EVPSPUGCI0D5M0RP8KTVHHUAP29XNWLK}
+      api-url: ${VNPAY_API_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+      return-url: ${VNPAY_RETURN_URL:http://localhost:5173}
+      #      ipn-url: ${VNPAY_IPN_URL:http://localhost:8080} 
+      locale: ${VNPAY_LOCALE:vn}
+      order-type: ${VNPAY_ORDER_TYPE:other}
+      order-info-prefix: ${VNPAY_ORDER_INFO_PREFIX:E-Shop Order}
+      expire-after-minutes: ${VNPAY_EXPIRE_AFTER_MINUTES:15}
