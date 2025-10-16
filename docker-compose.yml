@@ -18,19 +18,6 @@ services:
     #   timeout: 3s
     #   retries: 10
 
-  postgres_test:
-    image: postgres:17
-    container_name: eshop-postgres-test
-    environment:
-      POSTGRES_DB: eshop_test
-      POSTGRES_USER: app
-      POSTGRES_PASSWORD: secret
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres_test_data:/var/lib/postgresql/data
-    restart: unless-stopped
-
   api:
     build:
       context: ./backend/e-shop
@@ -46,5 +33,3 @@ services:
     restart: unless-stopped
 volumes:
   postgres_data:
-  postgres_test_data:
-
