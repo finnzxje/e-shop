@@ -10,19 +10,19 @@ import com.eshop.api.order.repository.OrderRepository;
 import com.eshop.api.order.repository.OrderStatusHistoryRepository;
 import com.eshop.api.order.repository.PaymentTransactionRepository;
 import com.eshop.api.payment.dto.VnPayConfirmResponse;
+import com.eshop.api.order.service.InventoryService;
 import com.eshop.api.payment.service.CurrencyConversionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
 
 @Service
 @RequiredArgsConstructor
@@ -35,8 +35,10 @@ public class VnPayCallbackService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final ObjectMapper objectMapper;
+    private final InventoryService inventoryService;
     private final CurrencyConversionService currencyConversionService;
 
+    @Transactional
     public VnPayConfirmResponse handleReturn(Map<String, String> payload) {
         if (payload == null || payload.isEmpty()) {
             throw new PaymentValidationException("VNPay payload is empty");
@@ -79,9 +81,11 @@ public class VnPayCallbackService {
             validateAmount(order, payload.get("vnp_Amount"));
             applySuccess(order, transaction);
             transaction.setCapturedAmount(order.getTotalAmount());
+            inventoryService.clearCart(order.getCart());
             log.info("VNPay payment captured for order {}", orderNumber);
         } else {
             applyFailure(order, transaction, payload.get("vnp_ResponseCode"), payload.get("vnp_TransactionStatus"));
+            inventoryService.releaseOrderItems(order.getItems());
             log.warn("VNPay payment failed for order {} with codes {}/{}", orderNumber,
                 payload.get("vnp_ResponseCode"), payload.get("vnp_TransactionStatus"));
         }
