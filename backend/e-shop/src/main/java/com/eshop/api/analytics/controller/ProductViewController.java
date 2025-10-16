@@ -1,7 +1,10 @@
 package com.eshop.api.analytics.controller;
 
+import com.eshop.api.analytics.dto.LinkSessionRequest;
 import com.eshop.api.analytics.dto.ProductViewRequest;
+import com.eshop.api.analytics.service.ProductInteractionLinkService;
 import com.eshop.api.analytics.service.ProductViewService;
+import com.eshop.api.exception.InvalidJwtException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +24,7 @@ import java.util.UUID;
 public class ProductViewController {
 
     private final ProductViewService productViewService;
+    private final ProductInteractionLinkService productInteractionLinkService;
 
     @PostMapping("/{productId}/views")
     public ResponseEntity<Void> recordView(
@@ -34,5 +38,18 @@ public class ProductViewController {
 
         productViewService.recordProductView(productId, request, email);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PostMapping("/views/link-session")
+    public ResponseEntity<Void> linkSession(
+        @Valid @RequestBody LinkSessionRequest request,
+        Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new InvalidJwtException("Authentication is required to link session data");
+        }
+
+        productInteractionLinkService.linkSessionToUser(request.sessionId(), authentication.getName());
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

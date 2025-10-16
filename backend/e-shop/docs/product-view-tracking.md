@@ -67,3 +67,33 @@ The flexible JSON column avoids future schema changes. Some lightweight ideas:
 - `{"device":"mobile"}`
 
 Feel free to leave it blank; the backend automatically stores `{}`.
+
+## Linking Anonymous Views After Login
+
+Once the frontend has stored the access token, call the dedicated endpoint to claim earlier anonymous views:
+
+```
+POST /api/catalog/products/views/link-session
+Authorization: Bearer <access token>
+Content-Type: application/json
+
+{
+  "sessionId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+The backend updates both `product_views` and `product_interaction_events` rows where `session_id` matches and `user_id` is still `NULL`. The call is idempotent, so feel free to retry if the network fails.
+
+If you ever need to perform the linkage manually (for example, during a bulk backfill), you can reuse the SQL directly:
+
+```sql
+UPDATE product_views
+   SET user_id = :userId
+ WHERE session_id = :sessionId
+   AND user_id IS NULL;
+
+UPDATE product_interaction_events
+   SET user_id = :userId
+ WHERE session_id = :sessionId
+   AND user_id IS NULL;
+```
