@@ -69,11 +69,9 @@ public class OrderCheckoutService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    @Transactional
-    public CheckoutResponse checkout(String email, CheckoutRequest request, String clientIp) {
+    @Transactional public CheckoutResponse checkout(String email, CheckoutRequest request, String clientIp) {
         User user = findUser(email);
-        Cart cart = cartRepository.findByUser_Id(user.getId())
-            .orElseThrow(() -> new CartNotFoundException(user.getId()));
+        Cart cart = cartRepository.findByUser_Id(user.getId()).orElseThrow(() -> new CartNotFoundException(user.getId()));
 
         if (cart.getItems() == null || cart.getItems().isEmpty()) {
             throw new CartEmptyException();
@@ -89,23 +87,11 @@ public class OrderCheckoutService {
 
         inventoryService.reserveCartItems(cart.getItems());
 
-        Order order = Order.builder()
-            .orderNumber(generateOrderNumber())
-            .user(user)
-            .cart(cart)
-            .status(OrderStatus.AWAITING_PAYMENT)
-            .paymentStatus(PaymentStatus.PENDING)
-            .paymentMethod(PaymentMethod.CARD)
-            .currency(DEFAULT_CURRENCY)
-            .subtotalAmount(breakdown.subtotal())
-            .discountAmount(breakdown.discount())
-            .shippingAmount(breakdown.shipping())
-            .taxAmount(breakdown.tax())
-            .totalAmount(breakdown.total())
-            .notes(request.getNotes())
-            .shippingMethod(request.getShippingMethod())
-            .placedAt(Instant.now())
-            .build();
+        Order order = Order.builder().orderNumber(generateOrderNumber()).user(user).cart(cart).status(OrderStatus.AWAITING_PAYMENT).paymentStatus(
+                PaymentStatus.PENDING).paymentMethod(PaymentMethod.CARD).currency(DEFAULT_CURRENCY).subtotalAmount(
+                breakdown.subtotal()).discountAmount(breakdown.discount()).shippingAmount(breakdown.shipping()).taxAmount(
+                breakdown.tax()).totalAmount(breakdown.total()).notes(request.getNotes()).shippingMethod(request.getShippingMethod()).placedAt(
+                Instant.now()).build();
 
         order = orderRepository.save(order);
 
@@ -122,63 +108,38 @@ public class OrderCheckoutService {
 
         order = orderRepository.save(order);
 
-        OrderStatusHistory history = OrderStatusHistory.builder()
-            .order(order)
-            .status(order.getStatus())
-            .paymentStatus(order.getPaymentStatus())
-            .changedBy(user)
-            .comment("Order created and pending VNPay payment")
-            .build();
+        OrderStatusHistory history = OrderStatusHistory.builder().order(order).status(order.getStatus()).paymentStatus(
+                order.getPaymentStatus()).changedBy(user).comment("Order created and pending VNPay payment").build();
         order.addStatusHistory(history);
         orderStatusHistoryRepository.save(history);
 
-        PaymentTransaction transaction = PaymentTransaction.builder()
-            .order(order)
-            .provider("VNPAY")
-            .idempotencyKey(order.getOrderNumber())
-            .amount(order.getTotalAmount())
-            .currency(order.getCurrency())
-            .status(PaymentStatus.PENDING)
-            .method(PaymentMethod.CARD)
-            .build();
+        PaymentTransaction transaction = PaymentTransaction.builder().order(order).provider("VNPAY").idempotencyKey(
+                order.getOrderNumber()).amount(order.getTotalAmount()).currency(order.getCurrency()).status(
+                PaymentStatus.PENDING).method(PaymentMethod.CARD).build();
         order.addPaymentTransaction(transaction);
         transaction = paymentTransactionRepository.save(transaction);
 
-//        clearCart(cart);
-
         VnPayInitResponse vnPayInit = vnPayPaymentService.createPaymentUrl(order, transaction, clientIp);
 
-        return CheckoutResponse.builder()
-            .orderId(order.getId())
-            .orderNumber(order.getOrderNumber())
-            .status(order.getStatus())
-            .paymentStatus(order.getPaymentStatus())
-            .subtotalAmount(order.getSubtotalAmount())
-            .discountAmount(order.getDiscountAmount())
-            .shippingAmount(order.getShippingAmount())
-            .taxAmount(order.getTaxAmount())
-            .totalAmount(order.getTotalAmount())
-            .currency(order.getCurrency())
-            .totalAmountVnd(vnPayInit.getAmountVnd())
-            .paymentProvider("VNPAY")
-            .paymentUrl(vnPayInit.getPaymentUrl())
-            .paymentUrlExpiresAt(vnPayInit.getExpiresAt())
-            .items(itemResponses)
-            .build();
+        return CheckoutResponse.builder().orderId(order.getId()).orderNumber(order.getOrderNumber()).status(order.getStatus()).paymentStatus(
+                order.getPaymentStatus()).subtotalAmount(order.getSubtotalAmount()).discountAmount(order.getDiscountAmount()).shippingAmount(
+                order.getShippingAmount()).taxAmount(order.getTaxAmount()).totalAmount(order.getTotalAmount()).currency(
+                order.getCurrency()).totalAmountVnd(vnPayInit.getAmountVnd()).paymentProvider("VNPAY").paymentUrl(
+                vnPayInit.getPaymentUrl()).paymentUrlExpiresAt(vnPayInit.getExpiresAt()).items(itemResponses).build();
     }
 
     private User findUser(String email) {
         if (email == null || email.isBlank()) {
             throw new CheckoutValidationException("Authenticated user email is required");
         }
-        return userRepository.findByEmailIgnoreCase(email)
-            .orElseThrow(() -> new CheckoutValidationException("User not found for email: " + email));
+        return userRepository.findByEmailIgnoreCase(email).orElseThrow(() -> new CheckoutValidationException(
+                "User not found for email: " + email));
     }
 
     private Address resolveAddress(User user, CheckoutRequest request) {
         if (request.getAddressId() != null) {
-            return addressRepository.findByIdAndUser_Id(request.getAddressId(), user.getId())
-                .orElseThrow(() -> new AddressNotFoundException(request.getAddressId()));
+            return addressRepository.findByIdAndUser_Id(request.getAddressId(),
+                    user.getId()).orElseThrow(() -> new AddressNotFoundException(request.getAddressId()));
         }
 
         CheckoutAddressRequest payload = request.getAddress();
@@ -190,24 +151,17 @@ public class OrderCheckoutService {
             return null;
         }
 
-        Address address = Address.builder()
-            .user(user)
-            .label(payload.getLabel())
-            .recipientName(payload.getRecipientName())
-            .phone(payload.getPhone())
-            .line1(payload.getLine1())
-            .line2(payload.getLine2())
-            .city(payload.getCity())
-            .stateProvince(payload.getStateProvince())
-            .postalCode(payload.getPostalCode())
-            .countryCode(payload.getCountryCode())
-            .isDefault(false)
-            .build();
+        Address address = Address.builder().user(user).label(payload.getLabel()).recipientName(payload.getRecipientName()).phone(
+                payload.getPhone()).line1(payload.getLine1()).line2(payload.getLine2()).city(payload.getCity()).stateProvince(
+                payload.getStateProvince()).postalCode(payload.getPostalCode()).countryCode(payload.getCountryCode()).isDefault(
+                false).build();
 
         return addressRepository.save(address);
     }
 
-    private OrderAddress buildOrderAddress(Order order, Address address, CheckoutAddressRequest payload,
+    private OrderAddress buildOrderAddress(Order order,
+                                           Address address,
+                                           CheckoutAddressRequest payload,
                                            OrderAddressType type) {
         String recipientName;
         String phone;
@@ -243,20 +197,9 @@ public class OrderCheckoutService {
             throw new CheckoutValidationException("Address details are required");
         }
 
-        return OrderAddress.builder()
-            .order(order)
-            .address(address)
-            .addressType(type)
-            .recipientName(recipientName)
-            .phone(phone)
-            .line1(line1)
-            .line2(line2)
-            .city(city)
-            .stateProvince(stateProvince)
-            .postalCode(postalCode)
-            .countryCode(countryCode)
-            .instructions(instructions)
-            .build();
+        return OrderAddress.builder().order(order).address(address).addressType(type).recipientName(recipientName).phone(
+                phone).line1(line1).line2(line2).city(city).stateProvince(stateProvince).postalCode(postalCode).countryCode(
+                countryCode).instructions(instructions).build();
     }
 
     private OrderItem buildOrderItem(Order order, CartItem cartItem) {
@@ -280,29 +223,16 @@ public class OrderCheckoutService {
         ObjectNode metadata = objectMapper.createObjectNode();
         metadata.put("source", "cart");
 
-        return OrderItem.builder()
-            .order(order)
-            .product(variant.getProduct())
-            .variant(variant)
-            .quantity(quantity)
-            .unitPrice(unitPrice)
-            .discountAmount(discount)
-            .totalAmount(lineTotal)
-            .currency(order.getCurrency())
-            .metadata(metadata)
-            .build();
+        return OrderItem.builder().order(order).product(variant.getProduct()).variant(variant).quantity(quantity).unitPrice(
+                unitPrice).discountAmount(discount).totalAmount(lineTotal).currency(order.getCurrency()).metadata(
+                metadata).build();
     }
 
     private CheckoutItemResponse mapToItemResponse(OrderItem orderItem) {
-        return CheckoutItemResponse.builder()
-            .productId(orderItem.getProduct() != null ? orderItem.getProduct().getId() : null)
-            .variantId(orderItem.getVariant() != null ? orderItem.getVariant().getId() : null)
-            .quantity(orderItem.getQuantity())
-            .unitPrice(orderItem.getUnitPrice())
-            .discountAmount(orderItem.getDiscountAmount())
-            .totalAmount(orderItem.getTotalAmount())
-            .currency(orderItem.getCurrency())
-            .build();
+        return CheckoutItemResponse.builder().productId(orderItem.getProduct() != null ? orderItem.getProduct().getId() : null).variantId(
+                orderItem.getVariant() != null ? orderItem.getVariant().getId() : null).quantity(orderItem.getQuantity()).unitPrice(
+                orderItem.getUnitPrice()).discountAmount(orderItem.getDiscountAmount()).totalAmount(orderItem.getTotalAmount()).currency(
+                orderItem.getCurrency()).build();
     }
 
     private MonetaryBreakdown calculateMonetaryBreakdown(Iterable<CartItem> cartItems, CheckoutRequest request) {
@@ -316,9 +246,8 @@ public class OrderCheckoutService {
             if (quantity <= 0) {
                 throw new CheckoutValidationException("Cart item quantity must be greater than zero");
             }
-            BigDecimal lineTotal = variant.getPrice()
-                .multiply(BigDecimal.valueOf(quantity))
-                .setScale(2, RoundingMode.HALF_UP);
+            BigDecimal lineTotal = variant.getPrice().multiply(BigDecimal.valueOf(quantity)).setScale(2,
+                    RoundingMode.HALF_UP);
             subtotal = subtotal.add(lineTotal);
         }
 
@@ -344,16 +273,6 @@ public class OrderCheckoutService {
         return value.setScale(2, RoundingMode.HALF_UP);
     }
 
-    private void clearCart(Cart cart) {
-        if (cart.getItems() == null) {
-            return;
-        }
-        List<CartItem> items = new ArrayList<>(cart.getItems());
-        for (CartItem item : items) {
-            cart.removeItem(item);
-        }
-        cartRepository.save(cart);
-    }
 
     private String generateOrderNumber() {
         Number sequence = (Number) entityManager.createNativeQuery("select nextval('seq_order_number')").getSingleResult();
@@ -361,7 +280,7 @@ public class OrderCheckoutService {
         return String.format("ORD-%08d", value);
     }
 
-    private record MonetaryBreakdown(BigDecimal subtotal, BigDecimal discount, BigDecimal shipping,
-                                     BigDecimal tax, BigDecimal total) {
+    private record MonetaryBreakdown(BigDecimal subtotal, BigDecimal discount, BigDecimal shipping, BigDecimal tax,
+                                     BigDecimal total) {
     }
 }

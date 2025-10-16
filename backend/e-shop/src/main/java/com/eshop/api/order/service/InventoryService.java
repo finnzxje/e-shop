@@ -1,11 +1,14 @@
 package com.eshop.api.order.service;
 
-import com.eshop.api.cart.model.CartItem;
 import com.eshop.api.catalog.model.ProductVariant;
+import com.eshop.api.cart.model.Cart;
+import com.eshop.api.cart.model.CartItem;
+import com.eshop.api.cart.repository.CartRepository;
 import com.eshop.api.catalog.repository.ProductVariantRepository;
 import com.eshop.api.exception.InsufficientInventoryException;
 import com.eshop.api.exception.ProductVariantNotFoundException;
 import com.eshop.api.order.model.OrderItem;
+import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ import java.util.UUID;
 public class InventoryService {
 
     private final ProductVariantRepository productVariantRepository;
+    private final CartRepository cartRepository;
 
     @Transactional
     public void reserveCartItems(Collection<CartItem> cartItems) {
@@ -55,6 +59,18 @@ public class InventoryService {
             int available = Objects.requireNonNullElse(variant.getQuantityInStock(), 0);
             variant.setQuantityInStock(available + quantity);
         }
+    }
+
+    @Transactional
+    public void clearCart(Cart cart) {
+        if (cart == null || cart.getItems() == null || cart.getItems().isEmpty()) {
+            return;
+        }
+        ArrayList<CartItem> items = new ArrayList<>(cart.getItems());
+        for (CartItem item : items) {
+            cart.removeItem(item);
+        }
+        cartRepository.save(cart);
     }
 
     private ProductVariant resolveVariant(UUID variantId) {
