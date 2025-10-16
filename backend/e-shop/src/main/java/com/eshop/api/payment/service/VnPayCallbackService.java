@@ -10,6 +10,7 @@ import com.eshop.api.order.repository.OrderRepository;
 import com.eshop.api.order.repository.OrderStatusHistoryRepository;
 import com.eshop.api.order.repository.PaymentTransactionRepository;
 import com.eshop.api.payment.dto.VnPayConfirmResponse;
+import com.eshop.api.order.service.InventoryService;
 import com.eshop.api.payment.service.CurrencyConversionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -35,6 +36,7 @@ public class VnPayCallbackService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final ObjectMapper objectMapper;
+    private final InventoryService inventoryService;
     private final CurrencyConversionService currencyConversionService;
 
     public VnPayConfirmResponse handleReturn(Map<String, String> payload) {
@@ -82,6 +84,7 @@ public class VnPayCallbackService {
             log.info("VNPay payment captured for order {}", orderNumber);
         } else {
             applyFailure(order, transaction, payload.get("vnp_ResponseCode"), payload.get("vnp_TransactionStatus"));
+            inventoryService.releaseOrderItems(order.getItems());
             log.warn("VNPay payment failed for order {} with codes {}/{}", orderNumber,
                 payload.get("vnp_ResponseCode"), payload.get("vnp_TransactionStatus"));
         }

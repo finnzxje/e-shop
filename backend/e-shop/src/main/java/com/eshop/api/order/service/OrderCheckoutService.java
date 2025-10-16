@@ -22,6 +22,7 @@ import com.eshop.api.order.model.OrderItem;
 import com.eshop.api.order.model.OrderStatusHistory;
 import com.eshop.api.order.model.PaymentTransaction;
 import com.eshop.api.order.repository.AddressRepository;
+import com.eshop.api.order.service.InventoryService;
 import com.eshop.api.order.repository.OrderAddressRepository;
 import com.eshop.api.order.repository.OrderRepository;
 import com.eshop.api.order.repository.OrderStatusHistoryRepository;
@@ -62,6 +63,7 @@ public class OrderCheckoutService {
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final VnPayPaymentService vnPayPaymentService;
+    private final InventoryService inventoryService;
     private final ObjectMapper objectMapper;
 
     @PersistenceContext
@@ -84,6 +86,8 @@ public class OrderCheckoutService {
         }
 
         MonetaryBreakdown breakdown = calculateMonetaryBreakdown(cart.getItems(), request);
+
+        inventoryService.reserveCartItems(cart.getItems());
 
         Order order = Order.builder()
             .orderNumber(generateOrderNumber())
