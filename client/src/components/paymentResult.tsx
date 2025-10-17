@@ -20,6 +20,10 @@ const PaymentResult = () => {
     const confirmPayment = async () => {
       try {
         const vnpData = Object.fromEntries(params.entries());
+        const randomPart =
+          crypto.randomUUID?.() || // modern browsers
+          Math.random().toString(36).substring(2) + Date.now();
+        vnpData.vnp_TransactionNo = `DEV-${randomPart}`.slice(0, 128); // ensure max length
 
         // ✨ SỬA LỖI: Lấy token trực tiếp từ localStorage thay vì từ context
         const token = localStorage.getItem("accessToken");
@@ -32,19 +36,19 @@ const PaymentResult = () => {
         const res = await api.post(
           "/api/payments/vnpay/confirm",
           vnpData,
-          { headers: { Authorization: `Bearer ${token}` } } // Sử dụng token vừa lấy
+          { headers: { Authorization: `Bearer ${token}` } }, // Sử dụng token vừa lấy
         );
 
         setOrder(res.data);
       } catch (err: any) {
         console.error(
           "Payment confirm error:",
-          err.response?.data || err.message
+          err.response?.data || err.message,
         );
         setError(
           err.response?.data?.message ||
             err.message ||
-            "An error occurred during payment confirmation."
+            "An error occurred during payment confirmation.",
         );
       } finally {
         setLoading(false);

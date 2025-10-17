@@ -70,14 +70,14 @@ const Cart = () => {
         "/api/orders/checkout",
         {
           addressId: selectedAddress,
-          saveAddress: true,
+          saveAddress: false,
           shippingAmount: 2.5,
           discountAmount: 5.0,
           shippingMethod: "standard",
           // paymentMethod,
           notes: "Gift wrap if possible",
         },
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token}` } },
       );
 
       const { paymentUrl } = dataOrder.data;
@@ -157,7 +157,7 @@ const Cart = () => {
                               headers: {
                                 Authorization: `Bearer ${user?.token}`,
                               },
-                            }
+                            },
                           );
                           setCart(res.data);
                         } catch (err) {
@@ -167,7 +167,7 @@ const Cart = () => {
                     >
                       {Array.from(
                         { length: item.availableQuantity },
-                        (_, i) => i + 1
+                        (_, i) => i + 1,
                       ).map((n) => (
                         <option key={n} value={n}>
                           {n}
