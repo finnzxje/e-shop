@@ -25,6 +25,8 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
   const fetchTestToken = async () => {
     const savedUser = localStorage.getItem("user");
     if (!savedUser) {
+      setUser(null);
+      setCart(null);
       return;
     }
     const parsedUser: any = JSON.parse(savedUser);
@@ -34,6 +36,7 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
       });
       if (authUser.data.authenticated) {
         setUser(parsedUser);
+        localStorage.setItem("accessToken", parsedUser.token);
       } else {
         setUser(null);
         setCart(null);

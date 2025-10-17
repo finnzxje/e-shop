@@ -8,6 +8,8 @@ import ProductPage from "./pages/allProcusts";
 import Detail from "./components/detail";
 import Cart from "./pages/cart";
 import { Toaster } from "react-hot-toast";
+import EditAddress from "./components/editAddress";
+import PaymentResult from "./components/paymentResult";
 function App() {
   return (
     <BrowserRouter>
@@ -21,6 +23,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/all-products" element={<ProductPage />} />
           <Route path="/products/:slug" element={<Detail />} />
+          <Route path="/payment-result" element={<PaymentResult />} />
+          <Route path="/edit-address" element={<EditAddress />} />
         </Routes>
         <Footer />
       </div>
