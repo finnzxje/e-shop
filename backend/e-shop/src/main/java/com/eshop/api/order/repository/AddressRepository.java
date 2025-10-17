@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,6 +14,8 @@ import java.util.UUID;
 public interface AddressRepository extends JpaRepository<Address, UUID> {
 
     Optional<Address> findByIdAndUser_Id(UUID id, UUID userId);
+
+    List<Address> findByUser_IdOrderByCreatedAtDesc(UUID userId);
 
     @Modifying
     @Query("update Address a set a.isDefault = false where a.user.id = :userId")
