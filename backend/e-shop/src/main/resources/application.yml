@@ -29,7 +29,7 @@ app:
       tmn-code: ${VNPAY_TMN_CODE:82TFXA73}
       hash-secret: ${VNPAY_HASH_SECRET:EVPSPUGCI0D5M0RP8KTVHHUAP29XNWLK}
       api-url: ${VNPAY_API_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
-      return-url: ${VNPAY_RETURN_URL:http://localhost:5173}
+      return-url: ${VNPAY_RETURN_URL:http://localhost:5173/payment-result}
       #      ipn-url: ${VNPAY_IPN_URL:http://localhost:8080} 
       locale: ${VNPAY_LOCALE:vn}
       order-type: ${VNPAY_ORDER_TYPE:other}
