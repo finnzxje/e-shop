@@ -14,6 +14,7 @@ export const Header = () => {
     setUser(null);
     setCart(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("accessToken");
     toast.success("Logout success!");
   };
 

@@ -11,9 +11,21 @@ import {
 import { useEffect, useState } from "react";
 import type { Product } from "../config/interface";
 import api from "../config/axios";
-
+interface Products {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  basePrice: number;
+  image: string;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+}
 const BestSeller = () => {
-  const [productBesSeller, setProductBesSeller] = useState<Product[]>([]);
+  const [productBesSeller, setProductBesSeller] = useState<Products[]>([]);
 
   useEffect(() => {
     async function fetchData() {

@@ -116,3 +116,26 @@ export interface Cart {
   inStock: boolean;
   availableQuantity: number;
 }
+export interface Address {
+  label: string;
+  recipientName: string;
+  phone: string;
+  line1: string;
+  line2: string;
+  city: string;
+  stateProvince: string;
+  postalCode: string;
+  countryCode: string;
+  instructions: string;
+}
+
+export interface AddressdCheckout {
+  addressId: string;
+  address: Address;
+  saveAddress: false;
+  shippingAmount: number;
+  discountAmount: number;
+  taxAmount: number;
+  shippingMethod: string;
+  notes: string;
+}

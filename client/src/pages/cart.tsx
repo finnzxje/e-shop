@@ -1,18 +1,107 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Cart } from "../config/interface";
 import api from "../config/axios";
 import { useAppProvider } from "../context/useContex";
+import LoginModal from "../components/loginModal";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+
+interface Address {
+  id: string;
+  label: string;
+  recipientName: string;
+  line1: string;
+  city: string;
+  countryCode: string;
+  isDefault: boolean;
+}
 
 const Cart = () => {
-  const { user } = useAppProvider();
-  const [showAddress, setShowAddress] = useState(false);
-  const { cart, setCart } = useAppProvider();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("vnpay");
+  const { cart, setCart, user } = useAppProvider();
+  const navigate = useNavigate();
+  const handleEditaddress = () => {
+    if (!user) {
+      setIsModalOpen(true);
+      return;
+    } else navigate("/edit-address", { state: selectedAddress });
+  };
+
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      if (!user?.token) {
+        setAddresses([]);
+        return;
+      }
+      try {
+        const res = await api.get("/api/account/addresses", {
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        setAddresses(res.data);
+        const defaultAddr = res.data.find((a: Address) => a.isDefault);
+        if (defaultAddr) setSelectedAddress(defaultAddr.id);
+      } catch (error) {
+        console.error("Error fetching addresses:", error);
+      }
+    };
+    fetchAddresses();
+  }, [user]);
+
+  const handleOpenModel = async () => {
+    if (!user) {
+      setIsModalOpen(true);
+      return;
+    }
+    if (!selectedAddress) {
+      toast.error("Please select a delivery address!");
+      return;
+    }
+    if (cart.items.length === 0) {
+      toast.error("Please add product to cart!");
+      return;
+    }
+    setLoading(true);
+    try {
+      const dataOrder = await api.post(
+        "/api/orders/checkout",
+        {
+          addressId: selectedAddress,
+          saveAddress: true,
+          shippingAmount: 2.5,
+          discountAmount: 5.0,
+          shippingMethod: "standard",
+          // paymentMethod,
+          notes: "Gift wrap if possible",
+        },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      const { paymentUrl } = dataOrder.data;
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        alert("Đơn hàng đã được tạo thành công!");
+      }
+    } catch (error: any) {
+      console.error("Checkout error:", error.response?.data || error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseModel = () => setIsModalOpen(false);
+
   return (
-    <div className="flex flex-col md:flex-row py-16 max-w-6xl min-h-screen  w-full px-6 mx-auto">
+    <div className="flex flex-col md:flex-row py-16 max-w-6xl min-h-screen w-full px-6 mx-auto">
+      {/* -------- DANH SÁCH SẢN PHẨM -------- */}
       <div className="flex-1 max-w-4xl">
         <h1 className="text-3xl font-medium mb-6">
           Shopping Cart{" "}
-          <span className="text-sm text-indigo-500">
+          <span className="text-sm text-black/50">
             {cart ? `${cart.totalItems} Item(s)` : "0 Items"}
           </span>
         </h1>
@@ -129,21 +218,73 @@ const Cart = () => {
         )}
       </div>
 
-      <div className="max-w-[360px] w-full bg-gray-100/40 h-full p-5 max-md:mt-16 border border-gray-300/70">
-        <h2 className="text-xl md:text-xl font-medium">Order Summary</h2>
+      {/* -------- TÓM TẮT ĐƠN HÀNG -------- */}
+      <div className="max-w-[360px] w-full bg-gray-100/40 h-full rounded-lg p-5 max-md:mt-16 border border-gray-300/70">
+        <h2 className="text-xl font-medium">Order Summary</h2>
         <hr className="border-gray-300 my-5" />
 
+        {/* Địa chỉ giao hàng */}
+        <div className="mb-5">
+          <div className="flex justify-between">
+            <label className="mb-2 text-gray-600 font-medium">
+              Shipping Address
+            </label>
+            <div
+              onClick={handleEditaddress}
+              className="mb-2 cursor-pointer text-gray-600 font-medium hover:text-gray-800"
+            >
+              Add address
+            </div>
+          </div>
+          <select
+            className="w-full border rounded p-2 text-gray-600"
+            value={selectedAddress}
+            onChange={(e) => setSelectedAddress(e.target.value)}
+          >
+            <option value="">-- Select Address --</option>
+            {addresses.map((addr) => (
+              <option key={addr.id} value={addr.id}>
+                {addr.label
+                  ? `${addr.label} - ${addr.line1}, ${addr.city}`
+                  : `${addr.line1}, ${addr.city}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Phương thức thanh toán */}
+        <div className="mb-5">
+          <label className="block mb-2 text-gray-600 font-medium">
+            Payment Method
+          </label>
+          <select
+            className="w-full border rounded p-2 text-gray-600"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <option value="vnpay">VNPay</option>
+            <option value="cod">Thanh toán khi nhận hàng (COD)</option>
+            <option value="momo">Momo</option>
+          </select>
+        </div>
+
+        {/* Tổng tiền */}
         <div className="text-gray-500 mt-4 space-y-2">
           <p className="flex justify-between">
             <span>Subtotal</span>
-            <span>${cart?.subtotal}</span>
+            <span>${cart?.subtotal ?? 0}</span>
           </p>
         </div>
 
-        <button className="w-full py-3 mt-6 cursor-pointer bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition">
-          Place Order
+        <button
+          onClick={handleOpenModel}
+          className="w-full py-3 mt-6 cursor-pointer bg-black text-white font-medium rounded-lg hover:bg-black/80 transition"
+        >
+          {loading ? "Creating order..." : "Place Order"}
         </button>
       </div>
+
+      <LoginModal isOpen={isModalOpen} onClose={handleCloseModel} />
     </div>
   );
 };
