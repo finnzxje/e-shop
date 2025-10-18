@@ -1,5 +1,7 @@
 package com.eshop.api.wishlist.service;
 
+import com.eshop.api.analytics.enums.InteractionType;
+import com.eshop.api.analytics.service.ProductInteractionEventService;
 import com.eshop.api.catalog.enums.ProductStatus;
 import com.eshop.api.catalog.model.Product;
 import com.eshop.api.catalog.repository.ProductRepository;
@@ -30,6 +32,7 @@ public class WishlistService {
     private final WishlistItemRepository wishlistItemRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final ProductInteractionEventService interactionEventService;
 
     @Transactional(readOnly = true)
     public List<WishlistItemResponse> listItems(String email) {
@@ -51,6 +54,7 @@ public class WishlistService {
                 .build());
 
         WishlistItem saved = wishlistItemRepository.save(item);
+        interactionEventService.recordInteraction(user, product, InteractionType.WISHLIST, metadata -> metadata.put("action", "ADD"));
 
         log.info("Wishlist item {} ensured for user {}", saved.getId(), user.getId());
         return toResponse(saved);
