@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import type { Cart } from "../config/interface";
 import api from "../config/axios";
 import { useAppProvider } from "../context/useContex";
 import LoginModal from "../components/loginModal";
@@ -16,7 +15,7 @@ interface Address {
   isDefault: boolean;
 }
 
-const Cart = () => {
+const Carts = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -77,7 +76,7 @@ const Cart = () => {
           // paymentMethod,
           notes: "Gift wrap if possible",
         },
-        { headers: { Authorization: `Bearer ${user.token}` } },
+        { headers: { Authorization: `Bearer ${user.token}` } }
       );
 
       const { paymentUrl } = dataOrder.data;
@@ -157,7 +156,7 @@ const Cart = () => {
                               headers: {
                                 Authorization: `Bearer ${user?.token}`,
                               },
-                            },
+                            }
                           );
                           setCart(res.data);
                         } catch (err) {
@@ -167,7 +166,7 @@ const Cart = () => {
                     >
                       {Array.from(
                         { length: item.availableQuantity },
-                        (_, i) => i + 1,
+                        (_, i) => i + 1
                       ).map((n) => (
                         <option key={n} value={n}>
                           {n}
@@ -233,7 +232,7 @@ const Cart = () => {
               onClick={handleEditaddress}
               className="mb-2 cursor-pointer text-gray-600 font-medium hover:text-gray-800"
             >
-              Add address
+              {selectedAddress ? "Edit address" : "Add address"}
             </div>
           </div>
           <select
@@ -289,4 +288,4 @@ const Cart = () => {
   );
 };
 
-export default Cart;
+export default Carts;

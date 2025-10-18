@@ -14,6 +14,32 @@ interface FormErrors {
   stateProvince?: string;
   postalCode?: string;
 }
+interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  error?: string;
+  name: string;
+}
+const FormField = ({ name, label, error, ...props }: FormFieldProps) => (
+  <div>
+    <label
+      htmlFor={name}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      {label}
+    </label>
+    <input
+      id={name}
+      name={name}
+      {...props}
+      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 ${
+        error
+          ? "border-red-500 focus:border-red-500 focus:ring-red-500"
+          : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+      }`}
+    />
+    {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+  </div>
+);
 
 const EditAddress = () => {
   const { user } = useAppProvider();
@@ -146,28 +172,6 @@ const EditAddress = () => {
     );
   }
 
-  const FormField = ({ name, label, error, ...props }: any) => (
-    <div>
-      <label
-        htmlFor={name}
-        className="block text-sm font-medium text-gray-700 mb-1"
-      >
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        {...props}
-        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 ${
-          error
-            ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-            : "border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-        }`}
-      />
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
-    </div>
-  );
-
   return (
     <div className="bg-gray-50 min-h-screen py-12 px-4">
       <div className="max-w-3xl mx-auto">
@@ -282,7 +286,7 @@ const EditAddress = () => {
                 type="button"
                 onClick={() => setDeleteModalOpen(true)}
                 disabled={isDeleting}
-                className="px-4 py-2 text-sm font-medium text-red-600 bg-red-100 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition"
+                className="px-4 py-2 text-sm font-medium cursor-pointer text-red-600 bg-red-100 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition"
               >
                 Delete Address
               </button>
@@ -292,14 +296,14 @@ const EditAddress = () => {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
+                className="px-6 py-2 text-sm font-medium cursor-pointer text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className="px-6 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed transition"
+                className="px-6 py-2 text-sm cursor-pointer font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed transition"
               >
                 {isSaving
                   ? "Saving..."
@@ -332,7 +336,7 @@ const EditAddress = () => {
                   type="button"
                   disabled={isDeleting}
                   onClick={handleDelete}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:col-start-2 sm:text-sm disabled:bg-red-300"
+                  className="w-full inline-flex cursor-pointer justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:col-start-2 sm:text-sm disabled:bg-red-300"
                 >
                   {isDeleting ? "Deleting..." : "Delete"}
                 </button>
@@ -340,7 +344,7 @@ const EditAddress = () => {
                 <button
                   type="button"
                   onClick={() => setDeleteModalOpen(false)}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
+                  className="mt-3 w-full inline-flex justify-center cursor-pointer rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm"
                 >
                   Cancel
                 </button>

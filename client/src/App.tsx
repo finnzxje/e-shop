@@ -6,10 +6,11 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import ProductPage from "./pages/allProcusts";
 import Detail from "./components/detail";
-import Cart from "./pages/cart";
+import Carts from "./pages/cart";
 import { Toaster } from "react-hot-toast";
-import EditAddress from "./components/editAddress";
+import EditAddress from "./pages/editAddress";
 import PaymentResult from "./components/paymentResult";
+import Wishlist from "./pages/wishlist";
 function App() {
   return (
     <BrowserRouter>
@@ -18,13 +19,14 @@ function App() {
         <Header />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/cart" element={<Cart />} />
+          <Route path="/cart" element={<Carts />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/all-products" element={<ProductPage />} />
           <Route path="/products/:slug" element={<Detail />} />
           <Route path="/payment-result" element={<PaymentResult />} />
           <Route path="/edit-address" element={<EditAddress />} />
+          <Route path="/wishlist" element={<Wishlist />} />
         </Routes>
         <Footer />
       </div>

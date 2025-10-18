@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { User, ShoppingBag, Menu, X } from "lucide-react";
+import { useState } from "react";
+import { User, ShoppingBag, Menu, X, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppProvider } from "../context/useContex";
 import profile from "../assets/profile_icon.png";
@@ -20,6 +20,29 @@ export const Header = () => {
 
   return (
     <header className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-200 bg-white shadow-sm relative">
+      {/* Logo */}
+      <Link to={"/"}>
+        <div className="group">
+          <div className="relative inline-block">
+            <span
+              className="text-2xl cursor-pointer font-bold text-black uppercase tracking-widest"
+              style={{
+                fontFamily: "Garamond, Georgia, serif",
+                letterSpacing: "0.2em",
+                textShadow: "2px 2px 0px rgba(0,0,0,0.1)",
+              }}
+            >
+              PATAGONIA
+            </span>
+            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-black transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></div>
+            <div className="absolute -bottom-2 left-0 right-0 flex justify-center gap-1">
+              <div className="w-1 h-1 bg-black rounded-full"></div>
+              <div className="w-1 h-1 bg-black rounded-full"></div>
+              <div className="w-1 h-1 bg-black rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </Link>
       {/* Desktop Menu */}
       <nav className="hidden md:block">
         <ul className="flex gap-6 text-sm font-montserrat text-gray-700">
@@ -40,12 +63,6 @@ export const Header = () => {
       >
         {open ? <X /> : <Menu />}
       </button>
-
-      {/* Logo */}
-      <div className="text-xl font-bold font-poppins tracking-wide cursor-pointer">
-        patagonia
-      </div>
-
       {/* Icons */}
       <div className="flex items-center gap-6">
         {!user ? (
@@ -69,6 +86,9 @@ export const Header = () => {
           </div>
         )}
 
+        <Link to={"/wishlist"} className="relative">
+          <Heart className="cursor-pointer hover:text-black text-2xl" />
+        </Link>
         <Link to={"/cart"} className="relative">
           <ShoppingBag className="cursor-pointer hover:text-black text-2xl" />
           {cart?.totalQuantity > 0 && (
