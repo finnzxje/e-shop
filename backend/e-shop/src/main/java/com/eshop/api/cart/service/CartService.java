@@ -1,5 +1,7 @@
 package com.eshop.api.cart.service;
 
+import com.eshop.api.analytics.enums.InteractionType;
+import com.eshop.api.analytics.service.ProductInteractionEventService;
 import com.eshop.api.cart.dto.AddCartItemRequest;
 import com.eshop.api.cart.dto.CartItemResponse;
 import com.eshop.api.cart.dto.CartResponse;
@@ -50,6 +52,7 @@ public class CartService {
     private final CartItemRepository cartItemRepository;
     private final ProductVariantRepository productVariantRepository;
     private final UserRepository userRepository;
+    private final ProductInteractionEventService interactionEventService;
 
     @Transactional
     public CartResponse addItem(String email, AddCartItemRequest request) {
@@ -68,6 +71,7 @@ public class CartService {
         }
 
         CartItem existingItem = findItemByVariant(cart, variant.getId());
+        int resultingQuantity;
         if (existingItem == null) {
             validateStock(variant, requestedQuantity);
             CartItem newItem = CartItem.builder()
@@ -76,14 +80,20 @@ public class CartService {
                 .quantity(requestedQuantity)
                 .build();
             cart.addItem(newItem);
+            resultingQuantity = requestedQuantity;
         } else {
             int currentQuantity = Optional.ofNullable(existingItem.getQuantity()).orElse(0);
             int newQuantity = currentQuantity + requestedQuantity;
             validateStock(variant, newQuantity);
             existingItem.setQuantity(newQuantity);
+            resultingQuantity = newQuantity;
         }
 
         cartRepository.save(cart);
+        interactionEventService.recordInteraction(user, variant.getProduct(), variant, InteractionType.ADD_TO_CART, metadata -> {
+            metadata.put("quantity", resultingQuantity);
+            metadata.put("requestedQuantity", requestedQuantity);
+        });
         Cart refreshed = cartRepository.findByUser_Id(user.getId())
             .orElseThrow(() -> new CartNotFoundException(user.getId()));
 
@@ -121,9 +131,16 @@ public class CartService {
 
         Cart cart = cartItem.getCart();
         cart.removeItem(cartItem);
+        int removedQuantity = Optional.ofNullable(cartItem.getQuantity()).orElse(0);
+        ProductVariant variant = cartItem.getVariant();
         cartItemRepository.delete(cartItem);
 
         cartRepository.save(cart);
+        if (variant != null) {
+            interactionEventService.recordInteraction(user, variant.getProduct(), variant, InteractionType.REMOVE_FROM_CART, metadata -> {
+                metadata.put("quantity", removedQuantity);
+            });
+        }
         Cart refreshed = cartRepository.findByUser_Id(user.getId())
             .orElseThrow(() -> new CartNotFoundException(user.getId()));
         return mapToResponse(refreshed);

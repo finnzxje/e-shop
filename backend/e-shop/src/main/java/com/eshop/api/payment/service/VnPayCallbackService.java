@@ -1,5 +1,9 @@
 package com.eshop.api.payment.service;
 
+import com.eshop.api.analytics.enums.InteractionType;
+import com.eshop.api.analytics.service.ProductInteractionEventService;
+import com.eshop.api.catalog.model.Product;
+import com.eshop.api.catalog.model.ProductVariant;
 import com.eshop.api.order.enums.OrderStatus;
 import com.eshop.api.order.enums.PaymentStatus;
 import com.eshop.api.order.exception.PaymentValidationException;
@@ -23,6 +27,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,6 +42,7 @@ public class VnPayCallbackService {
     private final ObjectMapper objectMapper;
     private final InventoryService inventoryService;
     private final CurrencyConversionService currencyConversionService;
+    private final ProductInteractionEventService interactionEventService;
 
     @Transactional
     public VnPayConfirmResponse handleReturn(Map<String, String> payload) {
@@ -81,6 +87,7 @@ public class VnPayCallbackService {
             validateAmount(order, payload.get("vnp_Amount"));
             applySuccess(order, transaction);
             transaction.setCapturedAmount(order.getTotalAmount());
+            logPurchaseEvents(order);
             inventoryService.clearCart(order.getCart());
             log.info("VNPay payment captured for order {}", orderNumber);
         } else {
@@ -145,5 +152,34 @@ public class VnPayCallbackService {
         order.setPaymentStatus(PaymentStatus.FAILED);
         order.setCancelledAt(Instant.now());
         order.setStatus(OrderStatus.CANCELLED);
+    }
+
+    private void logPurchaseEvents(Order order) {
+        if (order == null || order.getItems() == null || order.getItems().isEmpty()) {
+            return;
+        }
+        final var user = order.getUser();
+        final var orderId = order.getId();
+        final var orderNumber = order.getOrderNumber();
+
+        order.getItems().forEach(orderItem -> {
+            Product product = orderItem.getProduct();
+            ProductVariant variant = orderItem.getVariant();
+            if (product == null && variant != null) {
+                product = variant.getProduct();
+            }
+
+            final Product productRef = product;
+            final ProductVariant variantRef = variant;
+            final Integer quantity = orderItem.getQuantity();
+            final BigDecimal lineTotal = orderItem.getTotalAmount();
+
+            interactionEventService.recordInteraction(user, productRef, variantRef, InteractionType.PURCHASE, metadata -> {
+                Optional.ofNullable(orderId).ifPresent(id -> metadata.put("orderId", id.toString()));
+                Optional.ofNullable(orderNumber).ifPresent(number -> metadata.put("orderNumber", number));
+                Optional.ofNullable(quantity).ifPresent(qty -> metadata.put("quantity", qty));
+                Optional.ofNullable(lineTotal).ifPresent(total -> metadata.put("totalAmount", total.doubleValue()));
+            });
+        });
     }
 }
