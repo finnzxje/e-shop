@@ -1,15 +1,21 @@
 package com.eshop.api.order.controller;
 
 import com.eshop.api.exception.InvalidJwtException;
+import com.eshop.api.catalog.dto.PageResponse;
 import com.eshop.api.order.dto.CheckoutRequest;
 import com.eshop.api.order.dto.CheckoutResponse;
+import com.eshop.api.order.dto.PurchasedItemResponse;
 import com.eshop.api.order.service.OrderCheckoutService;
+import com.eshop.api.order.service.OrderHistoryService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
     private final OrderCheckoutService orderCheckoutService;
+    private final OrderHistoryService orderHistoryService;
 
     @PostMapping("/checkout")
     public ResponseEntity<CheckoutResponse> checkout(
@@ -32,6 +39,16 @@ public class OrderController {
         String clientIp = resolveClientIp(httpServletRequest);
         CheckoutResponse response = orderCheckoutService.checkout(email, request, clientIp);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/purchased-items")
+    public ResponseEntity<PageResponse<PurchasedItemResponse>> getPurchasedItems(
+        Authentication authentication,
+        @PageableDefault(size = 20) Pageable pageable
+    ) {
+        String email = resolveEmail(authentication);
+        PageResponse<PurchasedItemResponse> response = orderHistoryService.getPurchasedItems(email, pageable);
+        return ResponseEntity.ok(response);
     }
 
     private String resolveEmail(Authentication authentication) {
