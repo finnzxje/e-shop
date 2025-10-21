@@ -206,3 +206,31 @@ Content-Type: application/json
 
 - `401 Unauthorized` — missing or invalid JWT.
 - `404 Not Found` — never returned; an empty list is encoded as an empty `content` array.
+
+## POST `/orders/{orderId}/confirm-fulfillment`
+
+Allows the authenticated customer to acknowledge delivery of an order. When invoked the order status transitions to `FULFILLED`, `fulfilledAt` is timestamped, and a status-history entry is recorded. The endpoint is idempotent: confirming an already fulfilled order returns the current state without error.
+
+### Response
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "orderId": "6e9c1fd7-4243-4a7a-9e3d-1d49f21b8c44",
+  "orderNumber": "ORD-00010234",
+  "orderStatus": "FULFILLED",
+  "paymentStatus": "CAPTURED",
+  "paidAt": "2025-03-12T09:10:02.581Z",
+  "fulfilledAt": "2025-03-14T18:21:45.903Z"
+}
+```
+
+### Error Responses
+
+- `401 Unauthorized` — missing or invalid JWT.
+- `404 Not Found` — the order does not belong to the authenticated user.
+- `409 Conflict` — the order is in a state that cannot be confirmed (e.g., payment not captured, already cancelled).

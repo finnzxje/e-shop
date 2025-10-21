@@ -4,9 +4,11 @@ import com.eshop.api.exception.InvalidJwtException;
 import com.eshop.api.catalog.dto.PageResponse;
 import com.eshop.api.order.dto.CheckoutRequest;
 import com.eshop.api.order.dto.CheckoutResponse;
+import com.eshop.api.order.dto.OrderStatusResponse;
 import com.eshop.api.order.dto.PurchasedItemResponse;
 import com.eshop.api.order.service.OrderCheckoutService;
 import com.eshop.api.order.service.OrderHistoryService;
+import com.eshop.api.order.service.OrderLifecycleService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -28,6 +33,7 @@ public class OrderController {
 
     private final OrderCheckoutService orderCheckoutService;
     private final OrderHistoryService orderHistoryService;
+    private final OrderLifecycleService orderLifecycleService;
 
     @PostMapping("/checkout")
     public ResponseEntity<CheckoutResponse> checkout(
@@ -48,6 +54,16 @@ public class OrderController {
     ) {
         String email = resolveEmail(authentication);
         PageResponse<PurchasedItemResponse> response = orderHistoryService.getPurchasedItems(email, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{orderId}/confirm-fulfillment")
+    public ResponseEntity<OrderStatusResponse> confirmFulfillment(
+        Authentication authentication,
+        @PathVariable("orderId") UUID orderId
+    ) {
+        String email = resolveEmail(authentication);
+        OrderStatusResponse response = orderLifecycleService.confirmFulfillment(email, orderId);
         return ResponseEntity.ok(response);
     }
 
