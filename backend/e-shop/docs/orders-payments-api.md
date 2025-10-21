@@ -147,3 +147,90 @@ Accepts the query parameters returned by VNPay after checkout and updates the or
   "alreadyProcessed": false
 }
 ```
+
+## GET `/purchased-items`
+
+Returns a paginated list of items the authenticated user has purchased (orders whose payment status is `CAPTURED`). Results are sorted by the most recent payment, falling back to the order item creation time.
+
+### Query Parameters
+
+Supports the usual Spring pageable parameters:
+
+- `page` — zero-based page index (default `0`).
+- `size` — page size (default `20`).
+- `sort` — optional sort expression if you need to override the default ordering.
+
+Example request:
+
+```
+GET http://localhost:8080/api/orders/purchased-items?page=0&size=10
+Authorization: Bearer <token>
+```
+
+### Response
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "content": [
+    {
+      "orderId": "6e9c1fd7-4243-4a7a-9e3d-1d49f21b8c44",
+      "orderNumber": "ORD-00010234",
+      "orderStatus": "PROCESSING",
+      "paymentStatus": "CAPTURED",
+      "orderItemId": "41a4e557-1f7d-4fd6-9a11-5b0b8bb7d3e6",
+      "productId": "d53c16a4-beb5-4a97-b992-ef7fb8cfe5b8",
+      "productName": "Everyday Crewneck",
+      "variantId": "4a23ab92-8c62-4e80-81d8-6a06fb4048a4",
+      "quantity": 2,
+      "unitPrice": 62.49,
+      "totalAmount": 124.98,
+      "currency": "USD",
+      "purchasedAt": "2025-03-12T09:15:11.102Z"
+    }
+  ],
+  "totalElements": 4,
+  "totalPages": 1,
+  "page": 0,
+  "size": 10,
+  "hasNext": false,
+  "hasPrevious": false
+}
+```
+
+### Error Responses
+
+- `401 Unauthorized` — missing or invalid JWT.
+- `404 Not Found` — never returned; an empty list is encoded as an empty `content` array.
+
+## POST `/orders/{orderId}/confirm-fulfillment`
+
+Allows the authenticated customer to acknowledge delivery of an order. When invoked the order status transitions to `FULFILLED`, `fulfilledAt` is timestamped, and a status-history entry is recorded. The endpoint is idempotent: confirming an already fulfilled order returns the current state without error.
+
+### Response
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "orderId": "6e9c1fd7-4243-4a7a-9e3d-1d49f21b8c44",
+  "orderNumber": "ORD-00010234",
+  "orderStatus": "FULFILLED",
+  "paymentStatus": "CAPTURED",
+  "paidAt": "2025-03-12T09:10:02.581Z",
+  "fulfilledAt": "2025-03-14T18:21:45.903Z"
+}
+```
+
+### Error Responses
+
+- `401 Unauthorized` — missing or invalid JWT.
+- `404 Not Found` — the order does not belong to the authenticated user.
+- `409 Conflict` — the order is in a state that cannot be confirmed (e.g., payment not captured, already cancelled).
