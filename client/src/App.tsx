@@ -11,6 +11,7 @@ import { Toaster } from "react-hot-toast";
 import EditAddress from "./pages/editAddress";
 import PaymentResult from "./components/paymentResult";
 import Wishlist from "./pages/wishlist";
+import PurchasedItems from "./pages/purchasedItems";
 function App() {
   return (
     <BrowserRouter>
@@ -27,6 +28,7 @@ function App() {
           <Route path="/payment-result" element={<PaymentResult />} />
           <Route path="/edit-address" element={<EditAddress />} />
           <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/purchase" element={<PurchasedItems />} />
         </Routes>
         <Footer />
       </div>
