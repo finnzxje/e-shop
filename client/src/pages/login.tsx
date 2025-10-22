@@ -40,6 +40,7 @@ export default function Login() {
         localStorage.setItem("user", JSON.stringify(data.data));
         toast.success("Login successful!");
         setUser(data.data);
+        localStorage.setItem("accessToken", data.data.token);
         setEmail("");
         setPassword("");
         navigate("/");
