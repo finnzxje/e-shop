@@ -44,6 +44,7 @@ public class OrderHistoryService {
         var order = item.getOrder();
         var product = item.getProduct();
         var variant = item.getVariant();
+        var slug = product.getSlug();
 
         return PurchasedItemResponse.builder()
             .orderId(order != null ? order.getId() : null)
@@ -53,6 +54,7 @@ public class OrderHistoryService {
             .orderItemId(item.getId())
             .productId(product != null ? product.getId() : null)
             .productName(product != null ? product.getName() : null)
+            .slug(slug)
             .variantId(variant != null ? variant.getId() : null)
             .quantity(item.getQuantity())
             .unitPrice(item.getUnitPrice())

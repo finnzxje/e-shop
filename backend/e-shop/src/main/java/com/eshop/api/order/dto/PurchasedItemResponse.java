@@ -16,6 +16,7 @@ public class PurchasedItemResponse {
     String orderNumber;
     OrderStatus orderStatus;
     PaymentStatus paymentStatus;
+    String slug;
 
     UUID orderItemId;
     UUID productId;
