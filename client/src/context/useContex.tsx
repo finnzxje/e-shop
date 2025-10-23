@@ -35,7 +35,6 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [cart, setCart] = useState<Cart | null>(null);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-
   // --- TÍCH HỢP (2): TẠO HÀM DỌN DẸP DỮ LIỆU ---
   // Hàm nội bộ để dọn dẹp state và localStorage, bao gồm cả session ID
   const clearUserData = () => {
@@ -44,7 +43,9 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
     setWishlist([]);
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
-    clearSessionId(); // <-- Đảm bảo session ID được xóa khi đăng xuất
+    clearSessionId();
+
+    // <-- Đảm bảo session ID được xóa khi đăng xuất
     toast.success("Logout success!");
   };
 
