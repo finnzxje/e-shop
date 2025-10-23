@@ -1,0 +1,90 @@
+### 
+
+@access_token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MTA2MTE3MywiZXhwIjoxNzYxNDIxMTczfQ.tBoWg0jVdEJHdJbLCsK1Q4mhKUlh8YF-TgQawujh4ZY
+@address_id = {{ADDRESS_ID}}
+@orderId = 0bc64dd0-b3a5-4e14-afee-fc230dffcd2c
+@variant_id = {{VARIANT_ID}}
+
+
+### Checkout existing address
+
+POST http://localhost:8080/api/orders/checkout HTTP/1.1
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "addressId": "{{address_id}}",
+  "discountAmount": 0,
+  "notes": "Deliver during daytime",
+  "shippingAmount": 2.50,
+  "shippingMethod": "standard",
+  "taxAmount": 0
+}
+
+
+### Checkout with inline address and save it
+
+POST http://localhost:8080/api/orders/checkout HTTP/1.1
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "address": {
+    "city": "Ha Noi",
+    "countryCode": "VN",
+    "instructions": "Call when arriving",
+    "label": "Home",
+    "line1": "12 Ly Thuong Kiet",
+    "line2": "Apartment 1005",
+    "phone": "+84-901-234-567",
+    "postalCode": "100000",
+    "recipientName": "Nguyen Van A",
+    "stateProvince": "Hoan Kiem"
+  },
+  "discountAmount": 0,
+  "saveAddress": false,
+  "shippingAmount": 2.50,
+  "taxAmount": 0
+}
+
+
+### 
+
+GET http://localhost:5173/?vnp_Amount=475717300&vnp_BankCode=NCB&vnp_BankTranNo=VNP15205297&vnp_CardType=ATM&vnp_OrderInfo=E-Shop+Order+ORD-00010040&vnp_PayDate=20251016003743&vnp_ResponseCode=00&vnp_TmnCode=82TFXA73&vnp_TransactionNo=15205297&vnp_TransactionStatus=00&vnp_TxnRef=ORD-00010040&vnp_SecureHash=3c0450196ce154fbc4fc481e098c83ea4d46e6de2f951b2d49b332c12afe18d3eea36fe9f5ecb5f70acecc2840abe96ba3cf536381cf7a70b47a487c2b96dd42 HTTP/1.1
+
+
+### 
+
+POST http://localhost:8080/api/payments/vnpay/confirm HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{access_token}}
+
+{
+  "vnp_Amount": "502072800",
+  "vnp_BankCode": "NCB",
+  "vnp_BankTranNo": "VNP15208567",
+  "vnp_CardType": "ATM",
+  "vnp_OrderInfo": "E-Shop Order ORD-00010020",
+  "vnp_PayDate": "20251018012343",
+  "vnp_ResponseCode": "00",
+  "vnp_SecureHash": "175b961e39ecc08cccc7c1c7c2c8e7aae60dca8d5a5b963185651960427e94249c6201def088573374a4a203f42ea897a749c997baf724f8d35136b2a1eb25b7",
+  "vnp_TmnCode": "82TFXA73",
+  "vnp_TransactionNo": "152208567",
+  "vnp_TransactionStatus": "00",
+  "vnp_TxnRef": "ORD-00010020"
+}
+
+
+### List purchased items
+
+GET http://localhost:8080/api/orders/purchased-items?page=0&size=10 HTTP/1.1
+Authorization: Bearer {{access_token}}
+Accept: application/json
+
+
+### Confirm fulfillment
+
+POST http://localhost:8080/api/orders/{{orderId}}/confirm-fulfillment HTTP/1.1
+Authorization: Bearer {{access_token}}

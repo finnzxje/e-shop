@@ -1,0 +1,44 @@
+GET http://localhost:8080/api/catalog/products/beanies HTTP/1.1
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products/womens-work-waffle-crewneck HTTP/1.1
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products/gender/mens HTTP/1.1
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products/category/beanies HTTP/1.1
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products/filter?gender=womens&priceMin=300&sort=basePrice,desc&sizes=M HTTP/1.1
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products/filter?page=0&size=20&category=tops HTTP/1.1
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products/search?q=pants&sort=basePrice HTTP/1.1
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products?sort=createdAt,desc HTTP/1.1
+
+
+### 
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products/filter?page=0&sizes=20&priceMax=80 HTTP/1.1

@@ -1,0 +1,45 @@
+### 
+
+@accessToken = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MDQ2NTQ0OCwiZXhwIjoxNzYwODI1NDQ4fQ.lVVClx_4DwV_TfwTQvT_SJJu_GgZR0dCuF3pGyDB1Ag
+@sessionId = 81612360-0167-4dd7-b38b-c06c345d4f3f
+
+
+### Record product view as anonymous visitor (session required)
+
+POST http://localhost:8080/api/catalog/products/{{productId}}/views HTTP/1.1
+Content-Type: application/json
+
+{
+  "metadata": {
+    "component": "hero",
+    "page": "product-detail"
+  },
+  "sessionId": "{{sessionId}}",
+  "variantId": "{{variantId}}"
+}
+
+
+### Record product view as authenticated user
+
+POST http://localhost:8080/api/catalog/products/{{productId}}/views HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "metadata": {
+    "page": "related-products",
+    "position": 2
+  },
+  "sessionId": "{{sessionId}}"
+}
+
+
+### Link session to authenticated user
+
+POST http://localhost:8080/api/catalog/products/views/link-session HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "sessionId": "{{sessionId}}"
+}

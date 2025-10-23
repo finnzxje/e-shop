@@ -1,0 +1,33 @@
+### 
+
+@orderItemId = 27ff6081-db05-4e77-8ba5-d415b7842576
+@productId = 6fb08bf6-f51b-4c03-9607-deb66fac6a73
+@token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MTA2MTE3MywiZXhwIjoxNzYxNDIxMTczfQ.tBoWg0jVdEJHdJbLCsK1Q4mhKUlh8YF-TgQawujh4ZY
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products/{{productId}}/reviews?page=0&size=5 HTTP/1.1
+Accept: application/json
+
+
+### 
+
+POST http://localhost:8080/api/catalog/products/{{productId}}/reviews HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "orderItemId": "{{orderItemId}}",
+  "rating": 4,
+  "reviewText": "Solid quality and fast shipping."
+}
+
+
+### 
+
+GET http://localhost:8080/api/catalog/products/{{productId}}/reviews?sort=createdAt,asc HTTP/1.1
+Accept: application/json
+
+
+### 
