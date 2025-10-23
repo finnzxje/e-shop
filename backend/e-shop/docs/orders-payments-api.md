@@ -207,6 +207,32 @@ Content-Type: application/json
 - `401 Unauthorized` — missing or invalid JWT.
 - `404 Not Found` — never returned; an empty list is encoded as an empty `content` array.
 
+## GET `/purchased-items/{productId}/latest`
+
+Looks up the most recent captured order item for the authenticated user and the specified product.
+
+```
+GET /api/orders/purchased-items/9c8eeb67-9d68-4a70-9e7c-4dc47b7a6da4/latest
+Authorization: Bearer <token>
+```
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "orderItemId": "41a4e557-1f7d-4fd6-9a11-5b0b8bb7d3e6",
+  "orderId": "6e9c1fd7-4243-4a7a-9e3d-1d49f21b8c44",
+  "orderNumber": "ORD-00010234",
+  "purchasedAt": "2025-03-12T09:15:11.102Z",
+  "verifiedPurchase": true
+}
+```
+
+If the user has not purchased the product, the endpoint returns `404 Not Found`. Use this endpoint from the review form to decide whether the UI should pre-fill the review `orderItemId` and show a “Verified purchase” indicator.
+
 ## POST `/orders/{orderId}/confirm-fulfillment`
 
 Allows the authenticated customer to acknowledge delivery of an order. When invoked the order status transitions to `FULFILLED`, `fulfilledAt` is timestamped, and a status-history entry is recorded. The endpoint is idempotent: confirming an already fulfilled order returns the current state without error.
