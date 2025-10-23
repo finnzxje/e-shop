@@ -113,7 +113,7 @@ class ETLPipeline:
                     WHEN 'add_to_cart' THEN 3.0
                     WHEN 'wishlist' THEN 2.5
                     WHEN 'rating' THEN COALESCE(rating_value, 0)
-                    WHEN 'click' THEN 1.0
+                    WHEN 'view' THEN 1.0
                     ELSE 0.5
                 END as weight
             FROM interactions
@@ -124,7 +124,7 @@ class ETLPipeline:
                 user_id,
                 variant_id,
                 COUNT(*) as total_interactions,
-                SUM(CASE WHEN interaction_type = 'click' THEN 1 ELSE 0 END) as view_count,
+                SUM(CASE WHEN interaction_type = 'view' THEN 1 ELSE 0 END) as view_count,
                 SUM(CASE WHEN interaction_type = 'add_to_cart' THEN 1 ELSE 0 END) as cart_count,
                 SUM(CASE WHEN interaction_type = 'purchase' THEN 1 ELSE 0 END) as purchase_count,
                 SUM(CASE WHEN interaction_type = 'wishlist' THEN 1 ELSE 0 END) as wishlist_count,
@@ -194,7 +194,7 @@ class ETLPipeline:
                 COUNT(DISTINCT pr.id) as total_reviews,
                 
                 -- Engagement metrics
-                COUNT(DISTINCT i.id) FILTER (WHERE i.interaction_type = 'click') as total_clicks,
+                COUNT(DISTINCT i.id) FILTER (WHERE i.interaction_type = 'view') as total_clicks,
                 COUNT(DISTINCT w.id) as wishlist_items,
                 
                 -- Gender preference based on purchases
@@ -223,12 +223,13 @@ class ETLPipeline:
                 ELSE 'loyal'
             END as customer_segment,
             
-            CASE 
-                WHEN avg_order_value < 500000 THEN 'budget'
-                WHEN avg_order_value < 1000000 THEN 'mid'
-                WHEN avg_order_value < 2000000 THEN 'premium'
+          CASE 
+                WHEN avg_order_value < 50 THEN 'budget'
+                WHEN avg_order_value < 120 THEN 'mid'
+                WHEN avg_order_value < 300 THEN 'premium'
                 ELSE 'luxury'
-            END as price_segment,
+           END as price_segment,
+
             
             CASE 
                 WHEN avg_rating_given >= 4 THEN 'positive'
@@ -286,13 +287,13 @@ class ETLPipeline:
                 
                 -- Price features
                 pv.price,
-                CASE 
-                    WHEN pv.price < 500000 THEN 'budget'
-                    WHEN pv.price < 1000000 THEN 'mid'
-                    WHEN pv.price < 2000000 THEN 'premium'
+               CASE 
+                    WHEN pv.price < 50 THEN 'budget'
+                    WHEN pv.price < 120 THEN 'mid'
+                    WHEN pv.price < 300 THEN 'premium'
                     ELSE 'luxury'
                 END as price_range,
-                
+
                 -- Popularity metrics
                 COUNT(DISTINCT oi.id) as total_sales,
                 COUNT(DISTINCT ci.id) as times_in_cart,

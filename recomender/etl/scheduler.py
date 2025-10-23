@@ -25,16 +25,17 @@ class Config:
         'add_to_cart': 3.0,
         'wishlist': 2.5,
         'rating': 1.0,  # Will use actual rating value
-        'click': 1.0
+        'view': 1.0
     }
     
-    # Price segments (VND)
+  # Price segments (USD)
     PRICE_SEGMENTS = {
-        'budget': (0, 500000),
-        'mid': (500000, 1000000),
-        'premium': (1000000, 2000000),
-        'luxury': (2000000, float('inf'))
+    'budget': (0, 50),
+    'mid': (50, 120),
+    'premium': (120, 300),
+    'luxury': (300, float('inf'))
     }
+
     
     # Customer segments (by order count)
     CUSTOMER_SEGMENTS = {

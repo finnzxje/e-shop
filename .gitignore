@@ -13,7 +13,7 @@ Thumbs.db
 *.iws
 *.iml
 *.ipr
-
+*.env
 .vscode/
 
 .apt_generated
