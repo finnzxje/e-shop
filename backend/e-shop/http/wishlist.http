@@ -1,0 +1,27 @@
+### 
+
+@accessToken = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MDQ2NTQ0OCwiZXhwIjoxNzYwODI1NDQ4fQ.lVVClx_4DwV_TfwTQvT_SJJu_GgZR0dCuF3pGyDB1Ag
+@productId = 6fb08bf6-f51b-4c03-9607-deb66fac6a73
+
+
+### List wishlist items
+
+GET http://localhost:8080/api/account/wishlist HTTP/1.1
+Authorization: Bearer {{accessToken}}
+
+
+### Add product to wishlist
+
+POST http://localhost:8080/api/account/wishlist HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "productId": "{{productId}}"
+}
+
+
+### Remove product from wishlist
+
+DELETE http://localhost:8080/api/account/wishlist/{{productId}} HTTP/1.1
+Authorization: Bearer {{accessToken}}

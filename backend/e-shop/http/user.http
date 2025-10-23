@@ -1,0 +1,44 @@
+### 
+
+POST http://localhost:8080/api/auth/register HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "test2@gmail.com",
+  "firstName": "Yoo",
+  "lastName": "WHT",
+  "password": "testpassword"
+}
+
+
+### 
+
+POST http://localhost:8080/api/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "test@gmail.com",
+  "password": "testpassword"
+}
+
+
+### 
+
+GET http://localhost:8080/api/auth/test-token HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1ODI4NzM1MywiZXhwIjoxNzU4MjkwOTUzfQ.waw_6bj2nXgv1utaEvQ-P0LWykwEmFstSq5vVwHDa5I
+
+
+### 
+
+POST http://localhost:8080/api/auth/refresh HTTP/1.1
+Content-Type: application/json
+
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJSRUZSRVNIIiwic3ViIjoidGVzdEBnbWFpbC5jb20iLCJpYXQiOjE3NTgyODYwMTUsImV4cCI6MTc1OTU4MjAxNX0.Aj98PI7eUaRIXCny4diVB5gwg4hRnAEdYes_yLZMp6w"
+}
+
+
+### 
+
+GET http://localhost:8080/actuator/health HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1ODI5Njg1NiwiZXhwIjoxNzU4MzAwNDU2fQ.slJmDwZHJ1th4LpBoMEXkOJDK_vPl44E7tF3n0RIHSw

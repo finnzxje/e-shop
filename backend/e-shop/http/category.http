@@ -1,0 +1,22 @@
+GET http://localhost:8080/api/catalog/categories HTTP/1.1
+
+
+### 
+
+GET http://localhost:8080/api/catalog/categories/common HTTP/1.1
+
+
+### 
+
+# name, slug, displayOrder, active
+
+POST http://localhost:8080/api/catalog/categories HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1OTA1ODI0MiwiZXhwIjoxNzU5MDYxODQyfQ.UpMYtNRH-3H0dA0XONygd98PZ6QPtJecP7Ho-EVvfQw
+Content-Type: application/json
+
+{
+ "active": true,
+ "displayOrder": 1,
+ "name": ,
+ "slug": "a-test-category"
+}
