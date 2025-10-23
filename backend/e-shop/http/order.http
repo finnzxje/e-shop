@@ -90,6 +90,7 @@ Accept: application/json
 
 POST http://localhost:8080/api/orders/{{orderId}}/confirm-fulfillment HTTP/1.1
 Authorization: Bearer {{access_token}}
+Accept: application/json
 
 
 ### Lookup latest purchased item for product
@@ -99,8 +100,8 @@ Authorization: Bearer {{access_token}}
 Accept: application/json
 
 
-### 
+### List orders summary
 
-GET http://localhost:8080/api/orders HTTP/1.1
+GET http://localhost:8080/api/orders?page=0&size=10 HTTP/1.1
 Authorization: Bearer {{access_token}}
 Accept: application/json

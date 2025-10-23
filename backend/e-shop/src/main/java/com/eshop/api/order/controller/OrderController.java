@@ -7,6 +7,7 @@ import com.eshop.api.order.dto.CheckoutResponse;
 import com.eshop.api.order.dto.OrderStatusResponse;
 import com.eshop.api.order.dto.PurchasedItemLookupResponse;
 import com.eshop.api.order.dto.PurchasedItemResponse;
+import com.eshop.api.order.dto.OrderSummaryResponse;
 import com.eshop.api.order.service.OrderCheckoutService;
 import com.eshop.api.order.service.OrderHistoryService;
 import com.eshop.api.order.service.OrderLifecycleService;
@@ -55,6 +56,16 @@ public class OrderController {
     ) {
         String email = resolveEmail(authentication);
         PageResponse<PurchasedItemResponse> response = orderHistoryService.getPurchasedItems(email, pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<PageResponse<OrderSummaryResponse>> listOrders(
+        Authentication authentication,
+        @PageableDefault(size = 20) Pageable pageable
+    ) {
+        String email = resolveEmail(authentication);
+        PageResponse<OrderSummaryResponse> response = orderHistoryService.getOrderSummaries(email, pageable);
         return ResponseEntity.ok(response);
     }
 

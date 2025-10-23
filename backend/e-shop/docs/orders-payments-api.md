@@ -207,6 +207,67 @@ Content-Type: application/json
 - `401 Unauthorized` — missing or invalid JWT.
 - `404 Not Found` — never returned; an empty list is encoded as an empty `content` array.
 
+## GET `/`
+
+Fetches the authenticated user's orders (newest first) with summary details and the order items for each purchase.
+
+### Query Parameters
+
+Supports the standard pageable parameters (`page`, `size`, optional `sort`). By default, results are sorted by `placedAt` descending.
+
+### Response
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "content": [
+    {
+      "orderId": "6e9c1fd7-4243-4a7a-9e3d-1d49f21b8c44",
+      "orderNumber": "ORD-00010234",
+      "orderStatus": "PROCESSING",
+      "paymentStatus": "CAPTURED",
+      "subtotalAmount": 124.98,
+      "discountAmount": 5.0,
+      "shippingAmount": 2.5,
+      "taxAmount": 0.0,
+      "totalAmount": 122.48,
+      "currency": "USD",
+      "shippingMethod": "standard",
+      "shippingTrackingNumber": "TRACK-123456",
+      "placedAt": "2025-03-12T09:10:02.581Z",
+      "paidAt": "2025-03-12T09:12:11.004Z",
+      "fulfilledAt": null,
+      "items": [
+        {
+          "orderItemId": "41a4e557-1f7d-4fd6-9a11-5b0b8bb7d3e6",
+          "productId": "d53c16a4-beb5-4a97-b992-ef7fb8cfe5b8",
+          "productName": "Everyday Crewneck",
+          "variantId": "4a23ab92-8c62-4e80-81d8-6a06fb4048a4",
+          "quantity": 2,
+          "unitPrice": 62.49,
+          "totalAmount": 124.98,
+          "currency": "USD"
+        }
+      ]
+    }
+  ],
+  "totalElements": 4,
+  "totalPages": 1,
+  "page": 0,
+  "size": 20,
+  "hasNext": false,
+  "hasPrevious": false
+}
+```
+
+### Error Responses
+
+- `401 Unauthorized` — missing or invalid JWT.
+
 ## GET `/purchased-items/{productId}/latest`
 
 Looks up the most recent captured order item for the authenticated user and the specified product.
