@@ -25,7 +25,7 @@ Creates a new customer account and returns the user profile (no tokens are gener
 
 **Responses**
 
-* `201 Created` — returns an `AuthResponse` without tokens:
+- `201 Created` — returns an `AuthResponse` without tokens:
 
   ```json
   {
@@ -41,8 +41,8 @@ Creates a new customer account and returns the user profile (no tokens are gener
   }
   ```
 
-* `409 Conflict` — email already registered.
-* `400 Bad Request` — validation failures (field level details included in the response message).
+- `409 Conflict` — email already registered.
+- `400 Bad Request` — validation failures (field level details included in the response message).
 
 ### Login
 
@@ -77,8 +77,8 @@ Authenticates an existing user and returns both tokens alongside the user profil
 
 **Error responses**
 
-* `401 Unauthorized` — invalid credentials.
-* `400 Bad Request` — malformed JSON body.
+- `401 Unauthorized` — invalid credentials.
+- `400 Bad Request` — malformed JSON body.
 
 ### Refresh Tokens
 
@@ -96,8 +96,8 @@ Accepts a refresh token and returns a brand new access/refresh token pair. The o
 
 **Responses**
 
-* `200 OK` — returns the same structure as the login response, with new tokens.
-* `401 Unauthorized` — refresh token missing, malformed, expired, or not a refresh token.
+- `200 OK` — returns the same structure as the login response, with new tokens.
+- `401 Unauthorized` — refresh token missing, malformed, expired, or not a refresh token.
 
 ### Get Current User Profile
 
@@ -111,7 +111,7 @@ Returns the authenticated user's profile without issuing new tokens. Use this to
 
 **Responses**
 
-* `200 OK` — returns `AuthResponse` without tokens:
+- `200 OK` — returns `AuthResponse` without tokens:
 
   ```json
   {
@@ -127,7 +127,7 @@ Returns the authenticated user's profile without issuing new tokens. Use this to
   }
   ```
 
-* `401 Unauthorized` — missing or invalid access token.
+- `401 Unauthorized` — missing or invalid access token.
 
 ### Test Current Token
 
@@ -141,7 +141,7 @@ Protected endpoint that echoes the authentication context so clients can verify 
 
 **Responses**
 
-* `200 OK` — access token is valid:
+- `200 OK` — access token is valid:
 
   ```json
   {
@@ -151,7 +151,7 @@ Protected endpoint that echoes the authentication context so clients can verify 
   }
   ```
 
-* `401 Unauthorized` — missing or invalid token:
+- `401 Unauthorized` — missing or invalid token:
 
   ```json
   {
@@ -184,15 +184,24 @@ docker compose up
 
 Services:
 
-* `postgres` — Postgres 17 database exposed on host port `5433`.
-* `api` — Spring Boot backend exposed on host port `8080`.
+- `postgres` — Postgres 17 database exposed on host port `5433`.
+- `api` — Spring Boot backend exposed on host port `8080`.
 
 Default database credentials:
 
-| Variable | Value |
-| --- | --- |
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://postgres:5432/eshop` |
-| `SPRING_DATASOURCE_USERNAME` | `app` |
-| `SPRING_DATASOURCE_PASSWORD` | `secret` |
+| Variable                     | Value                                   |
+| ---------------------------- | --------------------------------------- |
+| `SPRING_DATASOURCE_URL`      | `jdbc:postgresql://postgres:5432/eshop` |
+| `SPRING_DATASOURCE_USERNAME` | `app`                                   |
+| `SPRING_DATASOURCE_PASSWORD` | `secret`                                |
 
 When running outside Docker, update `application.yml` or supply equivalent environment variables.
+
+## Default Accounts
+
+The application seeds an administrator during startup for development and manual testing:
+
+- Email: `admin@gmail.com`
+- Password: `123456`
+
+Use this account to exercise the admin-only endpoints.
