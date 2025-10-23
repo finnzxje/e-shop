@@ -5,6 +5,7 @@ import com.eshop.api.auth.dto.AuthStatusResponse;
 import com.eshop.api.auth.dto.LoginRequest;
 import com.eshop.api.auth.dto.RefreshTokenRequest;
 import com.eshop.api.auth.dto.RegisterRequest;
+import com.eshop.api.exception.InvalidJwtException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,16 @@ public class AuthController {
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         AuthResponse response = authenticationService.refresh(request.refreshToken());
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<AuthResponse> getCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new InvalidJwtException("Authentication is required to fetch the current user profile");
+        }
+
+        AuthResponse response = authenticationService.getCurrentUser(authentication.getName());
         return ResponseEntity.ok(response);
     }
 

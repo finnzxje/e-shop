@@ -99,6 +99,36 @@ Accepts a refresh token and returns a brand new access/refresh token pair. The o
 * `200 OK` — returns the same structure as the login response, with new tokens.
 * `401 Unauthorized` — refresh token missing, malformed, expired, or not a refresh token.
 
+### Get Current User Profile
+
+`GET /api/auth/me`
+
+Returns the authenticated user's profile without issuing new tokens. Use this to hydrate client-side sessions after a page reload.
+
+**Headers**
+
+`Authorization: Bearer <access token>`
+
+**Responses**
+
+* `200 OK` — returns `AuthResponse` without tokens:
+
+  ```json
+  {
+    "id": "fdc1b8cb-6e78-4c12-8ceb-8bbd1ce41f3f",
+    "email": "jane.doe@example.com",
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "enabled": true,
+    "createdAt": "2025-02-18T12:44:10.941Z",
+    "token": null,
+    "refreshToken": null,
+    "roles": ["CUSTOMER"]
+  }
+  ```
+
+* `401 Unauthorized` — missing or invalid access token.
+
 ### Test Current Token
 
 `GET /api/auth/test-token`

@@ -116,6 +116,23 @@ public class AuthenticationService {
         }
     }
 
+    public AuthResponse getCurrentUser(String email) {
+        log.info("Fetching current authenticated user profile for email: {}", email);
+
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new InvalidJwtException("Authenticated user could not be resolved"));
+
+        return new AuthResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEnabled(),
+                user.getCreatedAt(),
+                getRoleNames(user)
+        );
+    }
+
     private List<String> getRoleNames(User user) {
         return user.getRoles().stream().map(Role::getName).toList();
     }
