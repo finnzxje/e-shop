@@ -100,3 +100,7 @@ Accept: application/json
 
 
 ### 
+
+GET http://localhost:8080/api/orders HTTP/1.1
+Authorization: Bearer {{access_token}}
+Accept: application/json
