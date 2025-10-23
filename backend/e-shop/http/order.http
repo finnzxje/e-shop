@@ -3,8 +3,9 @@
 @access_token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MTA2MTE3MywiZXhwIjoxNzYxNDIxMTczfQ.tBoWg0jVdEJHdJbLCsK1Q4mhKUlh8YF-TgQawujh4ZY
 @address_id = {{ADDRESS_ID}}
 @orderId = 0bc64dd0-b3a5-4e14-afee-fc230dffcd2c
-@productId = 9bc4bf7f-aae5-497c-a60d-0ad63be9dd14
 @variant_id = {{VARIANT_ID}}
+
+# @productId 9bc4bf7f-aae5-497c-a60d-0ad63be9dd14
 
 
 ### Checkout existing address
