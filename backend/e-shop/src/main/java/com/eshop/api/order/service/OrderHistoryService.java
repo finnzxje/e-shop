@@ -3,10 +3,14 @@ package com.eshop.api.order.service;
 import com.eshop.api.catalog.dto.PageResponse;
 import com.eshop.api.exception.InvalidJwtException;
 import com.eshop.api.order.dto.PurchasedItemLookupResponse;
+import com.eshop.api.order.dto.OrderSummaryItemResponse;
+import com.eshop.api.order.dto.OrderSummaryResponse;
 import com.eshop.api.order.dto.PurchasedItemResponse;
 import com.eshop.api.order.enums.PaymentStatus;
+import com.eshop.api.order.model.Order;
 import com.eshop.api.order.model.OrderItem;
 import com.eshop.api.order.repository.OrderItemRepository;
+import com.eshop.api.order.repository.OrderRepository;
 import com.eshop.api.user.User;
 import com.eshop.api.user.UserRepository;
 import java.time.Instant;
@@ -26,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderHistoryService {
 
     private final OrderItemRepository orderItemRepository;
+    private final OrderRepository orderRepository;
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
@@ -35,6 +40,22 @@ public class OrderHistoryService {
 
         return PageResponse.<PurchasedItemResponse>builder()
             .content(page.stream().map(this::toResponse).toList())
+            .totalElements(page.getTotalElements())
+            .totalPages(page.getTotalPages())
+            .page(page.getNumber())
+            .size(page.getSize())
+            .hasNext(page.hasNext())
+            .hasPrevious(page.hasPrevious())
+            .build();
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<OrderSummaryResponse> getOrderSummaries(String email, Pageable pageable) {
+        User user = resolveUser(email);
+        var page = orderRepository.findByUser_IdOrderByPlacedAtDesc(user.getId(), pageable);
+
+        return PageResponse.<OrderSummaryResponse>builder()
+            .content(page.stream().map(this::toSummaryResponse).toList())
             .totalElements(page.getTotalElements())
             .totalPages(page.getTotalPages())
             .page(page.getNumber())
@@ -99,9 +120,47 @@ public class OrderHistoryService {
 
     private User resolveUser(String email) {
         if (email == null || email.isBlank()) {
-            throw new InvalidJwtException("Authentication is required to view purchase history");
+            throw new InvalidJwtException("Authentication is required to access order history");
         }
         return userRepository.findByEmailIgnoreCase(email)
             .orElseThrow(() -> new UsernameNotFoundException("User not found for email: " + email));
+    }
+
+    private OrderSummaryResponse toSummaryResponse(Order order) {
+        var items = order.getItems().stream()
+            .map(item -> {
+                var product = item.getProduct();
+                var variant = item.getVariant();
+                return OrderSummaryItemResponse.builder()
+                    .orderItemId(item.getId())
+                    .productId(product != null ? product.getId() : null)
+                    .productName(product != null ? product.getName() : null)
+                    .variantId(variant != null ? variant.getId() : null)
+                    .quantity(item.getQuantity())
+                    .unitPrice(item.getUnitPrice())
+                    .totalAmount(item.getTotalAmount())
+                    .currency(item.getCurrency())
+                    .build();
+            })
+            .toList();
+
+        return OrderSummaryResponse.builder()
+            .orderId(order.getId())
+            .orderNumber(order.getOrderNumber())
+            .orderStatus(order.getStatus())
+            .paymentStatus(order.getPaymentStatus())
+            .subtotalAmount(order.getSubtotalAmount())
+            .discountAmount(order.getDiscountAmount())
+            .shippingAmount(order.getShippingAmount())
+            .taxAmount(order.getTaxAmount())
+            .totalAmount(order.getTotalAmount())
+            .currency(order.getCurrency())
+            .shippingMethod(order.getShippingMethod())
+            .shippingTrackingNumber(order.getShippingTrackingNumber())
+            .placedAt(order.getPlacedAt())
+            .paidAt(order.getPaidAt())
+            .fulfilledAt(order.getFulfilledAt())
+            .items(items)
+            .build();
     }
 }
