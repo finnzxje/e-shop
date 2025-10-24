@@ -1,8 +1,9 @@
 ### 
 
-@access_token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MTA2MTE3MywiZXhwIjoxNzYxNDIxMTczfQ.tBoWg0jVdEJHdJbLCsK1Q4mhKUlh8YF-TgQawujh4ZY
+@access_token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpYXQiOjE3NjEzMTcyODksImV4cCI6MTc2MTY3NzI4OX0.GmazUMZ6xJwq6O5iWx2Qr-zs7-P5xAhHOyQ3g6m6t4A
 @address_id = {{ADDRESS_ID}}
 @orderId = 0bc64dd0-b3a5-4e14-afee-fc230dffcd2c
+@productId = 508642bd-734f-4b62-b8ce-3b2685ef1ba7
 @variant_id = {{VARIANT_ID}}
 
 # @productId 9bc4bf7f-aae5-497c-a60d-0ad63be9dd14
