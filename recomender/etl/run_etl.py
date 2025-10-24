@@ -2,13 +2,17 @@ from config import Config
 from etl_pipeline import ETLPipeline
 import logging
 from datetime import datetime
+import os
 
+# Create necessary directories first
+os.makedirs('logs', exist_ok=True)
+os.makedirs('data/processed', exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(f'logs/etl_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'),
+        logging.FileHandler(f'logs/etl{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'),
         logging.StreamHandler()
     ]
 )
@@ -19,9 +23,7 @@ logger = logging.getLogger(__name__)
 def main():
     """Main ETL runner"""
     try:
-  
         logger.info("Starting ETL Pipeline")
-  
         
         # Initialize ETL
         etl = ETLPipeline(Config.DB_CONFIG)
@@ -42,7 +44,4 @@ def main():
 
 
 if __name__ == "__main__":
-    import os
-    os.makedirs('logs', exist_ok=True)
-    os.makedirs('data/processed', exist_ok=True)
     main()

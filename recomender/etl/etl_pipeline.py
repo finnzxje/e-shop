@@ -1,8 +1,8 @@
 """
-Flow: PostgreSQL -> ETL -> Feature Engineering -> CLIP Encoding -> LightFM
+ETL Pipeline cho Recommendation System
+Theo flow: PostgreSQL -> ETL -> Feature Engineering -> CLIP Encoding -> LightFM
 """
 
-import os
 import psycopg2
 import pandas as pd
 import numpy as np
@@ -11,7 +11,7 @@ import json
 from typing import Dict, List, Tuple
 
 class DatabaseConnection:
-    """Manage PostgreSQL connection"""
+    """database connection handler"""
     
     def __init__(self, config: Dict):
         self.config = config
@@ -19,7 +19,7 @@ class DatabaseConnection:
         self.cursor = None
     
     def connect(self):
-        """Connect to database"""
+        """Kết nối database"""
         try:
             self.conn = psycopg2.connect(
                 host=self.config['host'],
@@ -29,19 +29,19 @@ class DatabaseConnection:
                 password=self.config['password']
             )
             self.cursor = self.conn.cursor()
-            print("Connected to PostgreSQL successfully!")
+            print(" Connected to PostgreSQL successfully!")
             return self.conn
         except Exception as e:
             print(f"Error connecting to PostgreSQL: {e}")
             raise
     
     def close(self):
-        """Close connection"""
+        """Đóng kết nối"""
         if self.cursor:
             self.cursor.close()
         if self.conn:
             self.conn.close()
-        print("Database connection closed")
+        print(" Database connection closed")
 
 
 class ETLPipeline:
@@ -52,27 +52,27 @@ class ETLPipeline:
         self.conn = None
         
     def run(self, lookback_days: int = 90):
-        """Run the ETL pipeline"""
+        """run the full ETL pipeline"""
         try:
-            print("\nStarting ETL Pipeline...\n")
+            print("\n Starting ETL Pipeline...\n")
             
             # Connect to database
             self.conn = self.db.connect()
             
             # Step 1: Extract & Transform Interactions
-            print("\nStep 1: Building Interaction Matrix...")
+            print("\n Step 1: Building Interaction Matrix...")
             interactions_df = self.build_interaction_matrix(lookback_days)
-            print(f"Found {len(interactions_df)} user-item interactions")
+            print(f"   ✓ Found {len(interactions_df)} user-item interactions")
             
             # Step 2: Extract User Features
-            print("\nStep 2: Extracting User Features...")
+            print("\n Step 2: Extracting User Features...")
             user_features_df = self.extract_user_features()
-            print(f"Extracted features for {len(user_features_df)} users")
+            print(f"   ✓ Extracted features for {len(user_features_df)} users")
             
             # Step 3: Extract Item Features
             print("\nStep 3: Extracting Item Features...")
             item_features_df = self.extract_item_features()
-            print(f"Extracted features for {len(item_features_df)} items")
+            print(f"   ✓ Extracted features for {len(item_features_df)} items")
             
             # Step 4: Load to database (optional - save processed features)
             print("\nStep 4: Saving Features to Database...")
@@ -91,14 +91,14 @@ class ETLPipeline:
             }
             
         except Exception as e:
-            print(f"\nETL Pipeline failed: {e}")
+            print(f"\n❌ ETL Pipeline failed: {e}")
             raise
         finally:
             self.db.close()
     
     def build_interaction_matrix(self, lookback_days: int) -> pd.DataFrame:
         """
-        Step 1: Aggregate interactions into a matrix with weights
+        step 1: Build interaction matrix with weights
         """
         query = f"""
         WITH interaction_weights AS (
@@ -106,17 +106,33 @@ class ETLPipeline:
                 user_id,
                 variant_id,
                 interaction_type,
-                rating_value,
+                CASE 
+                    WHEN interaction_type = 'RATING' 
+                    THEN (metadata->>'rating_value')::float
+                    ELSE NULL
+                END as rating_value,
                 interaction_time,
                 CASE interaction_type
-                    WHEN 'purchase' THEN 5.0
-                    WHEN 'add_to_cart' THEN 3.0
-                    WHEN 'wishlist' THEN 2.5
-                    WHEN 'rating' THEN COALESCE(rating_value, 0)
-                    WHEN 'click' THEN 1.0
+
+                    WHEN 'PURCHASE' THEN 5.0
+                    WHEN 'ADD_TO_CART' THEN 3.0
+                    WHEN 'REMOVE_FROM_CART' THEN -1.0
+                    WHEN 'WISHLIST' THEN 2.5
+                    WHEN 'LIKE' THEN 2.0
+                    WHEN 'VIEW' THEN 1.0
+                    WHEN 'RATING' THEN 
+                        CASE 
+                            WHEN (metadata->>'rating_value')::float = 1 THEN -0.5
+                            WHEN (metadata->>'rating_value')::float = 2 THEN -0.25
+                            WHEN (metadata->>'rating_value')::float = 3 THEN 0.0
+                            WHEN (metadata->>'rating_value')::float = 4 THEN 0.25
+                            WHEN (metadata->>'rating_value')::float = 5 THEN 0.5
+                            ELSE 0.0
+                        END
+
                     ELSE 0.5
                 END as weight
-            FROM interactions
+            FROM product_interaction_events 
             WHERE interaction_time >= NOW() - INTERVAL '{lookback_days} days'
         ),
         aggregated AS (
@@ -124,7 +140,7 @@ class ETLPipeline:
                 user_id,
                 variant_id,
                 COUNT(*) as total_interactions,
-                SUM(CASE WHEN interaction_type = 'click' THEN 1 ELSE 0 END) as view_count,
+                SUM(CASE WHEN interaction_type = 'view' THEN 1 ELSE 0 END) as view_count,
                 SUM(CASE WHEN interaction_type = 'add_to_cart' THEN 1 ELSE 0 END) as cart_count,
                 SUM(CASE WHEN interaction_type = 'purchase' THEN 1 ELSE 0 END) as purchase_count,
                 SUM(CASE WHEN interaction_type = 'wishlist' THEN 1 ELSE 0 END) as wishlist_count,
@@ -167,7 +183,8 @@ class ETLPipeline:
     
     def extract_user_features(self) -> pd.DataFrame:
         """
-        Step 2: Extract user features
+        step2: Extract user features
+        
         """
         query = """
         WITH user_stats AS (
@@ -194,7 +211,7 @@ class ETLPipeline:
                 COUNT(DISTINCT pr.id) as total_reviews,
                 
                 -- Engagement metrics
-                COUNT(DISTINCT i.id) FILTER (WHERE i.interaction_type = 'click') as total_clicks,
+                COUNT(DISTINCT i.id) FILTER (WHERE i.interaction_type = 'view') as total_clicks,
                 COUNT(DISTINCT w.id) as wishlist_items,
                 
                 -- Gender preference based on purchases
@@ -223,12 +240,15 @@ class ETLPipeline:
                 ELSE 'loyal'
             END as customer_segment,
             
+
             CASE 
-                WHEN avg_order_value < 500000 THEN 'budget'
-                WHEN avg_order_value < 1000000 THEN 'mid'
-                WHEN avg_order_value < 2000000 THEN 'premium'
+
+                WHEN avg_order_value < 50 THEN 'budget'
+                WHEN avg_order_value < 120 THEN 'mid'
+                WHEN avg_order_value < 300 THEN 'premium'
                 ELSE 'luxury'
-            END as price_segment,
+           END as price_segment,
+
             
             CASE 
                 WHEN avg_rating_given >= 4 THEN 'positive'
@@ -264,7 +284,7 @@ class ETLPipeline:
     
     def extract_item_features(self) -> pd.DataFrame:
         """
-        Step 3: Extract item/variant features
+       step 3: Extract item features
         """
         query = """
         WITH variant_stats AS (
@@ -286,13 +306,15 @@ class ETLPipeline:
                 
                 -- Price features
                 pv.price,
+
                 CASE 
-                    WHEN pv.price < 500000 THEN 'budget'
-                    WHEN pv.price < 1000000 THEN 'mid'
-                    WHEN pv.price < 2000000 THEN 'premium'
+
+                    WHEN pv.price < 50 THEN 'budget'
+                    WHEN pv.price < 120 THEN 'mid'
+                    WHEN pv.price < 300 THEN 'premium'
                     ELSE 'luxury'
                 END as price_range,
-                
+
                 -- Popularity metrics
                 COUNT(DISTINCT oi.id) as total_sales,
                 COUNT(DISTINCT ci.id) as times_in_cart,
@@ -372,7 +394,7 @@ class ETLPipeline:
     
     def save_features_to_db(self, user_features_df: pd.DataFrame, item_features_df: pd.DataFrame):
         """
-        Step 4: Save features to database (optional)
+        Bước 4: Lưu features vào database (optional)
         """
         cursor = self.conn.cursor()
         
@@ -411,17 +433,17 @@ class ETLPipeline:
                         """, (row['variant_id'], col, str(row[col])))
             
             self.conn.commit()
-            print("Features saved to database")
+            print("   ✓ Features saved to database")
             
         except Exception as e:
             self.conn.rollback()
-            print(f"Warning: Could not save features to database: {e}")
+            print(f"   ⚠️  Warning: Could not save features to database: {e}")
     
     def export_for_training(self, interactions_df: pd.DataFrame, 
                            user_features_df: pd.DataFrame, 
                            item_features_df: pd.DataFrame):
         """
-        Step 5: Export data to files for model training
+        Bước 5: Export data ra files để train model
         """
         output_dir = "data/processed"
         import os
@@ -437,28 +459,30 @@ class ETLPipeline:
         user_features_df.to_pickle(f"{output_dir}/user_features.pkl")
         item_features_df.to_pickle(f"{output_dir}/item_features.pkl")
         
-        print(f"Data exported to {output_dir}/")
-        print(f"- interactions: {len(interactions_df)} rows")
-        print(f"- user_features: {len(user_features_df)} rows")
-        print(f"- item_features: {len(item_features_df)} rows")
-
+        print(f"   ✓ Data exported to {output_dir}/")
+        print(f"     - interactions: {len(interactions_df)} rows")
+        print(f"     - user_features: {len(user_features_df)} rows")
+        print(f"     - item_features: {len(item_features_df)} rows")
 
 if __name__ == "__main__":
-    """local test run"""
+    # Database configuration
     DB_CONFIG = {
-        'host': os.getenv('DB_HOST', 'localhost'),
-        'port': os.getenv('DB_PORT', 5432),
-        'database': os.getenv('DB_NAME', 'ecommerce_db'),
-        'user': os.getenv('DB_USER', 'postgres'),
-        'password': os.getenv('DB_PASSWORD', 'your_password')
+        'host': 'localhost',
+        'port': 5432,
+        'database': 'ecommerce_db',
+        'user': 'postgres',
+        'password': 'your_password'
     }
     
     # Run ETL Pipeline
     etl = ETLPipeline(DB_CONFIG)
-    result = etl.run(lookback_days=30)
-  
-
+    result = etl.run(lookback_days=90)
+    
+    # Print summary
+    print("\n" + "="*60)
     print("ETL SUMMARY")
+    print("="*60)
     print(f"Interactions: {len(result['interactions'])} records")
     print(f"Users: {len(result['user_features'])} users")
     print(f"Items: {len(result['item_features'])} items")
+    print("="*60)
