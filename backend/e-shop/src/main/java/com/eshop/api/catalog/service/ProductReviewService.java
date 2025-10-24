@@ -1,5 +1,7 @@
 package com.eshop.api.catalog.service;
 
+import com.eshop.api.analytics.enums.InteractionType;
+import com.eshop.api.analytics.service.ProductInteractionEventService;
 import com.eshop.api.catalog.dto.PageResponse;
 import com.eshop.api.catalog.model.Product;
 import com.eshop.api.catalog.model.ProductReview;
@@ -39,6 +41,7 @@ public class ProductReviewService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ProductInteractionEventService interactionEventService;
 
     @Transactional(readOnly = true)
     public PageResponse<ProductReviewResponse> listReviews(UUID productId, Pageable pageable) {
@@ -100,6 +103,9 @@ public class ProductReviewService {
             .build();
 
         ProductReview saved = productReviewRepository.save(review);
+        interactionEventService.recordInteraction(user, product, InteractionType.RATING, metadata ->
+            metadata.put("rating_value", saved.getRating())
+        );
         log.info("Created review {} for product {} by user {}", saved.getId(), product.getId(), user.getId());
         return toResponse(saved);
     }
@@ -144,4 +150,3 @@ public class ProductReviewService {
         return display;
     }
 }
-

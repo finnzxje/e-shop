@@ -473,3 +473,7 @@ Removes a single item from the cart and returns the updated cart.
 Clears the cart for the authenticated user.
 
 All cart endpoints require a valid JWT access token.
+
+## Administrative Endpoints
+
+Administrative catalog operations live under `/api/admin/catalog`. See [`admin-products-api.md`](./admin-products-api.md) for full documentation of the product management APIs.

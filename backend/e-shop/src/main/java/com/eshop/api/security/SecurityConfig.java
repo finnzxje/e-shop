@@ -42,7 +42,7 @@ public class SecurityConfig {
                 "/api/auth/refresh",
                 "/api/catalog/**",
                 "/swagger-ui/**",
-                "/v3/api-docs/**").permitAll().requestMatchers("/actuator/**").permitAll().anyRequest().authenticated()).addFilterBefore(
+                "/v3/api-docs/**").permitAll().requestMatchers("/actuator/**").permitAll().requestMatchers("/api/admin/**").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(
                 jwtFilter,
                 UsernamePasswordAuthenticationFilter.class);
 

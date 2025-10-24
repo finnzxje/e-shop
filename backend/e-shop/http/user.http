@@ -22,6 +22,23 @@ Content-Type: application/json
 }
 
 
+###
+
+POST http://localhost:8080/api/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "admin@gmail.com",
+  "password": "123456"
+}
+
+
+### 
+
+GET http://localhost:8080/api/auth/me HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MTIzNDE4NSwiZXhwIjoxNzYxNTk0MTg1fQ.ZiRasw99RyoUJrU3VRFYCRrzDr9J0B0EbPFAoX-4A2Y
+
+
 ### 
 
 GET http://localhost:8080/api/auth/test-token HTTP/1.1

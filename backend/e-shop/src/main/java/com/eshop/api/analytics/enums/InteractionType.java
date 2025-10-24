@@ -7,5 +7,6 @@ public enum InteractionType {
     PURCHASE,
     WISHLIST,
     LIKE,
-    RECOMMENDATION_CLICK
+    RECOMMENDATION_CLICK,
+    RATING
 }
