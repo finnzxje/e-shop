@@ -13,9 +13,10 @@ Thumbs.db
 *.iws
 *.iml
 *.ipr
-.env 
+*.env
 .vscode/
 venv/
+
 .apt_generated
 .classpath
 .factorypath

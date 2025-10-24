@@ -21,6 +21,7 @@ class Config:
     
     # Interaction weights
     INTERACTION_WEIGHTS = {
+
         'PURCHASE': 5.0,
         'ADD_TO_CART': 3.0,
         'REMOVE_FROM_CART': -1.0,
@@ -42,8 +43,9 @@ class Config:
         'mid': (50, 120),
         'premium': (120, 300),
         'luxury': (300, float('inf'))
-    
+
     }
+
     
     # Customer segments (by order count)
     CUSTOMER_SEGMENTS = {

@@ -17,11 +17,11 @@ schedule==1.2.0
 
 # Optional: For future steps
 
-# CLIP Embedding (khi cần bước tiếp theo)
-# torch==2.1.2
-# torchvision==0.16.2
-# pillow==10.1.0
-# clip-by-openai==1.0
+#CLIP Embedding (khi cần bước tiếp theo)
+torch==2.1.2
+torchvision==0.16.2
+pillow==10.1.0
+clip-by-openai==1.0
 
 # LightFM Training
 # lightfm==1.17
