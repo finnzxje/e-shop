@@ -1,0 +1,53 @@
+### 
+
+@access_token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MTE0NTgzNCwiZXhwIjoxNzYxNTA1ODM0fQ.jOVbVqzcsk0RGclaRvYQWVNy7OU1exMMOfqTTCYObm8
+@cart_item_id = c79573f9-6dd3-4cb6-988b-1610ebb4390e
+@variant_id = 5604e959-e3d3-479e-8c33-ccff82efd1ff
+
+# # @variant_id = 29ee30ed-9624-48ce-8626-e9fbfdf8c1e3
+
+
+### 
+
+GET http://localhost:8080/api/cart HTTP/1.1
+Authorization: Bearer {{access_token}}
+Accept: application/json
+
+
+### Add item to cart
+
+POST http://localhost:8080/api/cart/items HTTP/1.1
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "quantity": 2,
+  "variantId": "{{variant_id}}"
+}
+
+
+### Update cart item quantity
+
+PUT http://localhost:8080/api/cart/items/{{cart_item_id}} HTTP/1.1
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "quantity": 2
+}
+
+
+### Remove cart item
+
+DELETE http://localhost:8080/api/cart/items/{{cart_item_id}} HTTP/1.1
+Authorization: Bearer {{access_token}}
+Accept: application/json
+
+
+### Clear cart
+
+DELETE http://localhost:8080/api/cart HTTP/1.1
+Authorization: Bearer {{access_token}}
+Accept: application/json

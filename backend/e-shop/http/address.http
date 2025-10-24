@@ -1,0 +1,62 @@
+### 
+
+@accessToken = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MDQ2NTQ0OCwiZXhwIjoxNzYwODI1NDQ4fQ.lVVClx_4DwV_TfwTQvT_SJJu_GgZR0dCuF3pGyDB1Ag
+@addressId = 18a6d12b-2af5-4236-ae6d-8811ebc71af4
+
+
+### List addresses for current user
+
+GET http://localhost:8080/api/account/addresses HTTP/1.1
+Authorization: Bearer {{accessToken}}
+
+
+### Get a specific address
+
+GET http://localhost:8080/api/account/addresses/{{addressId}} HTTP/1.1
+Authorization: Bearer {{accessToken}}
+
+
+### Create a new address
+
+POST http://localhost:8080/api/account/addresses HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "city": "San Francisco",
+  "countryCode": "US",
+  "isDefault": true,
+  "label": "Home",
+  "line1": "123 Innovation Way",
+  "line2": "Suite 42",
+  "phone": "+1 555 123 4567",
+  "postalCode": "94107",
+  "recipientName": "Ada Lovelace",
+  "stateProvince": "CA"
+}
+
+
+### Update an address
+
+PUT http://localhost:8080/api/account/addresses/{{addressId}} HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "city": "San Francisco",
+  "countryCode": "US",
+  "isDefault": false,
+  "label": "Office",
+  "line1": "500 Market Street",
+  "line2": null,
+  "phone": "+1 555 987 6543",
+  "postalCode": "94105",
+  "recipientName": "Ada Lovelace",
+  "stateProvince": "CA"
+}
+
+
+### Delete an address
+
+DELETE http://localhost:8080/api/account/addresses/{{addressId}} HTTP/1.1
+Authorization: Bearer {{accessToken}}
