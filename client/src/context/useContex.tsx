@@ -7,7 +7,6 @@ import {
 } from "react";
 import api from "../config/axios";
 import type { Cart } from "../config/interface";
-import toast from "react-hot-toast";
 // --- TÍCH HỢP (1): IMPORT CÁC HÀM SESSION ---
 import { linkSessionToUser } from "../services/trackingService";
 import { clearSessionId } from "../utils/sessionManager";
@@ -46,7 +45,6 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
     clearSessionId();
 
     // <-- Đảm bảo session ID được xóa khi đăng xuất
-    toast.success("Logout success!");
   };
 
   //Fetch User Auth Status

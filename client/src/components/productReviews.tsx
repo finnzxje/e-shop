@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
-import api from "../config/axios"; // Giả sử baseURL là /api/catalog/products/
+import api from "../config/axios";
 import { Star } from "lucide-react";
 import { useAppProvider } from "../context/useContex";
 import toast from "react-hot-toast";
 
-// --- INTERFACES (Đã khôi phục đầy đủ) ---
+// --- INTERFACES ---
 interface Review {
   id: string;
   productId: string;
@@ -34,7 +34,7 @@ interface CreateReviewDTO {
   orderItemId?: string;
 }
 
-// --- StarRating COMPONENT  ---
+// --- StarRating COMPONENT ---
 interface StarRatingProps {
   rating: number;
   onRatingChange?: (newRating: number) => void;
@@ -74,7 +74,7 @@ const StarRating: React.FC<StarRatingProps> = ({
   );
 };
 
-// --- ReviewCard COMPONENT  ---
+// --- ReviewCard COMPONENT ---
 interface ReviewCardProps {
   review: Review;
 }
@@ -113,15 +113,17 @@ const ReviewCard: React.FC<ReviewCardProps> = ({ review }) => {
   );
 };
 
-// --- ReviewForm COMPONENT  ---
+// --- ReviewForm COMPONENT ---
 interface ReviewFormProps {
   productId: string;
   onReviewSubmitted: (newReview: Review) => void;
+  orderItemId: string;
 }
 
 const ReviewForm: React.FC<ReviewFormProps> = ({
   productId,
   onReviewSubmitted,
+  orderItemId,
 }) => {
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -135,10 +137,15 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
       setError("Please select a star rating.");
       return;
     }
+    // Không cần kiểm tra orderItemId ở đây nữa vì nó là bắt buộc
     setIsSubmitting(true);
     setError(null);
 
-    const dto: CreateReviewDTO = { rating, reviewText: reviewText.trim() };
+    const dto: CreateReviewDTO = {
+      rating,
+      reviewText: reviewText.trim(),
+      orderItemId,
+    };
 
     try {
       const response = await api.post<Review>(
@@ -215,7 +222,7 @@ const ReviewForm: React.FC<ReviewFormProps> = ({
   );
 };
 
-// --- MAIN COMPONENT  ---
+// --- MAIN COMPONENT ---
 interface ProductReviewsProps {
   productId: string;
 }
@@ -224,30 +231,26 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({
   productId,
 }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
-  // === THÊM STATE PHÂN TRANG ===
+  const { user } = useAppProvider();
   const [page, setPage] = useState(0);
   const [hasNextPage, setHasNextPage] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orderItemId, setOrderItemId] = useState<string | undefined>(undefined);
 
-  // === CẬP NHẬT HÀM FETCHREVIEWS ===
+  // === 1. HÀM CHỈ ĐỂ FETCH REVIEWS (PUBLIC) ===
   const fetchReviews = useCallback(
     async (pageNum: number, clearExisting: boolean) => {
-      setIsLoading(true);
-      setError(null);
+      setIsLoadingReviews(true);
+      setError(null); // Chỉ reset lỗi của review
       try {
         const response = await api.get<PaginatedReviews>(
           `/api/catalog/products/${productId}/reviews`,
           {
-            params: {
-              page: pageNum,
-              size: 5, // Tải 5 review mỗi lần
-              sort: "createdAt,desc",
-            },
+            params: { page: pageNum, size: 5, sort: "createdAt,desc" },
           }
         );
         const data = response.data;
-        // Nối vào danh sách cũ hoặc thay thế
         setReviews((prev) =>
           clearExisting ? data.content : [...prev, ...data.content]
         );
@@ -256,34 +259,74 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({
       } catch (err) {
         setError("Could not load reviews. Please try again.");
       } finally {
-        setIsLoading(false);
+        setIsLoadingReviews(false);
       }
     },
-    [productId] // Phụ thuộc vào productId
+    [productId] // Chỉ phụ thuộc productId
   );
 
-  // === CẬP NHẬT USEEFFECT ĐỂ TẢI TRANG ĐẦU TIÊN ===
+  // === 2. USEEFFECT ĐỂ TẢI REVIEWS ===
   useEffect(() => {
     if (productId) {
-      fetchReviews(0, true); // Tải trang 0 và xóa review cũ
+      fetchReviews(0, true);
     }
-  }, [productId, fetchReviews]); // Thêm fetchReviews vào dependency array
+  }, [productId, fetchReviews]);
 
-  // === THÊM HÀM LOAD MORE ===
+  // === 3. USEEFFECT RIÊNG ĐỂ KIỂM TRA QUYỀN REVIEW (PRIVATE) ===
+  useEffect(() => {
+    const fetchPurchaseData = async () => {
+      if (!user || !productId) {
+        setOrderItemId(undefined);
+        return;
+      }
+
+      try {
+        const response = await api.get(
+          `/api/orders/purchased-items/${productId}/latest`,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }
+        );
+        setOrderItemId(response.data.orderItemId);
+        console.log(response.data.orderItemId);
+      } catch (err) {
+        console.warn(
+          "User has not purchased this item or session expired.",
+          err
+        );
+        setOrderItemId(undefined);
+      }
+    };
+
+    fetchPurchaseData();
+  }, [productId, user]); // Chạy lại khi user hoặc product thay đổi
+
+  // === 4. HÀM LOAD MORE ===
   const handleLoadMore = () => {
-    if (!isLoading && hasNextPage) {
+    if (!isLoadingReviews && hasNextPage) {
       fetchReviews(page + 1, false); // Tải trang tiếp theo, không xóa review cũ
     }
   };
 
+  // === 5. HÀM THÊM REVIEW VÀO ĐẦU DANH SÁCH ===
   const addReviewToList = (newReview: Review) => {
     setReviews((prev) => [newReview, ...prev]);
+    setOrderItemId(undefined);
   };
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden divide-y divide-gray-200">
-      {/* Phần Form */}
-      <ReviewForm productId={productId} onReviewSubmitted={addReviewToList} />
+      {orderItemId ? (
+        <ReviewForm
+          productId={productId}
+          onReviewSubmitted={addReviewToList}
+          orderItemId={orderItemId}
+        />
+      ) : (
+        <div className="p-6 text-sm text-gray-500">
+          You must be logged in and have purchased this item to leave a review.
+        </div>
+      )}
 
       {/* Phần Danh sách */}
       <div className="p-6">
@@ -297,14 +340,13 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({
           </div>
         )}
 
-        {/* Chỉ hiển thị loading spinner cho LẦN TẢI ĐẦU TIÊN */}
-        {isLoading && page === 0 && (
+        {isLoadingReviews && page === 0 && (
           <div className="text-center py-6 text-gray-500">
             Loading reviews...
           </div>
         )}
 
-        {!isLoading && reviews.length === 0 && !error && (
+        {!isLoadingReviews && reviews.length === 0 && !error && (
           <div className="text-center py-6 text-gray-500">
             There are no reviews for this product yet.
           </div>
@@ -316,15 +358,15 @@ export const ProductReviews: React.FC<ProductReviewsProps> = ({
           ))}
         </div>
 
-        {/* === THÊM NÚT LOAD MORE === */}
+        {/* === NÚT LOAD MORE === */}
         {hasNextPage && (
           <div className="mt-6 text-center">
             <button
               onClick={handleLoadMore}
-              disabled={isLoading}
+              disabled={isLoadingReviews}
               className="w-full max-w-xs bg-white text-gray-800 border border-gray-300 py-2.5 rounded-md font-semibold text-sm hover:bg-gray-50 transition-all disabled:bg-gray-200 disabled:text-gray-400 disabled:border-gray-200"
             >
-              {isLoading ? "Loading..." : "Load More Reviews"}
+              {isLoadingReviews ? "Loading..." : "Load More Reviews"}
             </button>
           </div>
         )}
