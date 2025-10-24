@@ -21,21 +21,29 @@ class Config:
     
     # Interaction weights
     INTERACTION_WEIGHTS = {
-        'purchase': 5.0,
-        'add_to_cart': 3.0,
-        'wishlist': 2.5,
-        'rating': 1.0, 
-        'click': 1.0
+        'PURCHASE': 5.0,
+        'ADD_TO_CART': 3.0,
+        'REMOVE_FROM_CART': -1.0,
+        'WISHLIST': 2.5,
+        'LIKE': 2.0,
+        'VIEW': 1.0,
+        'RATING': {
+            1: -0.5,  # Very negative
+            2: -0.25, # Negative
+            3: 0.0,   # Neutral
+            4: 0.25,  # Positive
+            5: 0.5    # Very positive
+        }
     }
     
-    # Price segments (USD )
+        # Price segments (USD)
     PRICE_SEGMENTS = {
-        'budget': (0, 69),
-        'mid': (69, 99),
-        'premium': (99, 159),
-        'luxury': (159, float('inf'))
-    }
+        'budget': (0, 50),
+        'mid': (50, 120),
+        'premium': (120, 300),
+        'luxury': (300, float('inf'))
     
+    }
     # Customer segments (by order count)
     CUSTOMER_SEGMENTS = {
         'new': (0, 0),

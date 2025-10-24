@@ -22,9 +22,9 @@ def test_connection():
         # Check required tables
         print("\nChecking required table...")
         required_tables = [
-            'interactions', 'users', 'products', 'product_variants',
+            'product_interaction_events', 'users', 'products', 'product_variants',
             'orders', 'order_items', 'categories', 'colors',
-            'product_reviews', 'wishlists', 'cart_items', 'product_views'
+            'product_reviews', 'wishlist_items', 'cart_items', 'product_views'
         ]
         
         for table in required_tables:
