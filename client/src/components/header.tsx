@@ -3,9 +3,14 @@ import { User, ShoppingBag, Menu, X, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppProvider } from "../context/useContex";
 import profile from "../assets/profile_icon.png";
+import toast from "react-hot-toast";
 export const Header = () => {
   const [open, setOpen] = useState(false);
   const { user, cart, handleLogout } = useAppProvider();
+  const handleLogouts = () => {
+    handleLogout();
+    toast.success("Logout success!");
+  };
   return (
     <header className="flex items-center justify-between px-6 md:px-16 lg:px-24 xl:px-32 py-4 border-b border-gray-200 bg-white shadow-sm relative">
       {/* Logo */}
@@ -68,7 +73,7 @@ export const Header = () => {
                 My Orders
               </Link>
               <li
-                onClick={handleLogout}
+                onClick={handleLogouts}
                 className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer"
               >
                 Logout
