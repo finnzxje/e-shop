@@ -37,9 +37,9 @@ class DataValidator:
         # Summary
         print("\n" + "="*60)
         if all(results.values()):
-            print("✅ All validations passed!")
+            print("All validations passed!")
         else:
-            print("⚠️  Some validations failed!")
+            print(" Some validations failed!")
         print("="*60)
         
         return results
