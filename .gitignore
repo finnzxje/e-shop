@@ -15,6 +15,7 @@ Thumbs.db
 *.ipr
 *.env
 .vscode/
+venv/
 
 .apt_generated
 .classpath
