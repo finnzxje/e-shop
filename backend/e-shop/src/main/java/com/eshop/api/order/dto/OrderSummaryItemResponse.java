@@ -13,6 +13,7 @@ public class OrderSummaryItemResponse {
     UUID productId;
     String productName;
     UUID variantId;
+    String slug;
     Integer quantity;
     BigDecimal unitPrice;
     BigDecimal totalAmount;

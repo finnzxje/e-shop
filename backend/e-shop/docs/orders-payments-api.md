@@ -247,6 +247,7 @@ Content-Type: application/json
           "productId": "d53c16a4-beb5-4a97-b992-ef7fb8cfe5b8",
           "productName": "Everyday Crewneck",
           "variantId": "4a23ab92-8c62-4e80-81d8-6a06fb4048a4",
+          "slug": "womens-wind-shield-windbreaker-jacket",
           "quantity": 2,
           "unitPrice": 62.49,
           "totalAmount": 124.98,

@@ -137,6 +137,7 @@ public class OrderHistoryService {
                     .productName(product != null ? product.getName() : null)
                     .variantId(variant != null ? variant.getId() : null)
                     .quantity(item.getQuantity())
+                    .slug(product != null ? product.getSlug() : null)
                     .unitPrice(item.getUnitPrice())
                     .totalAmount(item.getTotalAmount())
                     .currency(item.getCurrency())
