@@ -1,98 +1,158 @@
 import { useEffect, useState, useCallback } from "react";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, X } from "lucide-react"; // ✨ THÊM icon X
 import { useAppProvider } from "../context/useContex";
 import api from "../config/axios";
-import type { productDetail, Variant } from "../config/interface";
 import { useNavigate } from "react-router-dom";
-export interface PurchasedItem {
-  orderId: string;
-  orderNumber: string;
-  orderStatus: "PROCESSING" | "COMPLETED" | "CANCELLED" | "FULFILLED" | string;
-  paymentStatus: "CAPTURED" | "PENDING" | "FAILED" | string;
-  orderItemId: string;
+
+// --- (Tất cả interface giữ nguyên như cũ) ---
+interface Color {
+  id: string;
+  name: string;
+  hex: string;
+}
+export interface Variant {
+  id: string;
+  sku: string;
+  stock: number;
+  color: Color;
+  size: string;
+}
+interface ProductImage {
+  id: string;
+  imageUrl: string;
+  color: Color;
+}
+export interface productDetail {
+  id: string;
+  name: string;
   slug: string;
+  variants: Variant[];
+  images: ProductImage[];
+}
+type OrderStatus =
+  | "PENDING"
+  | "AWAITING_PAYMENT"
+  | "PROCESSING"
+  | "FULFILLED"
+  | "CANCELLED"
+  | string;
+type PaymentStatus =
+  | "PENDING"
+  | "AUTHORIZED"
+  | "CAPTURED"
+  | "FAILED"
+  | "VOIDED"
+  | string;
+interface OrderItem {
+  orderItemId: string;
   productId: string;
   productName: string;
   variantId: string;
+  slug: string;
   quantity: number;
   unitPrice: number;
   totalAmount: number;
   currency: string;
-  purchasedAt: string;
+}
+interface Order {
+  orderId: string;
+  orderNumber: string;
+  orderStatus: OrderStatus;
+  paymentStatus: PaymentStatus;
+  placedAt: string;
+  items: OrderItem[];
+  subtotalAmount: number;
+  discountAmount: number;
+  shippingAmount: number;
+  totalAmount: number;
+}
+interface PaginatedOrders {
+  content: Order[];
+  totalPages: number;
+}
+interface EnrichedOrderItem extends OrderItem {
   images: string;
   variant: Variant[];
 }
+interface EnrichedOrder extends Omit<Order, "items"> {
+  items: EnrichedOrderItem[];
+}
+
+// --- COMPONENT CHÍNH ---
 
 const PurchasedItems = () => {
-  const [items, setItems] = useState<PurchasedItem[]>([]);
+  const [orders, setOrders] = useState<EnrichedOrder[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const { user } = useAppProvider();
-  const navigate = useNavigate(); // --- BẮT ĐẦU SỬA LỖI 1: useEffect ---
+  const navigate = useNavigate();
 
+  // ✨ SỬA: Thêm state mới cho modal
+  const [orderToConfirm, setOrderToConfirm] = useState<EnrichedOrder | null>(
+    null
+  );
+
+  // (useEffect fetch dữ liệu không thay đổi)
   useEffect(() => {
-    // (Hàm fetchImagesForProducts không thay đổi)
-    const fetchImagesForProducts = async (productsData: PurchasedItem[]) => {
-      return await Promise.all(
-        productsData.map(async (p: PurchasedItem) => {
-          try {
-            const res = await api.get<productDetail>(
-              `/api/catalog/products/${p.slug}`
-            );
-
-            const variantProduct = res.data.variants.find(
-              (r) => r.id === p.variantId
-            );
-            const images = res.data.images.find(
-              (i) => i.color.id === variantProduct?.color.id
-            );
-            return {
-              ...p,
-
-              variant: variantProduct ? [variantProduct] : [],
-              images: images?.imageUrl,
-            };
-          } catch (err) {
-            console.error(`Failed to fetch images for ${p.slug}`, err);
-            return null;
-          }
-        })
-      );
+    const fetchItemDetails = async (
+      item: OrderItem
+    ): Promise<EnrichedOrderItem> => {
+      try {
+        const res = await api.get<productDetail>(
+          `/api/catalog/products/${item.slug}`
+        );
+        const variantProduct = res.data.variants.find(
+          (r) => r.id === item.variantId
+        );
+        const images = res.data.images.find(
+          (i) => i.color.id === variantProduct?.color.id
+        );
+        return {
+          ...item,
+          variant: variantProduct ? [variantProduct] : [],
+          images: images?.imageUrl || "",
+        };
+      } catch (err) {
+        console.error(`Failed to fetch images for ${item.slug}`, err);
+        return { ...item, images: "", variant: [] };
+      }
     };
-
-    const fetchPurchasedItems = async () => {
-      // SỬA Ở ĐÂY: Dùng user?.token
+    const fetchPurchasedOrders = async () => {
       if (!user?.token) {
         navigate("/");
         return;
       }
       try {
         setLoading(true);
-        const res = await api.get(
-          `/api/orders/purchased-items?page=${page}&size=10`,
-          {
-            // Khi đã vượt qua (if) ở trên, user.token ở đây chắc chắn tồn tại
-            headers: { Authorization: `Bearer ${user.token}` },
-          }
-        );
-        const order = await fetchImagesForProducts(res.data.content);
-
-        setItems(order.filter((item) => item !== null) as PurchasedItem[]);
+        const res = await api.get<PaginatedOrders>(`/api/orders`, {
+          params: { page, size: 10 },
+          headers: { Authorization: `Bearer ${user.token}` },
+        });
+        const fetchedOrders: Order[] = res.data.content;
         setTotalPages(res.data.totalPages);
+        const enrichedOrders = await Promise.all(
+          fetchedOrders.map(async (order) => {
+            const enrichedItems = await Promise.all(
+              order.items.map((item) => fetchItemDetails(item))
+            );
+            return { ...order, items: enrichedItems };
+          })
+        );
+        setOrders(enrichedOrders);
       } catch (error) {
         console.error("Error fetching purchased items:", error);
       } finally {
         setLoading(false);
       }
     };
+    fetchPurchasedOrders();
+  }, [page, user?.token, navigate]);
 
-    fetchPurchasedItems(); // SỬA Ở ĐÂY: Dùng user?.token trong dependency array // Và thêm 'navigate' vì nó được sử dụng bên trong
-  }, [page, user?.token, navigate]); // --- KẾT THÚC SỬA LỖI 1 --- // --- BẮT ĐẦU SỬA LỖI 2: useCallback ---
+  // ✨ SỬA: Cập nhật hàm handleConfirm
   const handleConfirm = useCallback(
     async (orderId: string) => {
-      // SỬA Ở ĐÂY: Dùng user?.token
       if (!user?.token) {
         navigate("/");
         return;
@@ -102,89 +162,166 @@ const PurchasedItems = () => {
         const res = await api.post(
           `/api/orders/${orderId}/confirm-fulfillment`,
           {},
-          {
-            // Tương tự, user.token ở đây an toàn vì đã check ở trên
-            headers: { Authorization: `Bearer ${user.token}` },
-          }
+          { headers: { Authorization: `Bearer ${user.token}` } }
         );
-
         const updatedOrderData = res.data;
 
-        setItems((prevItems) =>
-          prevItems.map((item) =>
-            item.orderId === updatedOrderData.orderId
-              ? { ...item, orderStatus: updatedOrderData.orderStatus }
-              : item
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order.orderId === updatedOrderData.orderId
+              ? { ...order, orderStatus: updatedOrderData.orderStatus }
+              : order
           )
         );
+
+        // Đóng modal SAU KHI thành công
+        setOrderToConfirm(null);
       } catch (error) {
         console.error("Failed to confirm fulfillment:", error);
+        // (Có thể thêm toast báo lỗi ở đây)
       } finally {
+        // Luôn tắt spinner
         setConfirmingId(null);
       }
-    }, // SỬA Ở ĐÂY: Dùng user?.token và thêm 'navigate'
-    [user?.token, navigate]
-  ); // --- KẾT THÚC SỬA LỖI 2 --- // --- PHẦN GIAO DIỆN (Render) --- // (Giữ nguyên toàn bộ phần return JSX của bạn)
+    },
+    [user?.token, navigate] // Thêm navigate vào dependency array
+  );
+
+  // (Các hàm helper getOrderStatusDetails, getPaymentStatusDetails không thay đổi)
+  const getOrderStatusDetails = (status: OrderStatus) => {
+    switch (status) {
+      case "PROCESSING":
+        return {
+          text: "Shipping",
+          className: "bg-blue-100 text-blue-800",
+        };
+      case "FULFILLED":
+        return {
+          text: "Delivered",
+          className: "bg-green-100 text-green-800",
+        };
+      case "CANCELLED":
+        return {
+          text: "Canceled",
+          className: "bg-red-100 text-red-800",
+        };
+      case "PENDING":
+      case "AWAITING_PAYMENT":
+        return {
+          text: "Pending",
+          className: "bg-gray-100 text-gray-800",
+        };
+      default:
+        return { text: status, className: "bg-gray-100 text-gray-800" };
+    }
+  };
+  const getPaymentStatusDetails = (status: PaymentStatus) => {
+    switch (status) {
+      case "CAPTURED":
+        return { text: "Paid", className: "bg-green-100 text-green-800" };
+      case "FAILED":
+        return {
+          text: "Payment Failed",
+          className: "bg-red-100 text-red-800",
+        };
+      case "PENDING":
+        return {
+          text: "Payment Pending",
+          className: "bg-yellow-100 text-yellow-800",
+        };
+      case "AUTHORIZED":
+        return {
+          text: "Authorized",
+          className: "bg-blue-100 text-blue-800",
+        };
+      case "VOIDED":
+        return {
+          text: "Voided",
+          className: "bg-gray-100 text-gray-800",
+        };
+      default:
+        return { text: status, className: "bg-gray-100 text-gray-800" };
+    }
+  };
+
+  // --- PHẦN GIAO DIỆN (Render) ---
   return (
-    <div className="min-h-screen bg-gray-50 px-6 py-10">
+    <div className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6">
-          🛒 Purchased Items
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">🛒 My Orders</h1>
 
         {loading ? (
+          // (Loading spinner)
           <div className="flex justify-center py-10">
             <Loader2 className="animate-spin text-gray-500 w-8 h-8" />
           </div>
-        ) : items.length === 0 ? (
+        ) : orders.length === 0 ? (
+          // (No orders)
           <p className="text-gray-500 text-center py-10">
-            No purchased items found.
+            No purchased orders found.
           </p>
         ) : (
-          <div className="bg-white shadow rounded-2xl overflow-hidden">
-            <table className="w-full border-collapse">
-              <thead className="bg-gray-100 text-gray-700">
-                <tr>
-                  <th className="text-left px-6 py-3 font-medium">Product</th> 
-                  <th className="text-left px-6 py-3 font-medium">Quantity</th> 
-                  <th className="text-left px-6 py-3 font-medium">Price</th>  
-                  <th className="text-left px-6 py-3 font-medium">Total</th>  
-                  <th className="text-left px-6 py-3 font-medium">
-                    Order Status
-                  </th>
-                  <th className="text-left px-6 py-3 font-medium">Payment</th> 
-                  <th className="text-left px-6 py-3 font-medium">
-                    Purchased At
-                  </th>
-                  <th className="text-left px-6 py-3 font-medium">Action</th>  
-                </tr>
-              </thead>
+          <div className="space-y-6">
+            {orders.map((order) => {
+              const orderStatusDetails = getOrderStatusDetails(
+                order.orderStatus
+              );
+              const paymentStatusDetails = getPaymentStatusDetails(
+                order.paymentStatus
+              );
+              // ✨ SỬA: Đổi tên biến để rõ ràng hơn
+              const isProcessingApi = confirmingId === order.orderId;
 
-              <tbody>
-                {items.map((item) => {
-                  const variant = item.variant?.[0];
-                  const isConfirming = confirmingId === item.orderId;
+              return (
+                <article
+                  key={order.orderId}
+                  className="bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200"
+                >
+                  {/* (Header không thay đổi) */}
+                  <header className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                    <div>
+                      <h2 className="font-semibold text-lg text-gray-900">
+                        Order #{order.orderNumber}
+                      </h2>
+                      <p className="text-sm text-gray-500">
+                        Placed on:{" "}
+                        {new Date(order.placedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${orderStatusDetails.className}`}
+                      >
+                        {orderStatusDetails.text}
+                      </span>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${paymentStatusDetails.className}`}
+                      >
+                        {paymentStatusDetails.text}
+                      </span>
+                    </div>
+                  </header>
 
-                  return (
-                    <tr
-                      key={item.orderItemId}
-                      className="border-b hover:bg-gray-50 transition"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
+                  {/* (Danh sách sản phẩm không thay đổi) */}
+                  <div className="divide-y divide-gray-100">
+                    {order.items.map((item) => {
+                      const variant = item.variant?.[0];
+                      return (
+                        <div
+                          key={item.orderItemId}
+                          className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-4"
+                        >
                           <img
                             src={item.images || "/placeholder.svg"}
                             alt={item.productName}
-                            className="w-20 h-20 rounded-lg object-cover border"
+                            className="w-24 h-24 rounded-lg object-cover border flex-shrink-0"
                           />
-
-                          <div>
-                            <div className="font-semibold text-gray-800">
-                              {item.productName} 
-                            </div>
-
+                          <div className="flex-grow">
+                            <h3 className="font-semibold text-gray-800">
+                              {item.productName}
+                            </h3>
                             {variant && (
-                              <div className="text-sm text-gray-500 flex items-center gap-2">
+                              <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
                                 <span
                                   className="inline-block w-4 h-4 rounded-full border border-gray-300"
                                   style={{
@@ -192,95 +329,77 @@ const PurchasedItems = () => {
                                       variant.color?.hex ?? undefined,
                                   }}
                                 ></span>
-                                <span> {variant.size}</span>  
+                                <span>
+                                  {variant.color?.name} / {variant.size}
+                                </span>
                               </div>
                             )}
                           </div>
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-4 text-gray-700">
-                        {item.quantity}
-                      </td>
-
-                      <td className="px-6 py-4 text-gray-700">
-                        ${item.unitPrice.toFixed(2)}
-                      </td>
-
-                      <td className="px-6 py-4 font-medium text-gray-900">
-                        ${item.totalAmount.toFixed(2)}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            item.orderStatus === "PROCESSING"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : item.orderStatus === "COMPLETED" ||
-                                item.orderStatus === "FULFILLED"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {item.orderStatus}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            item.paymentStatus === "CAPTURED"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {item.paymentStatus}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4 text-gray-500 text-sm">
-                        {new Date(item.purchasedAt).toLocaleString()}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        {item.orderStatus === "COMPLETED" && (
-                          <button
-                            onClick={() => handleConfirm(item.orderId)}
-                            disabled={isConfirming}
-                            className="flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-                          >
-                            {isConfirming ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              "Confirm Delivery"
-                            )}
-                          </button>
-                        )}
-
-                        {item.orderStatus === "FULFILLED" && (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle2 className="w-4 h-4" />
-                            <span className="text-xs font-semibold">
-                              Confirmed
-                            </span>
+                          <div className="flex-shrink-0 text-sm text-gray-700 sm:text-right">
+                            <p>${item.unitPrice.toFixed(2)}</p>
+                            <p className="text-gray-500">
+                              Qty: {item.quantity}
+                            </p>
+                            <p className="font-medium text-gray-900 mt-1">
+                              ${item.totalAmount.toFixed(2)}
+                            </p>
                           </div>
-                        )}
+                        </div>
+                      );
+                    })}
+                  </div>
 
-                        {(item.orderStatus === "PROCESSING" ||
-                          item.orderStatus === "CANCELLED") && (
-                          <span className="text-gray-400">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  {/* === Footer của Card Đơn Hàng (ĐÃ SỬA) === */}
+                  <footer className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">
+                        Total Amount:
+                      </span>
+                      <span className="text-xl font-bold text-gray-900 ml-2">
+                        ${order.totalAmount.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="w-36 text-right">
+                      {order.orderStatus === "PROCESSING" && (
+                        <button
+                          // ✨ SỬA: onClick mở modal
+                          onClick={() => setOrderToConfirm(order)}
+                          // Vẫn disable nếu API đang chạy
+                          disabled={isProcessingApi}
+                          className="flex items-center justify-center w-full px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+                        >
+                          {isProcessingApi ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            "Confirm Delivery"
+                          )}
+                        </button>
+                      )}
+                      {order.orderStatus === "FULFILLED" && (
+                        <div className="flex items-center justify-end gap-1 text-green-600">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span className="text-xs font-semibold">
+                            Delivered
+                          </span>
+                        </div>
+                      )}
+                      {(order.orderStatus === "CANCELLED" ||
+                        order.orderStatus === "PENDING" ||
+                        order.orderStatus === "AWAITING_PAYMENT") && (
+                        <span className="text-gray-400 text-sm">—</span>
+                      )}
+                    </div>
+                  </footer>
+                </article>
+              );
+            })}
           </div>
         )}
 
+        {/* (Phần phân trang không thay đổi) */}
         {totalPages > 1 && (
-          <div className="flex justify-center mt-6 space-x-2">
+          <div className="flex justify-center mt-8 space-x-2">
+            {/* ... Nút Prev/Next ... */}
             <button
               onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
               disabled={page === 0}
@@ -292,11 +411,9 @@ const PurchasedItems = () => {
             >
               Prev
             </button>
-
             <span className="px-3 py-2 text-gray-700">
               Page {page + 1} of {totalPages}
             </span>
-
             <button
               onClick={() => setPage((prev) => prev + 1)}
               disabled={page + 1 >= totalPages}
@@ -311,6 +428,66 @@ const PurchasedItems = () => {
           </div>
         )}
       </div>
+
+      {/* ✨ SỬA: Thêm JSX của MODAL XÁC NHẬN */}
+      {orderToConfirm && (
+        <div
+          // Lớp phủ nền mờ
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setOrderToConfirm(null)} // Đóng khi click ra ngoài
+        >
+          <div
+            // Hộp thoại
+            className="bg-white rounded-2xl shadow-xl w-full max-w-md m-4"
+            onClick={(e) => e.stopPropagation()} // Ngăn click bên trong đóng modal
+          >
+            <div className="flex items-center justify-between p-6 border-b">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Confirm Delivery
+              </h3>
+              <button
+                onClick={() => setOrderToConfirm(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-gray-600">
+                Are you sure you have received all items for order{" "}
+                <span className="font-medium text-gray-900">
+                  #{orderToConfirm.orderNumber}
+                </span>
+                ?
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 p-6 bg-gray-50 rounded-b-2xl">
+              <button
+                type="button"
+                onClick={() => setOrderToConfirm(null)}
+                disabled={confirmingId === orderToConfirm.orderId}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                // Gọi hàm confirm
+                onClick={() => handleConfirm(orderToConfirm.orderId)}
+                // Disable khi đang gọi API
+                disabled={confirmingId === orderToConfirm.orderId}
+                className="flex items-center justify-center w-28 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
+              >
+                {confirmingId === orderToConfirm.orderId ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  "Confirm"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
