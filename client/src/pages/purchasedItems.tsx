@@ -1,10 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { Loader2, CheckCircle2, X } from "lucide-react"; // ✨ THÊM icon X
+import { Loader2, CheckCircle2, X } from "lucide-react";
 import { useAppProvider } from "../context/useContex";
 import api from "../config/axios";
 import { useNavigate } from "react-router-dom";
-
-// --- (Tất cả interface giữ nguyên như cũ) ---
 interface Color {
   id: string;
   name: string;
@@ -86,15 +84,13 @@ const PurchasedItems = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const { user } = useAppProvider();
+  const { user, isAuthLoading } = useAppProvider();
   const navigate = useNavigate();
 
-  // ✨ SỬA: Thêm state mới cho modal
   const [orderToConfirm, setOrderToConfirm] = useState<EnrichedOrder | null>(
     null
   );
 
-  // (useEffect fetch dữ liệu không thay đổi)
   useEffect(() => {
     const fetchItemDetails = async (
       item: OrderItem
@@ -120,6 +116,9 @@ const PurchasedItems = () => {
       }
     };
     const fetchPurchasedOrders = async () => {
+      if (isAuthLoading) {
+        return;
+      }
       if (!user?.token) {
         navigate("/");
         return;
@@ -148,9 +147,8 @@ const PurchasedItems = () => {
       }
     };
     fetchPurchasedOrders();
-  }, [page, user?.token, navigate]);
+  }, [page, user?.token, navigate, isAuthLoading]);
 
-  // ✨ SỬA: Cập nhật hàm handleConfirm
   const handleConfirm = useCallback(
     async (orderId: string) => {
       if (!user?.token) {
@@ -174,17 +172,14 @@ const PurchasedItems = () => {
           )
         );
 
-        // Đóng modal SAU KHI thành công
         setOrderToConfirm(null);
       } catch (error) {
         console.error("Failed to confirm fulfillment:", error);
-        // (Có thể thêm toast báo lỗi ở đây)
       } finally {
-        // Luôn tắt spinner
         setConfirmingId(null);
       }
     },
-    [user?.token, navigate] // Thêm navigate vào dependency array
+    [user?.token, navigate]
   );
 
   // (Các hàm helper getOrderStatusDetails, getPaymentStatusDetails không thay đổi)
@@ -269,7 +264,6 @@ const PurchasedItems = () => {
               const paymentStatusDetails = getPaymentStatusDetails(
                 order.paymentStatus
               );
-              // ✨ SỬA: Đổi tên biến để rõ ràng hơn
               const isProcessingApi = confirmingId === order.orderId;
 
               return (
