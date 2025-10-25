@@ -16,6 +16,14 @@ management:
     web:
       exposure:
         include: "health"
+storage:
+  minio:
+    endpoint: ${STORAGE_MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${STORAGE_MINIO_ACCESS_KEY:admin}
+    secret-key: ${STORAGE_MINIO_SECRET_KEY:admin123}
+    bucket: ${STORAGE_MINIO_BUCKET:products}
+    region: ${STORAGE_MINIO_REGION:us-east-1}
+    public-url: ${STORAGE_MINIO_PUBLIC_URL:http://localhost:9000}
 app:
   base-url: /api/v1
   jwt:

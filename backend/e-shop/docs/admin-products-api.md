@@ -86,6 +86,28 @@ Updates the lifecycle status without affecting the rest of the product payload.
 
 - `200 OK` with the updated `ProductResponse`.
 
+## Media Uploads
+
+MinIO runs alongside the stack (see `docker-compose.yml`) and is exposed at `http://localhost:9000`. Use the console on port `9090` to inspect uploaded objects. Image uploads rely on the shared `MinioStorageService`.
+
+### Upload Product Image
+
+`POST /api/admin/catalog/products/{productId}/images`
+
+Consumes `multipart/form-data` with the following fields:
+
+- `file` (required) — image file to upload.
+- `altText` (optional) — up to 512 characters.
+- `displayOrder` (optional integer) — ordering hint; defaults to `0`.
+- `primary` (optional boolean) — mark the image as the primary asset.
+- `colorId` (optional integer) — associate the image with an existing color.
+
+**Responses**
+
+- `201 Created` — returns `ProductImageResponse` with the persisted metadata and resolved URL.
+- `400 Bad Request` — file missing or invalid.
+- `404 Not Found` — unknown product or color.
+
 ## Error Handling
 
 Errors follow the global `ErrorResponse` envelope documented elsewhere. Notable status codes include:

@@ -86,3 +86,29 @@ Authorization: Bearer {{admin_access_token}}
 {
   "status": "active"
 }
+
+
+### Upload image
+
+POST http://localhost:8080/api/admin/catalog/products/{{product_id}}/images HTTP/1.1
+Content-Type: multipart/form-data; boundary=WebKitFormBoundary12345
+Authorization: Bearer {{admin_access_token}}
+
+--WebKitFormBoundary12345
+Content-Disposition: form-data; name="file"; filename="product.jpg"
+Content-Type: image/jpeg
+
+< ./picture.jpg
+--WebKitFormBoundary12345
+Content-Disposition: form-data; name="altText"
+
+Front view
+--WebKitFormBoundary12345
+Content-Disposition: form-data; name="displayOrder"
+
+1
+--WebKitFormBoundary12345
+Content-Disposition: form-data; name="colorId"
+
+3
+--WebKitFormBoundary12345--

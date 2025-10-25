@@ -176,15 +176,7 @@ public class ProductMapper {
             .sorted(Comparator
                 .comparing(ProductImage::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
                 .thenComparing(ProductImage::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-            .map(image -> ProductImageResponse.builder()
-                .id(image.getId())
-                .imageUrl(image.getImageUrl())
-                .altText(image.getAltText())
-                .displayOrder(image.getDisplayOrder())
-                .primary(image.getPrimary())
-                .createdAt(image.getCreatedAt())
-                .color(mapColor(image.getColor()))
-                .build())
+            .map(this::toImageResponse)
             .toList();
     }
 
@@ -198,6 +190,22 @@ public class ProductMapper {
             .code(color.getCode())
             .name(color.getName())
             .hex(color.getHex())
+            .build();
+    }
+
+    public ProductImageResponse toImageResponse(ProductImage image) {
+        if (image == null) {
+            return null;
+        }
+
+        return ProductImageResponse.builder()
+            .id(image.getId())
+            .imageUrl(image.getImageUrl())
+            .altText(image.getAltText())
+            .displayOrder(image.getDisplayOrder())
+            .primary(image.getPrimary())
+            .createdAt(image.getCreatedAt())
+            .color(mapColor(image.getColor()))
             .build();
     }
 }
