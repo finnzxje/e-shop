@@ -9,7 +9,7 @@ class Config:
     # Database
     DB_CONFIG = {
         'host': os.getenv('DB_HOST', 'localhost'),
-        'port': int(os.getenv('DB_PORT', 5432)),
+        'port': int(os.getenv('DB_PORT', 5433)),
         'database': os.getenv('DB_NAME', 'ecommerce_db'),
         'user': os.getenv('DB_USER', 'postgres'),
         'password': os.getenv('DB_PASSWORD', 'your_password')
