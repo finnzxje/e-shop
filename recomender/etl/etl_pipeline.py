@@ -107,13 +107,12 @@ class ETLPipeline:
                 variant_id,
                 interaction_type,
                 CASE 
-                    WHEN interaction_type = 'RATING' 
-                    THEN (metadata->>'rating_value')::float
+                    WHEN interaction_type::text = 'RATING' 
+                    THEN (metadata->>'rating_value')::integer::float
                     ELSE NULL
                 END as rating_value,
-                interaction_time,
-                CASE interaction_type
-
+                occurred_at as interaction_time,
+                CASE interaction_type::text
                     WHEN 'PURCHASE' THEN 5.0
                     WHEN 'ADD_TO_CART' THEN 3.0
                     WHEN 'REMOVE_FROM_CART' THEN -1.0
@@ -122,29 +121,29 @@ class ETLPipeline:
                     WHEN 'VIEW' THEN 1.0
                     WHEN 'RATING' THEN 
                         CASE 
-                            WHEN (metadata->>'rating_value')::float = 1 THEN -0.5
-                            WHEN (metadata->>'rating_value')::float = 2 THEN -0.25
-                            WHEN (metadata->>'rating_value')::float = 3 THEN 0.0
-                            WHEN (metadata->>'rating_value')::float = 4 THEN 0.25
-                            WHEN (metadata->>'rating_value')::float = 5 THEN 0.5
+                            WHEN (metadata->>'rating_value')::integer = 1 THEN -0.5
+                            WHEN (metadata->>'rating_value')::integer = 2 THEN -0.25
+                            WHEN (metadata->>'rating_value')::integer = 3 THEN 0.0
+                            WHEN (metadata->>'rating_value')::integer = 4 THEN 0.25
+                            WHEN (metadata->>'rating_value')::integer = 5 THEN 0.5
                             ELSE 0.0
                         END
-
                     ELSE 0.5
                 END as weight
             FROM product_interaction_events 
-            WHERE interaction_time >= NOW() - INTERVAL '{lookback_days} days'
+            WHERE occurred_at >= NOW() - INTERVAL '{lookback_days} days'
         ),
         aggregated AS (
             SELECT 
                 user_id,
                 variant_id,
                 COUNT(*) as total_interactions,
-                SUM(CASE WHEN interaction_type = 'view' THEN 1 ELSE 0 END) as view_count,
-                SUM(CASE WHEN interaction_type = 'add_to_cart' THEN 1 ELSE 0 END) as cart_count,
-                SUM(CASE WHEN interaction_type = 'purchase' THEN 1 ELSE 0 END) as purchase_count,
-                SUM(CASE WHEN interaction_type = 'wishlist' THEN 1 ELSE 0 END) as wishlist_count,
-                AVG(CASE WHEN interaction_type = 'rating' THEN rating_value ELSE NULL END) as avg_rating,
+                SUM(CASE WHEN interaction_type::text = 'VIEW' THEN 1 ELSE 0 END) as view_count,
+                SUM(CASE WHEN interaction_type::text = 'ADD_TO_CART' THEN 1 ELSE 0 END) as cart_count,
+                SUM(CASE WHEN interaction_type::text = 'PURCHASE' THEN 1 ELSE 0 END) as purchase_count,
+                SUM(CASE WHEN interaction_type::text = 'WISHLIST' THEN 1 ELSE 0 END) as wishlist_count,
+                SUM(CASE WHEN interaction_type::text = 'LIKE' THEN 1 ELSE 0 END) as like_count,
+                AVG(CASE WHEN interaction_type::text = 'RATING' THEN rating_value ELSE NULL END) as avg_rating,
                 SUM(weight) as interaction_score,
                 MIN(interaction_time) as first_interaction,
                 MAX(interaction_time) as last_interaction
@@ -159,6 +158,7 @@ class ETLPipeline:
             cart_count,
             purchase_count,
             wishlist_count,
+            like_count,
             COALESCE(avg_rating, 0) as avg_rating,
             interaction_score,
             first_interaction,
@@ -211,7 +211,7 @@ class ETLPipeline:
                 COUNT(DISTINCT pr.id) as total_reviews,
                 
                 -- Engagement metrics
-                COUNT(DISTINCT i.id) FILTER (WHERE i.interaction_type = 'view') as total_clicks,
+                COUNT(DISTINCT i.id) FILTER (WHERE i.interaction_type = 'VIEW') as total_clicks,
                 COUNT(DISTINCT w.id) as wishlist_items,
                 
                 -- Gender preference based on purchases
@@ -224,8 +224,9 @@ class ETLPipeline:
             LEFT JOIN products p ON pv.product_id = p.id
             LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN product_reviews pr ON u.id = pr.user_id
-            LEFT JOIN interactions i ON u.id = i.user_id
-            LEFT JOIN wishlists w ON u.id = w.user_id
+            LEFT JOIN product_interaction_events i ON u.id = i.user_id
+
+            LEFT JOIN wishlist_items w ON u.id = w.user_id
             WHERE u.email_verified_at IS NOT NULL  -- Only verified users
             GROUP BY u.id, u.created_at
         )
@@ -281,10 +282,10 @@ class ETLPipeline:
         
         df = pd.read_sql(query, self.conn)
         return df
-    
+
     def extract_item_features(self) -> pd.DataFrame:
         """
-       step 3: Extract item features
+        step 3: Extract item features
         """
         query = """
         WITH variant_stats AS (
@@ -293,9 +294,8 @@ class ETLPipeline:
                 p.id as product_id,
                 p.name as product_name,
                 p.description as product_description,
-                p.sku as product_sku,
                 pv.variant_sku,
-                
+
                 -- Basic attributes
                 c.id as category_id,
                 c.name as category_name,
@@ -303,12 +303,10 @@ class ETLPipeline:
                 COALESCE(pv.color_id, 0) as color_id,
                 COALESCE(col.name, 'default') as color_name,
                 COALESCE(p.gender, 'unisex') as gender,
-                
+
                 -- Price features
                 pv.price,
-
                 CASE 
-
                     WHEN pv.price < 50 THEN 'budget'
                     WHEN pv.price < 120 THEN 'mid'
                     WHEN pv.price < 300 THEN 'premium'
@@ -320,40 +318,39 @@ class ETLPipeline:
                 COUNT(DISTINCT ci.id) as times_in_cart,
                 COUNT(DISTINCT w.id) as times_wishlisted,
                 COUNT(DISTINCT pview.id) as total_views,
-                
+
                 -- Quality metrics
                 COALESCE(AVG(pr.rating), 0) as avg_rating,
                 COUNT(DISTINCT pr.id) as review_count,
-                
+
                 -- Stock & status
                 pv.quantity_in_stock,
                 pv.is_active,
                 p.is_featured,
-                
+
                 -- Image URL (primary image)
                 (SELECT image_url 
                  FROM product_images 
                  WHERE product_id = p.id AND is_primary = true 
                  LIMIT 1) as primary_image_url
-                
+
             FROM product_variants pv
             JOIN products p ON pv.product_id = p.id
             JOIN categories c ON p.category_id = c.id
             LEFT JOIN colors col ON pv.color_id = col.id
             LEFT JOIN order_items oi ON pv.id = oi.variant_id
             LEFT JOIN cart_items ci ON pv.id = ci.variant_id
-            LEFT JOIN wishlists w ON pv.id = w.variant_id
-            LEFT JOIN product_views pview ON p.id = pview.product_id
+            LEFT JOIN wishlist_items w ON pv.product_id = w.product_id
+            LEFT JOIN product_views pview ON pv.id = pview.variant_id  -- Sửa: JOIN với variant_id thay vì product_id
             LEFT JOIN product_reviews pr ON p.id = pr.product_id
             WHERE pv.is_active = true
-            GROUP BY pv.id, p.id, c.id, col.id, col.name
+            GROUP BY pv.id, p.id, p.name, p.description, c.id, c.name, col.id, col.name
         )
         SELECT 
             variant_id::text,
             product_id::text,
             product_name,
             product_description,
-            product_sku,
             variant_sku,
             category_id,
             category_name,
@@ -363,10 +360,10 @@ class ETLPipeline:
             gender,
             price,
             price_range,
-            
+
             -- Popularity score (weighted)
             (total_sales * 5 + times_in_cart * 3 + times_wishlisted * 2 + total_views) as popularity_score,
-            
+
             total_sales,
             times_in_cart,
             times_wishlisted,
@@ -377,21 +374,44 @@ class ETLPipeline:
             is_active,
             is_featured,
             primary_image_url
-            
+
         FROM variant_stats
         ORDER BY popularity_score DESC;
         """
-        
+
         df = pd.read_sql(query, self.conn)
-        
+
         # Normalize popularity_score
         if len(df) > 0 and df['popularity_score'].max() > 0:
             df['popularity_score_normalized'] = df['popularity_score'] / df['popularity_score'].max()
         else:
             df['popularity_score_normalized'] = 0
-        
+
         return df
-    
+    # def extract_item_features(self) -> pd.DataFrame:
+    #     """
+    #     Simple query to test data extraction
+    #     """
+    #     query = """
+    #     SELECT 
+    #         pv.id::text as variant_id,
+    #         p.id::text as product_id,
+    #         p.name as product_name,
+    #         pv.variant_sku,
+    #         c.name as category_name,
+    #         pv.size,
+    #         pv.price,
+    #         pv.quantity_in_stock,
+    #         pv.is_active
+    #     FROM product_variants pv
+    #     JOIN products p ON pv.product_id = p.id
+    #     JOIN categories c ON p.category_id = c.id
+    #     WHERE pv.is_active = true
+    #     LIMIT 100;
+    #     """
+        
+    #     df = pd.read_sql(query, self.conn)
+    #     return df
     def save_features_to_db(self, user_features_df: pd.DataFrame, item_features_df: pd.DataFrame):
         """
         Bước 4: Lưu features vào database (optional)
