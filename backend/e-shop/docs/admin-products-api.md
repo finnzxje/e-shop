@@ -88,7 +88,7 @@ Updates the lifecycle status without affecting the rest of the product payload.
 
 ## Media Uploads
 
-MinIO runs alongside the stack (see `docker-compose.yml`) and is exposed at `http://localhost:9000`. Use the console on port `9090` to inspect uploaded objects. Image uploads rely on the shared `MinioStorageService`.
+MinIO runs alongside the stack (see `docker-compose.yml`) and is exposed at `http://localhost:9000`. Use the console on port `9090` to inspect uploaded objects. On startup the API ensures the `products` bucket exists and applies a public-read policy, so returned URLs (`http://localhost:9000/products/...`) are immediately browser-accessible in development environments.
 
 ### Upload Product Image
 

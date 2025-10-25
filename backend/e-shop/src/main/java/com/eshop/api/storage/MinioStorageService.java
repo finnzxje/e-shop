@@ -6,6 +6,7 @@ import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.SetBucketPolicyArgs;
 import io.minio.http.Method;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class MinioStorageService {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
                 log.info("Created MinIO bucket {}", bucket);
             }
+            applyPublicReadPolicy(bucket);
         } catch (Exception e) {
             throw new StorageException("Failed to initialize MinIO bucket: " + bucket, e);
         }
@@ -84,5 +86,31 @@ public class MinioStorageService {
             return value.substring(0, value.length() - 1);
         }
         return value;
+    }
+
+    private void applyPublicReadPolicy(String bucket) {
+        String policy = """
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {"AWS": ["*"]},
+                  "Action": ["s3:GetObject"],
+                  "Resource": ["arn:aws:s3:::%s/*"]
+                }
+              ]
+            }
+            """.formatted(bucket);
+
+        try {
+            minioClient.setBucketPolicy(SetBucketPolicyArgs.builder()
+                .bucket(bucket)
+                .config(policy)
+                .build());
+            log.debug("Applied public-read policy to MinIO bucket {}", bucket);
+        } catch (Exception e) {
+            log.warn("Failed to apply public-read policy to bucket {}: {}", bucket, e.getMessage());
+        }
     }
 }
