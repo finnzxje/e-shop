@@ -105,8 +105,56 @@ Consumes `multipart/form-data` with the following fields:
 **Responses**
 
 - `201 Created` — returns `ProductImageResponse` with the persisted metadata and resolved URL.
-- `400 Bad Request` — file missing or invalid.
+- `400 Bad Request` — file missing/invalid or color not found.
 - `404 Not Found` — unknown product or color.
+
+### List Product Color Media
+
+`GET /api/admin/catalog/products/{productId}/colors`
+
+Returns an array of color-centric aggregates combining variants and images. Entries where `color` is `null` represent assets that are not tied to a specific swatch.
+
+```json
+[
+  {
+    "color": {
+      "id": 12,
+      "code": "navy",
+      "name": "Navy",
+      "hex": "#001f3f"
+    },
+    "images": [ ... ProductImageResponse ... ],
+    "variants": [ ... ProductVariantResponse ... ]
+  }
+]
+```
+
+### Update Product Image
+
+`PATCH /api/admin/catalog/products/{productId}/images/{imageId}`
+
+JSON body (fields optional; omit values you don't want to change):
+
+```json
+{
+  "altText": "Side profile",
+  "displayOrder": 2,
+  "primary": false,
+  "colorId": 12
+}
+```
+
+- `200 OK` — returns the updated `ProductImageResponse`.
+- `404 Not Found` — image/product/color mismatch.
+
+### Delete Product Image
+
+`DELETE /api/admin/catalog/products/{productId}/images/{imageId}`
+
+Removes the image metadata entry.
+
+- `204 No Content` — deleted successfully.
+- `404 Not Found` — image or product mismatch.
 
 ## Error Handling
 

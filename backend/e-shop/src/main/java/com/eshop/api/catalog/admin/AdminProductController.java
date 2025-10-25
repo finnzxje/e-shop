@@ -1,7 +1,9 @@
 package com.eshop.api.catalog.admin;
 
 import com.eshop.api.catalog.dto.PageResponse;
+import com.eshop.api.catalog.dto.ProductColorMediaResponse;
 import com.eshop.api.catalog.dto.ProductImageResponse;
+import com.eshop.api.catalog.dto.ProductImageUpdateRequest;
 import com.eshop.api.catalog.dto.ProductImageUploadRequest;
 import com.eshop.api.catalog.dto.ProductResponse;
 import com.eshop.api.catalog.dto.ProductStatusUpdateRequest;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -108,5 +112,30 @@ public class AdminProductController {
         ProductImageUploadRequest metadata = new ProductImageUploadRequest(altText, displayOrder, primary, colorId);
         ProductImageResponse response = productMediaService.uploadProductImage(productId, file, metadata);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{productId}/colors")
+    public ResponseEntity<List<ProductColorMediaResponse>> listProductColors(@PathVariable("productId") UUID productId) {
+        List<ProductColorMediaResponse> response = productMediaService.listProductColorMedia(productId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{productId}/images/{imageId}")
+    public ResponseEntity<ProductImageResponse> updateProductImage(
+        @PathVariable("productId") UUID productId,
+        @PathVariable("imageId") UUID imageId,
+        @Valid @RequestBody ProductImageUpdateRequest request
+    ) {
+        ProductImageResponse response = productMediaService.updateProductImage(productId, imageId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{productId}/images/{imageId}")
+    public ResponseEntity<Void> deleteProductImage(
+        @PathVariable("productId") UUID productId,
+        @PathVariable("imageId") UUID imageId
+    ) {
+        productMediaService.deleteProductImage(productId, imageId);
+        return ResponseEntity.noContent().build();
     }
 }

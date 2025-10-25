@@ -1,28 +1,42 @@
 package com.eshop.api.catalog.service;
 
-import com.eshop.api.catalog.dto.ProductImageUploadRequest;
+import com.eshop.api.catalog.dto.ColorResponse;
+import com.eshop.api.catalog.dto.ProductColorMediaResponse;
 import com.eshop.api.catalog.dto.ProductImageResponse;
+import com.eshop.api.catalog.dto.ProductImageUpdateRequest;
+import com.eshop.api.catalog.dto.ProductImageUploadRequest;
+import com.eshop.api.catalog.dto.ProductVariantResponse;
 import com.eshop.api.catalog.model.Color;
 import com.eshop.api.catalog.model.Product;
 import com.eshop.api.catalog.model.ProductImage;
+import com.eshop.api.catalog.model.ProductVariant;
 import com.eshop.api.catalog.repository.ColorRepository;
 import com.eshop.api.catalog.repository.ProductImageRepository;
 import com.eshop.api.catalog.repository.ProductRepository;
 import com.eshop.api.exception.ColorNotFoundException;
 import com.eshop.api.exception.InvalidImageUploadException;
 import com.eshop.api.exception.ProductNotFoundException;
+import com.eshop.api.exception.ProductImageNotFoundException;
 import com.eshop.api.exception.StorageException;
 import com.eshop.api.storage.MinioStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -46,9 +60,11 @@ public class ProductMediaService {
             throw new InvalidImageUploadException("Image file is required");
         }
 
-        ProductImageUploadRequest payload = metadata != null
-            ? metadata
-            : new ProductImageUploadRequest(null, null, null, null);
+        if (metadata == null) {
+            throw new InvalidImageUploadException("Image metadata is required");
+        }
+
+        ProductImageUploadRequest payload = metadata;
 
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> new ProductNotFoundException(productId));
@@ -80,6 +96,108 @@ public class ProductMediaService {
         ProductImage saved = productImageRepository.save(productImage);
         log.info("Uploaded image {} for product {}", saved.getId(), productId);
         return productMapper.toImageResponse(saved);
+    }
+
+    @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
+    public List<ProductColorMediaResponse> listProductColorMedia(UUID productId) {
+        Product product = productRepository.findWithDetailsById(productId)
+            .orElseThrow(() -> new ProductNotFoundException(productId));
+
+        Map<Integer, java.util.List<ProductVariantResponse>> variantsByColor = new LinkedHashMap<>();
+        Map<Integer, java.util.List<ProductImageResponse>> imagesByColor = new LinkedHashMap<>();
+        Map<Integer, Color> colorLookup = new LinkedHashMap<>();
+        Set<Integer> colorOrder = new LinkedHashSet<>();
+
+        for (ProductVariant variant : product.getVariants()) {
+            Color color = variant.getColor();
+            Integer colorId = color != null ? color.getId() : null;
+            colorOrder.add(colorId);
+            if (color != null) {
+                colorLookup.putIfAbsent(colorId, color);
+            }
+
+            variantsByColor.computeIfAbsent(colorId, key -> new ArrayList<>())
+                .add(productMapper.toVariantResponse(variant));
+        }
+
+        for (ProductImage image : product.getImages()) {
+            Color color = image.getColor();
+            Integer colorId = color != null ? color.getId() : null;
+            colorOrder.add(colorId);
+            if (color != null) {
+                colorLookup.putIfAbsent(colorId, color);
+            }
+
+            imagesByColor.computeIfAbsent(colorId, key -> new ArrayList<>())
+                .add(productMapper.toImageResponse(image));
+        }
+
+        List<ProductColorMediaResponse> result = new ArrayList<>();
+        for (Integer colorId : colorOrder) {
+            ColorResponse colorResponse = null;
+            if (colorId != null && colorLookup.containsKey(colorId)) {
+                colorResponse = productMapper.toColorResponse(colorLookup.get(colorId));
+            }
+
+            List<ProductImageResponse> images = new ArrayList<>(imagesByColor.getOrDefault(colorId, List.of()));
+            images.sort(Comparator
+                .comparing(ProductImageResponse::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
+                .thenComparing(ProductImageResponse::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
+
+            List<ProductVariantResponse> variants = new ArrayList<>(variantsByColor.getOrDefault(colorId, List.of()));
+            variants.sort(Comparator
+                .comparing(ProductVariantResponse::getVariantSku, Comparator.nullsLast(String::compareToIgnoreCase))
+                .thenComparing(ProductVariantResponse::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
+
+            result.add(new ProductColorMediaResponse(colorResponse, images, variants));
+        }
+
+        return result;
+    }
+
+    public ProductImageResponse updateProductImage(UUID productId,
+                                                   UUID imageId,
+                                                   ProductImageUpdateRequest request) {
+        ProductImage image = productImageRepository.findById(imageId)
+            .orElseThrow(() -> new ProductImageNotFoundException(imageId));
+
+        if (!image.getProduct().getId().equals(productId)) {
+            throw new ProductImageNotFoundException(imageId);
+        }
+
+        if (request.altText() != null) {
+            image.setAltText(trim(request.altText()));
+        }
+
+        if (request.displayOrder() != null) {
+            image.setDisplayOrder(request.displayOrder());
+        }
+
+        if (request.primary() != null) {
+            image.setPrimary(request.primary());
+        }
+
+        if (request.colorId() != null) {
+            Color color = colorRepository.findById(request.colorId())
+                .orElseThrow(() -> new ColorNotFoundException(request.colorId()));
+            image.setColor(color);
+        }
+
+        ProductImage saved = productImageRepository.save(image);
+        log.info("Updated image {} for product {}", imageId, productId);
+        return productMapper.toImageResponse(saved);
+    }
+
+    public void deleteProductImage(UUID productId, UUID imageId) {
+        ProductImage image = productImageRepository.findById(imageId)
+            .orElseThrow(() -> new ProductImageNotFoundException(imageId));
+
+        if (!image.getProduct().getId().equals(productId)) {
+            throw new ProductImageNotFoundException(imageId);
+        }
+
+        productImageRepository.delete(image);
+        log.info("Deleted image {} for product {}", imageId, productId);
     }
 
     private String buildObjectKey(UUID productId, String originalFilename) {
