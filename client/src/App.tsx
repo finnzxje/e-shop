@@ -12,6 +12,7 @@ import EditAddress from "./pages/editAddress";
 import PaymentResult from "./components/paymentResult";
 import Wishlist from "./pages/wishlist";
 import PurchasedItems from "./pages/purchasedItems";
+import NotFound from "./pages/notFoundPages";
 function App() {
   return (
     <BrowserRouter>
@@ -29,6 +30,7 @@ function App() {
           <Route path="/edit-address" element={<EditAddress />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/purchase" element={<PurchasedItems />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
         <Footer />
       </div>
