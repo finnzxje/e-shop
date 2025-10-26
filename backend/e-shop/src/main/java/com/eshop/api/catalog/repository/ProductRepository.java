@@ -34,6 +34,18 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
     })
     Optional<Product> findWithDetailsBySlug(String slug);
 
+    @EntityGraph(attributePaths = {
+        "category",
+        "tags",
+        "variants",
+        "variants.color",
+        "variants.attributeValues",
+        "variants.attributeValues.attribute",
+        "images",
+        "images.color"
+    })
+    Optional<Product> findWithDetailsById(UUID id);
+
     @EntityGraph(attributePaths = "category")
     Page<Product> findBy(Pageable pageable);
 

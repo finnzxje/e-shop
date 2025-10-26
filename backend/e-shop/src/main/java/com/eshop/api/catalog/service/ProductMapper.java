@@ -124,11 +124,11 @@ public class ProductMapper {
             .sorted(Comparator
                 .comparing(ProductVariant::getVariantSku, Comparator.nullsLast(String::compareToIgnoreCase))
                 .thenComparing(ProductVariant::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-            .map(this::mapVariant)
+            .map(this::toVariantResponse)
             .toList();
     }
 
-    private ProductVariantResponse mapVariant(ProductVariant variant) {
+    public ProductVariantResponse toVariantResponse(ProductVariant variant) {
         return ProductVariantResponse.builder()
             .id(variant.getId())
             .variantSku(variant.getVariantSku())
@@ -139,7 +139,7 @@ public class ProductMapper {
             .fit(variant.getFit())
             .currency(variant.getCurrency())
             .createdAt(variant.getCreatedAt())
-            .color(mapColor(variant.getColor()))
+            .color(toColorResponse(variant.getColor()))
             .attributes(mapVariantAttributes(variant.getAttributeValues()))
             .build();
     }
@@ -176,19 +176,11 @@ public class ProductMapper {
             .sorted(Comparator
                 .comparing(ProductImage::getDisplayOrder, Comparator.nullsLast(Integer::compareTo))
                 .thenComparing(ProductImage::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-            .map(image -> ProductImageResponse.builder()
-                .id(image.getId())
-                .imageUrl(image.getImageUrl())
-                .altText(image.getAltText())
-                .displayOrder(image.getDisplayOrder())
-                .primary(image.getPrimary())
-                .createdAt(image.getCreatedAt())
-                .color(mapColor(image.getColor()))
-                .build())
+            .map(this::toImageResponse)
             .toList();
     }
 
-    private ColorResponse mapColor(Color color) {
+    public ColorResponse toColorResponse(Color color) {
         if (color == null) {
             return null;
         }
@@ -198,6 +190,22 @@ public class ProductMapper {
             .code(color.getCode())
             .name(color.getName())
             .hex(color.getHex())
+            .build();
+    }
+
+    public ProductImageResponse toImageResponse(ProductImage image) {
+        if (image == null) {
+            return null;
+        }
+
+        return ProductImageResponse.builder()
+            .id(image.getId())
+            .imageUrl(image.getImageUrl())
+            .altText(image.getAltText())
+            .displayOrder(image.getDisplayOrder())
+            .primary(image.getPrimary())
+            .createdAt(image.getCreatedAt())
+            .color(toColorResponse(image.getColor()))
             .build();
     }
 }

@@ -9,4 +9,12 @@ import java.util.UUID;
 public interface ProductVariantRepository extends JpaRepository<ProductVariant, UUID> {
 
     Optional<ProductVariant> findByVariantSku(String variantSku);
+
+    boolean existsByProduct_IdAndColor_IdAndSizeIgnoreCase(UUID productId, Integer colorId, String size);
+
+    boolean existsByProduct_IdAndColor_IdAndSizeIgnoreCaseAndIdNot(UUID productId, Integer colorId, String size, UUID id);
+
+    boolean existsByVariantSkuIgnoreCase(String variantSku);
+
+    boolean existsByVariantSkuIgnoreCaseAndIdNot(String variantSku, UUID id);
 }
