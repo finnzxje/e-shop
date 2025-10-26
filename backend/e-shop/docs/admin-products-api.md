@@ -250,3 +250,32 @@ Errors follow the global `ErrorResponse` envelope documented elsewhere. Notable 
 - `403 Forbidden` — authenticated but lacking the `ADMIN` role.
 - `404 Not Found` — product or category missing.
 - `409 Conflict` — slug duplication.
+
+## Payment Transactions
+
+### List Transactions
+
+`GET /api/admin/payments/transactions`
+
+Query parameters:
+
+- `status` — payment status filter (`PENDING`, `CAPTURED`, `FAILED`, etc.).
+- `method` — `VNPAY`, `CASH_ON_DELIVERY`, etc.
+- `provider` — partial match against the provider string.
+- `orderNumber` — filter by specific order.
+- `createdAfter`, `createdBefore` — ISO-8601 timestamps.
+- Standard pageable parameters (`page`, `size`, `sort`).
+
+Returns a `PageResponse<PaymentTransactionResponse>` sorted by the provided pageable directive.
+
+### Transaction Detail
+
+`GET /api/admin/payments/transactions/{transactionId}`
+
+Retrieves the full payload for a single transaction, including raw provider response JSON when available.
+
+### Order Transactions
+
+`GET /api/admin/orders/{orderNumber}/transactions`
+
+Returns all transactions associated with a specific order number (most recent first).
