@@ -222,6 +222,26 @@ Toggles the variant’s active flag.
 
 Removes the variant when it is not referenced by existing orders. Returns `204 No Content`; responds with `409 Conflict` if the variant is still in use.
 
+### Adjust Variant Stock
+
+`POST /api/admin/catalog/products/{productId}/variants/{variantId}/stock-adjustments`
+
+```json
+{
+  "newQuantity": 18,
+  "reason": "Manual cycle count",
+  "notes": "Added returned items back to shelf"
+}
+```
+
+Creates a manual stock adjustment, updates the variant quantity, and records the change (including the authenticated user).
+
+### List Variant Stock Adjustments
+
+`GET /api/admin/catalog/products/{productId}/variants/{variantId}/stock-adjustments`
+
+Returns a reverse-chronological list of adjustments, each with previous/new quantity, delta, timestamp, and who performed the change.
+
 ## Error Handling
 
 Errors follow the global `ErrorResponse` envelope documented elsewhere. Notable status codes include:

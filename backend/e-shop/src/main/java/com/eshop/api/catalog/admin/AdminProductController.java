@@ -11,6 +11,8 @@ import com.eshop.api.catalog.dto.ProductSummaryResponse;
 import com.eshop.api.catalog.dto.ProductUpsertRequest;
 import com.eshop.api.catalog.dto.ProductVariantCreateRequest;
 import com.eshop.api.catalog.dto.ProductVariantResponse;
+import com.eshop.api.catalog.dto.ProductVariantStockAdjustmentRequest;
+import com.eshop.api.catalog.dto.ProductVariantStockAdjustmentResponse;
 import com.eshop.api.catalog.dto.ProductVariantStatusRequest;
 import com.eshop.api.catalog.dto.ProductVariantUpdateRequest;
 import com.eshop.api.catalog.enums.Gender;
@@ -26,17 +28,18 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
@@ -187,5 +190,30 @@ public class AdminProductController {
     ) {
         productVariantService.deleteVariant(productId, variantId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{productId}/variants/{variantId}/stock-adjustments")
+    public ResponseEntity<ProductVariantStockAdjustmentResponse> adjustVariantStock(
+        @PathVariable("productId") UUID productId,
+        @PathVariable("variantId") UUID variantId,
+        @Valid @RequestBody ProductVariantStockAdjustmentRequest request,
+        Authentication authentication
+    ) {
+        ProductVariantStockAdjustmentResponse response = productVariantService.adjustVariantStock(
+            productId,
+            variantId,
+            request,
+            authentication != null ? authentication.getName() : null
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{productId}/variants/{variantId}/stock-adjustments")
+    public ResponseEntity<List<ProductVariantStockAdjustmentResponse>> listVariantStockAdjustments(
+        @PathVariable("productId") UUID productId,
+        @PathVariable("variantId") UUID variantId
+    ) {
+        List<ProductVariantStockAdjustmentResponse> response = productVariantService.listStockAdjustments(productId, variantId);
+        return ResponseEntity.ok(response);
     }
 }
