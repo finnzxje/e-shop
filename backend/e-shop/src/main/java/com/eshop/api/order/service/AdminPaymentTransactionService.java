@@ -117,6 +117,21 @@ public class AdminPaymentTransactionService {
             .errorMessage(transaction.getErrorMessage())
             .createdAt(transaction.getCreatedAt())
             .updatedAt(transaction.getUpdatedAt())
+            .customer(mapCustomer(transaction))
+            .build();
+    }
+
+    private PaymentTransactionResponse.Customer mapCustomer(PaymentTransaction transaction) {
+        if (transaction.getOrder() == null || transaction.getOrder().getUser() == null) {
+            return null;
+        }
+
+        var user = transaction.getOrder().getUser();
+        return PaymentTransactionResponse.Customer.builder()
+            .id(user.getId())
+            .email(user.getEmail())
+            .firstName(user.getFirstName())
+            .lastName(user.getLastName())
             .build();
     }
 }
