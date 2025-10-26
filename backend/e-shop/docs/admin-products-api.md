@@ -162,6 +162,66 @@ Removes the image metadata entry.
 - `204 No Content` — deleted successfully.
 - `404 Not Found` — image or product mismatch.
 
+## Variant Management
+
+### List Variants
+
+`GET /api/admin/catalog/products/{productId}/variants`
+
+Returns every variant for the product as `ProductVariantResponse` entries (color, size, inventory, pricing).
+
+### Create Variants (Bulk by Color)
+
+`POST /api/admin/catalog/products/{productId}/variants`
+
+```json
+{
+  "colorId": 12,
+  "variants": [
+    {
+      "size": "S",
+      "sku": "TEE-NVY-S",
+      "price": 29.99,
+      "quantity": 10,
+      "active": true,
+      "currency": "USD"
+    },
+    {
+      "size": "M",
+      "sku": "TEE-NVY-M",
+      "quantity": 5
+    }
+  ]
+}
+```
+
+- `201 Created` — returns the created variants.
+- `409 Conflict` — duplicate color/size combination or SKU.
+
+### Update Variant
+
+`PUT /api/admin/catalog/products/{productId}/variants/{variantId}`
+
+Body mirrors the creation payload fields (all optional). Size and color updates enforce the same uniqueness rules as creation.
+
+### Update Variant Status
+
+`PATCH /api/admin/catalog/products/{productId}/variants/{variantId}/status`
+
+```json
+{
+  "active": false
+}
+```
+
+Toggles the variant’s active flag.
+
+### Delete Variant
+
+`DELETE /api/admin/catalog/products/{productId}/variants/{variantId}`
+
+Removes the variant when it is not referenced by existing orders. Returns `204 No Content`; responds with `409 Conflict` if the variant is still in use.
+
 ## Error Handling
 
 Errors follow the global `ErrorResponse` envelope documented elsewhere. Notable status codes include:

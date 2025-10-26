@@ -31,4 +31,6 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, UUID> {
     Optional<OrderItem> findLatestPurchasedItemByUserAndProduct(@Param("userId") UUID userId,
                                                                 @Param("productId") UUID productId,
                                                                 @Param("paymentStatus") PaymentStatus paymentStatus);
+
+    boolean existsByVariant_Id(UUID variantId);
 }

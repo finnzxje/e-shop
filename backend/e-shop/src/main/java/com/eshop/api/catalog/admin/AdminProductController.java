@@ -9,10 +9,15 @@ import com.eshop.api.catalog.dto.ProductResponse;
 import com.eshop.api.catalog.dto.ProductStatusUpdateRequest;
 import com.eshop.api.catalog.dto.ProductSummaryResponse;
 import com.eshop.api.catalog.dto.ProductUpsertRequest;
+import com.eshop.api.catalog.dto.ProductVariantCreateRequest;
+import com.eshop.api.catalog.dto.ProductVariantResponse;
+import com.eshop.api.catalog.dto.ProductVariantStatusRequest;
+import com.eshop.api.catalog.dto.ProductVariantUpdateRequest;
 import com.eshop.api.catalog.enums.Gender;
 import com.eshop.api.catalog.enums.ProductStatus;
 import com.eshop.api.catalog.service.ProductMediaService;
 import com.eshop.api.catalog.service.AdminProductService;
+import com.eshop.api.catalog.service.ProductVariantService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -34,8 +39,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -45,6 +50,7 @@ public class AdminProductController {
 
     private final AdminProductService adminProductService;
     private final ProductMediaService productMediaService;
+    private final ProductVariantService productVariantService;
 
     @GetMapping
     public ResponseEntity<PageResponse<ProductSummaryResponse>> listProducts(
@@ -136,6 +142,50 @@ public class AdminProductController {
         @PathVariable("imageId") UUID imageId
     ) {
         productMediaService.deleteProductImage(productId, imageId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{productId}/variants")
+    public ResponseEntity<List<ProductVariantResponse>> listVariants(@PathVariable("productId") UUID productId) {
+        List<ProductVariantResponse> response = productVariantService.listVariants(productId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{productId}/variants")
+    public ResponseEntity<List<ProductVariantResponse>> createVariants(
+        @PathVariable("productId") UUID productId,
+        @Valid @RequestBody ProductVariantCreateRequest request
+    ) {
+        List<ProductVariantResponse> response = productVariantService.createVariants(productId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{productId}/variants/{variantId}")
+    public ResponseEntity<ProductVariantResponse> updateVariant(
+        @PathVariable("productId") UUID productId,
+        @PathVariable("variantId") UUID variantId,
+        @Valid @RequestBody ProductVariantUpdateRequest request
+    ) {
+        ProductVariantResponse response = productVariantService.updateVariant(productId, variantId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{productId}/variants/{variantId}/status")
+    public ResponseEntity<ProductVariantResponse> updateVariantStatus(
+        @PathVariable("productId") UUID productId,
+        @PathVariable("variantId") UUID variantId,
+        @Valid @RequestBody ProductVariantStatusRequest request
+    ) {
+        ProductVariantResponse response = productVariantService.updateVariantStatus(productId, variantId, request.active());
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{productId}/variants/{variantId}")
+    public ResponseEntity<Void> deleteVariant(
+        @PathVariable("productId") UUID productId,
+        @PathVariable("variantId") UUID variantId
+    ) {
+        productVariantService.deleteVariant(productId, variantId);
         return ResponseEntity.noContent().build();
     }
 }
