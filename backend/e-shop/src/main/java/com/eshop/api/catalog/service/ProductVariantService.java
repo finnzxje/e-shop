@@ -40,6 +40,9 @@ import java.util.UUID;
 @Transactional
 public class ProductVariantService {
 
+    private static final String REASON_INITIAL_CREATION = "initial_creation";
+    private static final String REASON_VARIANT_UPDATE = "variant_update";
+
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ColorRepository colorRepository;
@@ -86,6 +89,7 @@ public class ProductVariantService {
                 .build();
 
             ProductVariant saved = productVariantRepository.save(variant);
+            recordStockAdjustment(saved, 0, saved.getQuantityInStock(), REASON_INITIAL_CREATION, null, null);
             created.add(productMapper.toVariantResponse(saved));
         }
 
@@ -121,6 +125,8 @@ public class ProductVariantService {
             variant.setPrice(request.price());
         }
 
+        Integer previousQuantityObj = variant.getQuantityInStock();
+        int previousQuantity = previousQuantityObj != null ? previousQuantityObj : 0;
         if (request.quantity() != null) {
             variant.setQuantityInStock(request.quantity());
         }
@@ -172,6 +178,19 @@ public class ProductVariantService {
         }
 
         ProductVariant saved = productVariantRepository.save(variant);
+
+        int currentQuantity = Optional.ofNullable(variant.getQuantityInStock()).orElse(0);
+        if (request.quantity() != null && previousQuantity != currentQuantity) {
+            recordStockAdjustment(
+                saved,
+                previousQuantity,
+                currentQuantity,
+                REASON_VARIANT_UPDATE,
+                null,
+                null
+            );
+        }
+
         return productMapper.toVariantResponse(saved);
     }
 
@@ -204,7 +223,6 @@ public class ProductVariantService {
 
         int previousQuantity = Optional.ofNullable(variant.getQuantityInStock()).orElse(0);
         int newQuantity = request.newQuantity();
-        int delta = newQuantity - previousQuantity;
 
         variant.setQuantityInStock(newQuantity);
         productVariantRepository.save(variant);
@@ -213,18 +231,15 @@ public class ProductVariantService {
             ? userRepository.findByEmailIgnoreCase(adjustedByEmail).orElse(null)
             : null;
 
-        ProductVariantStockAdjustment adjustment = ProductVariantStockAdjustment.builder()
-            .variant(variant)
-            .previousQuantity(previousQuantity)
-            .newQuantity(newQuantity)
-            .delta(delta)
-            .reason(trim(request.reason()))
-            .notes(trim(request.notes()))
-            .adjustedBy(adjustedBy)
-            .build();
-
-        ProductVariantStockAdjustment savedAdjustment = stockAdjustmentRepository.save(adjustment);
-        return toAdjustmentResponse(savedAdjustment);
+        ProductVariantStockAdjustment adjustment = recordStockAdjustment(
+            variant,
+            previousQuantity,
+            newQuantity,
+            trim(request.reason()),
+            trim(request.notes()),
+            adjustedBy
+        );
+        return toAdjustmentResponse(adjustment);
     }
 
     @Transactional(readOnly = true)
@@ -292,5 +307,25 @@ public class ProductVariantService {
             .adjustedAt(adjustment.getAdjustedAt())
             .adjustedBy(adjustedBy)
             .build();
+    }
+
+    private ProductVariantStockAdjustment recordStockAdjustment(ProductVariant variant,
+                                                                 int previousQuantity,
+                                                                 int newQuantity,
+                                                                 String reason,
+                                                                 String notes,
+                                                                 User adjustedBy) {
+        String normalizedReason = reason != null ? reason.trim() : null;
+        ProductVariantStockAdjustment adjustment = ProductVariantStockAdjustment.builder()
+            .variant(variant)
+            .previousQuantity(previousQuantity)
+            .newQuantity(newQuantity)
+            .delta(newQuantity - previousQuantity)
+            .reason(normalizedReason != null ? normalizedReason : REASON_VARIANT_UPDATE)
+            .notes(trim(notes))
+            .adjustedBy(adjustedBy)
+            .build();
+
+        return stockAdjustmentRepository.save(adjustment);
     }
 }
