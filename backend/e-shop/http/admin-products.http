@@ -2,9 +2,9 @@
 
 @admin_access_token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpYXQiOjE3NjEyNDEzMTksImV4cCI6MTc2MTYwMTMxOX0.Dy7TDNyv_Y8MAhlla2ldAxYGgTG_Esur_lUIgGCv9qY
 @image_id = 11111111-1111-1111-1111-111111111111
-@product_id = ad34ac1f-57ac-4d5a-a2ba-b299b2e0d954
+@product_id = 550d8bd0-6f82-4a80-8953-5a4d8c0a140a
 @test_product_id = 550d8bd0-6f82-4a80-8953-5a4d8c0a140a
-@variant_id = 22222222-2222-2222-2222-222222222222
+@variant_id = b7748d00-21a7-4d05-8433-ea68db0905d1
 
 
 ### List products
@@ -112,7 +112,7 @@ Content-Disposition: form-data; name="displayOrder"
 --WebKitFormBoundary12345
 Content-Disposition: form-data; name="colorId"
 
-3
+4
 --WebKitFormBoundary12345--
 
 
@@ -161,18 +161,18 @@ Content-Type: application/json
 Authorization: Bearer {{admin_access_token}}
 
 {
-  "colorId": 3,
+  "colorId": 4,
   "variants": [
     {
       "active": true,
       "currency": "USD",
       "price": 29.99,
       "quantity": 10,
-      "size": "XL"
+      "size": "S"
     },
     {
       "quantity": 5,
-      "size": "L"
+      "size": "M"
     }
   ]
 }
@@ -206,4 +206,23 @@ Authorization: Bearer {{admin_access_token}}
 ### Delete variant
 
 DELETE http://localhost:8080/api/admin/catalog/products/{{product_id}}/variants/{{variant_id}} HTTP/1.1
+Authorization: Bearer {{admin_access_token}}
+
+
+### Create stock adjustment
+
+POST http://localhost:8080/api/admin/catalog/products/{{product_id}}/variants/{{variant_id}}/stock-adjustments HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{admin_access_token}}
+
+{
+  "newQuantity": 18,
+  "notes": "Added returned items back to shelf",
+  "reason": "Manual cycle count"
+}
+
+
+### List stock adjustments
+
+GET http://localhost:8080/api/admin/catalog/products/{{product_id}}/variants/{{variant_id}}/stock-adjustments HTTP/1.1
 Authorization: Bearer {{admin_access_token}}

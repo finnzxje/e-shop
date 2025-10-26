@@ -2,19 +2,25 @@ package com.eshop.api.catalog.service;
 
 import com.eshop.api.catalog.dto.ProductVariantCreateRequest;
 import com.eshop.api.catalog.dto.ProductVariantResponse;
+import com.eshop.api.catalog.dto.ProductVariantStockAdjustmentRequest;
+import com.eshop.api.catalog.dto.ProductVariantStockAdjustmentResponse;
 import com.eshop.api.catalog.dto.ProductVariantUpdateRequest;
 import com.eshop.api.catalog.model.Color;
 import com.eshop.api.catalog.model.Product;
 import com.eshop.api.catalog.model.ProductVariant;
+import com.eshop.api.catalog.model.ProductVariantStockAdjustment;
 import com.eshop.api.catalog.repository.ColorRepository;
 import com.eshop.api.catalog.repository.ProductRepository;
 import com.eshop.api.catalog.repository.ProductVariantRepository;
+import com.eshop.api.catalog.repository.ProductVariantStockAdjustmentRepository;
 import com.eshop.api.exception.ColorNotFoundException;
 import com.eshop.api.exception.DuplicateProductVariantException;
 import com.eshop.api.exception.ProductNotFoundException;
 import com.eshop.api.exception.ProductVariantInUseException;
 import com.eshop.api.exception.ProductVariantNotFoundException;
 import com.eshop.api.order.repository.OrderItemRepository;
+import com.eshop.api.user.User;
+import com.eshop.api.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +31,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -37,6 +44,8 @@ public class ProductVariantService {
     private final ProductVariantRepository productVariantRepository;
     private final ColorRepository colorRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ProductVariantStockAdjustmentRepository stockAdjustmentRepository;
+    private final UserRepository userRepository;
     private final ProductMapper productMapper;
 
     public List<ProductVariantResponse> createVariants(UUID productId, ProductVariantCreateRequest request) {
@@ -126,6 +135,17 @@ public class ProductVariantService {
                 .orElseThrow(() -> new ColorNotFoundException(request.colorId()));
             variant.setColor(color);
             colorId = color.getId();
+
+            String normalizedSize = normalize(variant.getSize());
+            if (normalizedSize != null
+                && productVariantRepository.existsByProduct_IdAndColor_IdAndSizeIgnoreCaseAndIdNot(
+                    productId,
+                    colorId,
+                    normalizedSize,
+                    variant.getId()
+                )) {
+                throw new DuplicateProductVariantException("Variant already exists for color " + color.getName() + " and size " + variant.getSize());
+            }
         }
 
         if (request.size() != null) {
@@ -171,6 +191,56 @@ public class ProductVariantService {
         log.info("Deleted variant {} for product {}", variantId, productId);
     }
 
+    public ProductVariantStockAdjustmentResponse adjustVariantStock(UUID productId,
+                                                                    UUID variantId,
+                                                                    ProductVariantStockAdjustmentRequest request,
+                                                                    String adjustedByEmail) {
+        ProductVariant variant = productVariantRepository.findById(variantId)
+            .orElseThrow(() -> new ProductVariantNotFoundException(variantId));
+
+        if (!variant.getProduct().getId().equals(productId)) {
+            throw new ProductVariantNotFoundException(variantId);
+        }
+
+        int previousQuantity = Optional.ofNullable(variant.getQuantityInStock()).orElse(0);
+        int newQuantity = request.newQuantity();
+        int delta = newQuantity - previousQuantity;
+
+        variant.setQuantityInStock(newQuantity);
+        productVariantRepository.save(variant);
+
+        User adjustedBy = adjustedByEmail != null
+            ? userRepository.findByEmailIgnoreCase(adjustedByEmail).orElse(null)
+            : null;
+
+        ProductVariantStockAdjustment adjustment = ProductVariantStockAdjustment.builder()
+            .variant(variant)
+            .previousQuantity(previousQuantity)
+            .newQuantity(newQuantity)
+            .delta(delta)
+            .reason(trim(request.reason()))
+            .notes(trim(request.notes()))
+            .adjustedBy(adjustedBy)
+            .build();
+
+        ProductVariantStockAdjustment savedAdjustment = stockAdjustmentRepository.save(adjustment);
+        return toAdjustmentResponse(savedAdjustment);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProductVariantStockAdjustmentResponse> listStockAdjustments(UUID productId, UUID variantId) {
+        ProductVariant variant = productVariantRepository.findById(variantId)
+            .orElseThrow(() -> new ProductVariantNotFoundException(variantId));
+
+        if (!variant.getProduct().getId().equals(productId)) {
+            throw new ProductVariantNotFoundException(variantId);
+        }
+
+        return stockAdjustmentRepository.findByVariant_IdOrderByAdjustedAtDesc(variantId).stream()
+            .map(this::toAdjustmentResponse)
+            .toList();
+    }
+
     public ProductVariantResponse updateVariantStatus(UUID productId, UUID variantId, boolean active) {
         ProductVariant variant = productVariantRepository.findById(variantId)
             .orElseThrow(() -> new ProductVariantNotFoundException(variantId));
@@ -194,5 +264,33 @@ public class ProductVariantService {
 
     private BigDecimal defaultPrice(Product product) {
         return product.getBasePrice() != null ? product.getBasePrice() : BigDecimal.ZERO;
+    }
+
+    private String trim(String value) {
+        return value == null ? null : value.trim();
+    }
+
+    private ProductVariantStockAdjustmentResponse toAdjustmentResponse(ProductVariantStockAdjustment adjustment) {
+        ProductVariantStockAdjustmentResponse.AdjustedBy adjustedBy = null;
+        User user = adjustment.getAdjustedBy();
+        if (user != null) {
+            adjustedBy = ProductVariantStockAdjustmentResponse.AdjustedBy.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .build();
+        }
+
+        return ProductVariantStockAdjustmentResponse.builder()
+            .id(adjustment.getId())
+            .previousQuantity(adjustment.getPreviousQuantity())
+            .newQuantity(adjustment.getNewQuantity())
+            .delta(adjustment.getDelta())
+            .reason(adjustment.getReason())
+            .notes(adjustment.getNotes())
+            .adjustedAt(adjustment.getAdjustedAt())
+            .adjustedBy(adjustedBy)
+            .build();
     }
 }
