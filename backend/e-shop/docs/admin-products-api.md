@@ -129,6 +129,12 @@ Returns an array of color-centric aggregates combining variants and images. Entr
 ]
 ```
 
+### List All Catalog Colors
+
+`GET /api/admin/catalog/colors`
+
+Returns every color defined in the catalog, sorted alphabetically. Helpful for admin forms that allow selecting from the global palette.
+
 ### Update Product Image
 
 `PATCH /api/admin/catalog/products/{productId}/images/{imageId}`

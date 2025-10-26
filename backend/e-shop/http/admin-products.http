@@ -120,6 +120,12 @@ Content-Disposition: form-data; name="colorId"
 GET http://localhost:8080/api/admin/catalog/products/{{product_id}}/colors HTTP/1.1
 Authorization: Bearer {{admin_access_token}}
 
+### List all colors
+
+GET http://localhost:8080/api/admin/catalog/colors HTTP/1.1
+Authorization: Bearer {{admin_access_token}}
+
+
 
 ### Update image metadata
 
