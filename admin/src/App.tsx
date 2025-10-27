@@ -1,11 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./context/useContex";
 import Login from "./pages/login";
-import AdminDashboard from "./pages/adminDashboard";
 import StaffDashboard from "./pages/staffDashboard";
 import NotFound from "./pages/notFound";
 import PrivateRoute from "./router/privateRoute";
-
+import AdminLayout from "./pages/admin/AdminLayout";
+import Dashboard from "./pages/admin/Dashboard";
+import UserManagement from "./pages/admin/UserManagement";
+import ProductManagement from "./pages/admin/ProductManagement";
 function App() {
   return (
     <AppProvider>
@@ -13,15 +15,19 @@ function App() {
         <Routes>
           <Route path="/admin/login" element={<Login />} />
 
-          {/* Chỉ ADMIN được vào */}
           <Route
             path="/admin"
             element={
               <PrivateRoute requiredRole="ADMIN">
-                <AdminDashboard />
+                <AdminLayout />
               </PrivateRoute>
             }
-          />
+          >
+            <Route index element={<Dashboard />} />
+
+            <Route path="users" element={<UserManagement />} />
+            <Route path="products" element={<ProductManagement />} />
+          </Route>
 
           {/* Chỉ STAFF được vào */}
           <Route
