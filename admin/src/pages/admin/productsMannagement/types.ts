@@ -1,11 +1,9 @@
-// Đây là type cho Danh mục
 export type Category = {
   id: number;
   name: string;
   slug: string;
 };
 
-// Đây là type cho dữ liệu trên Form
 export interface ProductFormPayload {
   name: string;
   slug: string;
@@ -19,19 +17,15 @@ export interface ProductFormPayload {
   tags: string[];
 }
 
-// Đây là type cho dữ liệu đầy đủ khi GET {id} (dựa trên JSON bạn gửi)
 export interface FullProduct extends ProductFormPayload {
   id: string;
   createdAt: string;
   updatedAt: string;
   category: Category;
-  variants: any[]; // (Bạn có thể định nghĩa type cho Variant sau)
-  images: any[]; // (Bạn có thể định nghĩa type cho Image sau)
+  variants: any[];
+  images: any[];
 }
-/**
- * Định nghĩa cho một Màu Sắc (Color)
- * Dùng chung cho cả Variant và Image
- */
+
 export type Color = {
   id: number;
   code: string;
@@ -39,9 +33,6 @@ export type Color = {
   hex: string;
 };
 
-/**
- * Định nghĩa cho một Hình Ảnh Sản Phẩm (ProductImage)
- */
 export type ProductImage = {
   id: string;
   imageUrl: string;
@@ -49,12 +40,9 @@ export type ProductImage = {
   displayOrder: number;
   primary: boolean;
   createdAt: string;
-  color: Color | null; // Hình ảnh có thể không gán vào màu nào
+  color: Color | null;
 };
 
-/**
- * Định nghĩa cho một Biến Thể Sản Phẩm (ProductVariant)
- */
 export type ProductVariant = {
   id: string;
   variantSku: string;
@@ -65,15 +53,17 @@ export type ProductVariant = {
   fit: string | null;
   currency: string;
   createdAt: string;
-  color: Color; // Variant luôn thuộc về một màu
-  attributes: any[]; // Bạn có thể định nghĩa type này rõ hơn nếu biết cấu trúc
+  color: Color;
+  attributes: any[];
 };
-/**
- * Dữ liệu (payload) để gửi khi điều chỉnh kho hàng
- * POST /api/admin/catalog/products/{productId}/variants/{variantId}/stock-adjustments
- */
+
 export type StockAdjustmentPayload = {
   newQuantity: number;
   reason: string;
-  notes?: string; // 'notes' có thể là tùy chọn
+  notes?: string;
 };
+export interface ColorMediaAggregate {
+  color: Color | null;
+  images: ProductImage[];
+  variants: ProductVariant[];
+}

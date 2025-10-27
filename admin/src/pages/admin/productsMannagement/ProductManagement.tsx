@@ -5,7 +5,6 @@ import api from "../../../config/axios";
 import axios from "axios";
 import { useAppProvider } from "../../../context/useContex";
 import toast from "react-hot-toast";
-
 // --- Types (Đã cập nhật) ---
 
 type ProductSummary = {
@@ -63,7 +62,7 @@ const ProductManagement: React.FC = () => {
       const params = {
         search: filters.search || undefined,
         status: filters.status || undefined,
-        page: filters.page,
+        page: filters.page, // API thường bắt đầu từ 0
         size: filters.size,
         sort: "updatedAt,desc",
       };
@@ -80,21 +79,22 @@ const ProductManagement: React.FC = () => {
         const data = response.data;
         console.log(params);
         setProducts(data.content);
+        // Cập nhật state phân trang dựa trên response (thường là 0-based)
         setPagination({
-          page: data.page,
+          page: data.page, // Giữ nguyên page từ response
           totalPages: data.totalPages,
         });
       } catch (error) {
         if (axios.isAxiosError(error)) {
           console.error("Lỗi gọi API:", error.response?.data);
           setApiError(
-            `Không thể tải sản phẩm: ${
+            `Could not load products: ${
               error.response?.data?.message || error.message
             }`
           );
         } else {
           console.error("Lỗi không xác định:", error);
-          setApiError("Đã xảy ra lỗi không mong muốn.");
+          setApiError("An unexpected error occurred.");
         }
       } finally {
         setLoading(false);
@@ -110,6 +110,7 @@ const ProductManagement: React.FC = () => {
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    // Khi filter thay đổi, quay về trang đầu tiên (page 0)
     setFilters((prev) => ({
       ...prev,
       [name]: value,
@@ -118,6 +119,7 @@ const ProductManagement: React.FC = () => {
   };
 
   const handlePageChange = (newPage: number) => {
+    // Chỉ cập nhật trang
     setFilters((prev) => ({
       ...prev,
       page: newPage,
@@ -147,14 +149,16 @@ const ProductManagement: React.FC = () => {
         }
       );
 
-      toast.success("Cập nhật thành công");
+      toast.success("Update successful");
     } catch (error) {
       console.error("Lỗi cập nhật trạng thái:", error);
       // Lỗi: Báo cho người dùng và (lý tưởng) là fetch lại data
       // hoặc rollback state, ở đây ta chỉ cảnh báo
       alert(
-        "Không thể cập nhật trạng thái. Dữ liệu có thể không đồng bộ, vui lòng tải lại trang."
+        "Could not update status. Data may be out of sync, please reload the page."
       );
+      // Optional: Rollback state if API call failed
+      // fetchProducts(); // Hoặc fetch lại data
     } finally {
       // 4. Tắt loading
       setPatchingStatusId(null);
@@ -163,25 +167,25 @@ const ProductManagement: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4">
-      {/* ... (Header và Filter giữ nguyên) ... */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Quản lý Sản phẩm</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Product Management</h1>
         <Link
           to="/admin/products/new"
           className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
         >
           <Plus size={18} className="mr-2" />
-          Thêm sản phẩm
+          Add Product
         </Link>
       </div>
 
+      {/* Filter Section */}
       <div className="bg-white p-4 rounded-lg shadow-md mb-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative">
             <input
               type="text"
               name="search"
-              placeholder="Tìm kiếm tên, slug, mô tả..."
+              placeholder="Search name, slug, description..."
               value={filters.search}
               onChange={handleFilterChange}
               className="w-full px-4 py-2 border rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -198,56 +202,53 @@ const ProductManagement: React.FC = () => {
               onChange={handleFilterChange}
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Tất cả trạng thái</option>
-              <option value="ACTIVE">Đang hoạt động (Active)</option>
-              <option value="DRAFT">Bản nháp (Draft)</option>
-              <option value="ARCHIVED">Lưu trữ (Archived)</option>
+              <option value="">All Statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="DRAFT">Draft</option>
+              <option value="ARCHIVED">Archived</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* 3. Bảng dữ liệu sản phẩm */}
+      {/* Product Table */}
       <div className="bg-white rounded-lg shadow-md overflow-x-auto">
-        {/* ... (Loading, Error, No products giữ nguyên) ... */}
         {loading && (
-          <div className="p-6 text-center text-gray-500">Đang tải...</div>
+          <div className="p-6 text-center text-gray-500">Loading...</div>
         )}
         {!loading && apiError && (
           <div className="p-6 text-center text-red-600">{apiError}</div>
         )}
         {!loading && !apiError && products.length === 0 && (
           <div className="p-6 text-center text-gray-500">
-            Không tìm thấy sản phẩm nào.
+            No products found.
           </div>
         )}
 
         {!loading && !apiError && products.length > 0 && (
           <table className="min-w-full divide-y divide-gray-200">
-            {/* ... (thead giữ nguyên) ... */}
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tên sản phẩm
+                  Product Name
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
+                  Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giá
+                  Price
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cập nhật lần cuối
+                  Last Updated
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Hành động
+                  Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {products.map((product) => (
                 <tr key={product.id}>
-                  {/* ... (td Tên sản phẩm giữ nguyên) ... */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {product.name}
@@ -255,7 +256,7 @@ const ProductManagement: React.FC = () => {
                     <div className="text-sm text-gray-500">{product.slug}</div>
                   </td>
 
-                  {/* --- CẬP NHẬT: Thay <span> bằng <select> --- */}
+                  {/* Status Dropdown */}
                   <td className="px-6 py-4 whitespace-nowrap">
                     {/* Hiển thị spinner nếu đang patching hàng này */}
                     {patchingStatusId === product.id ? (
@@ -268,7 +269,7 @@ const ProductManagement: React.FC = () => {
                         }
                         // Ngăn click vào select box trigger sự kiện click của hàng (nếu có)
                         onClick={(e) => e.stopPropagation()}
-                        className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full border-0 focus:ring-0
+                        className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full border-0 focus:ring-0 appearance-none bg-no-repeat bg-right pr-7
                           ${
                             product.status.toUpperCase() === "ACTIVE"
                               ? "bg-green-100 text-green-800"
@@ -276,6 +277,12 @@ const ProductManagement: React.FC = () => {
                               ? "bg-yellow-100 text-yellow-800"
                               : "bg-gray-100 text-gray-800"
                           }`}
+                        // Add basic dropdown arrow styling
+                        style={{
+                          backgroundImage: `url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>')`,
+                          backgroundPosition: "right 0.5rem center",
+                          backgroundSize: "0.8em",
+                        }}
                       >
                         <option value="ACTIVE">ACTIVE</option>
                         <option value="DRAFT">DRAFT</option>
@@ -284,32 +291,37 @@ const ProductManagement: React.FC = () => {
                     )}
                   </td>
 
-                  {/* ... (td Giá, Cập nhật, Hành động giữ nguyên) ... */}
+                  {/* Price */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {product.basePrice.toLocaleString("vi-VN", {
+                    {product.basePrice.toLocaleString("en-US", {
+                      // Use en-US for USD
                       style: "currency",
-                      currency: "VND",
+                      currency: "USD", // Or your desired currency
                     })}
                   </td>
+                  {/* Last Updated */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(product.updatedAt).toLocaleString("vi-VN")}
+                    {new Date(product.updatedAt).toLocaleString("en-US")}{" "}
+                    {/* Use en-US locale */}
                   </td>
+                  {/* Actions */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link
                       to={`/admin/products/${product.id}`}
                       className="text-blue-600 hover:text-blue-900 mr-4"
-                      title="Sửa"
+                      title="Edit"
                     >
                       <Edit size={18} />
                     </Link>
                     <button
+                      // Add actual delete logic here
                       onClick={() =>
                         alert(
-                          `Xóa sản phẩm ${product.id} (chưa cài đặt API DELETE)`
+                          `Delete product ${product.id} (DELETE API not set up)`
                         )
                       }
                       className="text-red-600 hover:text-red-900"
-                      title="Xóa"
+                      title="Delete"
                     >
                       <Trash2 size={18} />
                     </button>
@@ -321,26 +333,25 @@ const ProductManagement: React.FC = () => {
         )}
       </div>
 
-      {/* 4. Phân trang */}
-      {/* ... (Phân trang giữ nguyên) ... */}
+      {/* Pagination */}
       {!loading && !apiError && pagination.totalPages > 1 && (
         <div className="flex justify-between items-center mt-6">
           <button
             onClick={() => handlePageChange(pagination.page - 1)}
             disabled={pagination.page === 0}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Trang trước
+            Previous
           </button>
           <span className="text-sm text-gray-700">
-            Trang {pagination.page + 1} / {pagination.totalPages}
+            Page {pagination.page + 1} of {pagination.totalPages}
           </span>
           <button
             onClick={() => handlePageChange(pagination.page + 1)}
             disabled={pagination.page + 1 >= pagination.totalPages}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Trang sau
+            Next
           </button>
         </div>
       )}

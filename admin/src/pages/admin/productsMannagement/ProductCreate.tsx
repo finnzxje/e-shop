@@ -46,8 +46,8 @@ const ProductCreate: React.FC = () => {
         });
         setCategories(response.data);
       } catch (err) {
-        console.error("Không thể tải categories", err);
-        setError("Không thể tải danh sách danh mục.");
+        console.error("Unable to load categories", err);
+        setError("Unable to load category list.");
       }
     };
 
@@ -87,7 +87,7 @@ const ProductCreate: React.FC = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (product.categoryId === "") {
-      setError("Vui lòng chọn một danh mục.");
+      setError("Please select a category.");
       return;
     }
 
@@ -112,11 +112,13 @@ const ProductCreate: React.FC = () => {
     } catch (error: any) {
       console.error("Lỗi khi tạo sản phẩm:", error);
       if (error.response?.status === 409) {
-        setError("Lỗi: Slug này đã tồn tại. Vui lòng chọn một slug khác.");
+        setError(
+          "Error: This slug already exists. Please choose another slug."
+        );
       } else if (error.response?.status === 404) {
-        setError("Lỗi: Danh mục được chọn không tồn tại.");
+        setError("Error: The selected category does not exist.");
       } else {
-        setError("Đã xảy ra lỗi khi tạo sản phẩm.");
+        setError("An error occurred while creating the product.");
       }
     } finally {
       setSubmitting(false);
@@ -130,11 +132,11 @@ const ProductCreate: React.FC = () => {
         className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
       >
         <ArrowLeft size={18} className="mr-2" />
-        Quay lại danh sách sản phẩm
+        Return to product list
       </Link>
 
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        Tạo sản phẩm mới
+        Create new products
       </h1>
 
       <ProductForm

@@ -1,9 +1,8 @@
-// src/components/admin/products/ProductForm.tsx
 import React, { type ChangeEvent, type FormEvent } from "react";
 import { Save, Loader2, AlertCircle } from "lucide-react";
-import type { ProductFormPayload, Category } from "./types"; // (Bạn nên tạo file types.ts riêng)
+import type { ProductFormPayload, Category } from "./types";
 
-// --- Định nghĩa Props ---
+// --- Prop Definitions ---
 interface ProductFormProps {
   product: ProductFormPayload;
   categories: Category[];
@@ -12,7 +11,7 @@ interface ProductFormProps {
   error: string | null;
   isEditMode: boolean;
 
-  // Handlers được truyền từ component cha
+  // Handlers passed from the parent component
   onFormSubmit: (e: FormEvent) => void;
   onProductChange: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -34,7 +33,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   return (
     <form onSubmit={onFormSubmit} className="space-y-6">
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Thông tin cơ bản</h2>
+        <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
 
         {error && (
           <div className="flex items-center p-4 mb-4 text-red-800 bg-red-100 rounded-lg">
@@ -44,13 +43,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Tên sản phẩm */}
+          {/* Product Name */}
           <div>
             <label
               htmlFor="name"
               className="block text-sm font-medium text-gray-700"
             >
-              Tên sản phẩm
+              Product Name
             </label>
             <input
               type="text"
@@ -83,13 +82,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
           </div>
         </div>
 
-        {/* Mô tả */}
+        {/* Description */}
         <div className="mt-6">
           <label
             htmlFor="description"
             className="block text-sm font-medium text-gray-700"
           >
-            Mô tả
+            Description
           </label>
           <textarea
             id="description"
@@ -103,35 +102,35 @@ const ProductForm: React.FC<ProductFormProps> = ({
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Chi tiết & Phân loại</h2>
+        <h2 className="text-xl font-semibold mb-4">Details & Classification</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Giá cơ bản */}
+          {/* Base Price */}
           <div>
             <label
               htmlFor="basePrice"
               className="block text-sm font-medium text-gray-700"
             >
-              Giá cơ bản (Base Price)
+              Base Price
             </label>
             <input
               type="number"
               id="basePrice"
               name="basePrice"
               step="0.01"
-              value={product.basePrice}
+              value={product.basePrice === 0 ? "" : product.basePrice}
               onChange={onProductChange}
               required
               className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
-          {/* Danh mục */}
+          {/* Category */}
           <div>
             <label
               htmlFor="categoryId"
               className="block text-sm font-medium text-gray-700"
             >
-              Danh mục
+              Category
             </label>
             <select
               id="categoryId"
@@ -142,7 +141,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="" disabled>
-                -- Chọn danh mục --
+                -- Select a category --
               </option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
@@ -152,24 +151,24 @@ const ProductForm: React.FC<ProductFormProps> = ({
             </select>
           </div>
 
-          {/* Trạng thái */}
+          {/* Status */}
           <div>
             <label
               htmlFor="status"
               className="block text-sm font-medium text-gray-700"
             >
-              Trạng thái
+              Status
             </label>
             <select
               id="status"
               name="status"
-              value={product.status.toUpperCase()} // Luôn hiển thị chữ hoa
+              value={product.status.toUpperCase()} // Always display uppercase
               onChange={onProductChange}
               className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="DRAFT">Bản nháp (Draft)</option>
-              <option value="ACTIVE">Hoạt động (Active)</option>
-              <option value="ARCHIVED">Lưu trữ (Archived)</option>
+              <option value="DRAFT">Draft</option>
+              <option value="ACTIVE">Active</option>
+              <option value="ARCHIVED">Archived</option>
             </select>
           </div>
 
@@ -179,7 +178,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               htmlFor="gender"
               className="block text-sm font-medium text-gray-700"
             >
-              Giới tính (Gender)
+              Gender
             </label>
             <select
               id="gender"
@@ -189,8 +188,8 @@ const ProductForm: React.FC<ProductFormProps> = ({
               className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="unisex">Unisex</option>
-              <option value="mens">Nam (Men's)</option>
-              <option value="womens">Nữ (Women's)</option>
+              <option value="mens">Men's</option>
+              <option value="womens">Women's</option>
             </select>
           </div>
 
@@ -200,7 +199,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               htmlFor="productType"
               className="block text-sm font-medium text-gray-700"
             >
-              Loại sản phẩm (Product Type)
+              Product Type
             </label>
             <input
               type="text"
@@ -208,7 +207,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               name="productType"
               value={product.productType}
               onChange={onProductChange}
-              placeholder="Ví dụ: tops, shoes, accessories"
+              placeholder="e.g., tops, shoes, accessories"
               className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -219,7 +218,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               htmlFor="tags"
               className="block text-sm font-medium text-gray-700"
             >
-              Tags (cách nhau bằng dấu phẩy)
+              Tags (comma-separated)
             </label>
             <input
               type="text"
@@ -227,7 +226,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
               name="tags"
               value={tagsInput}
               onChange={onTagsChange}
-              placeholder="Ví dụ: essentials, organic"
+              placeholder="e.g., essentials, organic"
               className="mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
@@ -246,13 +245,13 @@ const ProductForm: React.FC<ProductFormProps> = ({
               htmlFor="featured"
               className="ml-2 block text-sm font-medium text-gray-700"
             >
-              Sản phẩm nổi bật (Featured)
+              Featured Product
             </label>
           </div>
         </div>
       </div>
 
-      {/* Nút Submit */}
+      {/* Submit Button */}
       <div className="flex justify-end">
         <button
           type="submit"
@@ -264,7 +263,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
           ) : (
             <Save size={18} className="mr-2" />
           )}
-          {isEditMode ? "Lưu thay đổi" : "Tạo sản phẩm"}
+          {isEditMode ? "Save Changes" : "Create Product"}
         </button>
       </div>
     </form>

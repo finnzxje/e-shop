@@ -1,4 +1,3 @@
-// src/components/admin/products/ProductMediaManagement.tsx
 import React, {
   useState,
   useEffect,
@@ -52,8 +51,8 @@ const ProductMediaManagement: React.FC<Props> = ({
         });
         setAllColors(response.data);
       } catch (err) {
-        console.error("Không thể tải danh sách màu", err);
-        setError("Không thể tải danh sách màu.");
+        console.error("Unable to load color list", err);
+        setError("Unable to load color list");
       }
     };
     fetchColors();
@@ -113,10 +112,8 @@ const ProductMediaManagement: React.FC<Props> = ({
       setUploadForm(initialFormState); // Reset form
       onUpdate(); // Báo cho component cha (ProductEdit) fetch lại
     } catch (err: any) {
-      console.error("Lỗi upload hình ảnh:", err);
-      setError(
-        `Upload thất bại: ${err.response?.data?.message || err.message}`
-      );
+      console.error("Error uploading image:", err);
+      setError(`Upload failed: ${err.response?.data?.message || err.message}`);
     } finally {
       setIsUploading(false);
     }
@@ -125,7 +122,7 @@ const ProductMediaManagement: React.FC<Props> = ({
   // 4. Xử lý Xóa
   const handleDeleteImage = async (imageId: string) => {
     if (
-      !window.confirm("Bạn có chắc chắn muốn xóa hình ảnh này không?") ||
+      !window.confirm("Are you sure you want to delete this image?") ||
       !user?.token
     ) {
       return;
@@ -141,25 +138,25 @@ const ProductMediaManagement: React.FC<Props> = ({
       // thành công!
       onUpdate(); // Báo cho component cha (ProductEdit) fetch lại
     } catch (err: any) {
-      console.error("Lỗi xóa hình ảnh:", err);
-      alert(`Xóa thất bại: ${err.response?.data?.message || err.message}`);
+      console.error("Error deleting images:", err);
+      alert(`Delete failure:${err.response?.data?.message || err.message}`);
     }
   };
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-      <h3 className="text-xl font-semibold mb-4">Quản lý Hình ảnh</h3>
+      <h3 className="text-xl font-semibold mb-4">Image management</h3>
 
       {/* --- Form Upload --- */}
       <form
         onSubmit={handleUploadSubmit}
         className="border-b pb-6 mb-6 space-y-4"
       >
-        <h4 className="font-semibold text-gray-700">Thêm hình ảnh mới</h4>
+        <h4 className="font-semibold text-gray-700">Add new images</h4>
         {error && <div className="text-red-600 text-sm">{error}</div>}
         <div>
           <label className="block text-sm font-medium text-gray-700">
-            Tập tin hình ảnh (bắt buộc)
+            Image file (required)
           </label>
           <input
             type="file"
@@ -176,7 +173,7 @@ const ProductMediaManagement: React.FC<Props> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Văn bản thay thế (Alt Text)
+              Alt Text
             </label>
             <input
               type="text"
@@ -188,7 +185,7 @@ const ProductMediaManagement: React.FC<Props> = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Gán vào màu (Tùy chọn)
+              Assign to color (Optional)
             </label>
             <select
               name="colorId"
@@ -196,7 +193,7 @@ const ProductMediaManagement: React.FC<Props> = ({
               onChange={handleFormChange}
               className="mt-1 block w-full border rounded-md shadow-sm"
             >
-              <option value="">Không gán màu</option>
+              <option value="">No color assigned</option>
               {allColors.map((color) => (
                 <option key={color.id} value={color.id}>
                   {color.name} ({color.code})
@@ -206,7 +203,7 @@ const ProductMediaManagement: React.FC<Props> = ({
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Thứ tự hiển thị
+              Display order
             </label>
             <input
               type="number"
@@ -226,7 +223,7 @@ const ProductMediaManagement: React.FC<Props> = ({
               className="h-4 w-4 text-blue-600 rounded"
             />
             <label htmlFor="isPrimary" className="ml-2 text-sm text-gray-700">
-              Đặt làm ảnh chính
+              Set as main photo
             </label>
           </div>
         </div>
@@ -241,7 +238,7 @@ const ProductMediaManagement: React.FC<Props> = ({
             <Upload size={18} />
           )}
           <span className="ml-2">
-            {isUploading ? "Đang tải lên..." : "Tải lên"}
+            {isUploading ? "Uploading..." : "Upload"}
           </span>
         </button>
       </form>
@@ -250,7 +247,7 @@ const ProductMediaManagement: React.FC<Props> = ({
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {images.length === 0 ? (
           <p className="text-gray-500 col-span-full">
-            Chưa có hình ảnh nào cho sản phẩm này.
+            There are no images for this product yet.
           </p>
         ) : (
           images.map((image) => (
@@ -269,7 +266,7 @@ const ProductMediaManagement: React.FC<Props> = ({
                 </p>
                 {image.primary && (
                   <span className="text-xs font-bold text-green-600">
-                    Ảnh chính
+                    Main photo
                   </span>
                 )}
                 {image.color && (
