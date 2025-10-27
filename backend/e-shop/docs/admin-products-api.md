@@ -4,7 +4,7 @@ Administrative endpoints for managing catalog products. All routes are prefixed 
 
 ## List Products
 
-`GET /api/admin/catalog/products`
+1.`GET /api/admin/catalog/products`
 
 Returns a paginated list of products with optional filtering.
 

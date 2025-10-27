@@ -7,7 +7,9 @@ import PrivateRoute from "./router/privateRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import UserManagement from "./pages/admin/UserManagement";
-import ProductManagement from "./pages/admin/ProductManagement";
+import ProductManagement from "./pages/admin/productsMannagement/ProductManagement";
+import ProductCreate from "./pages/admin/productsMannagement/ProductCreate";
+import ProductEdit from "./pages/admin/productsMannagement/ProductEdit";
 function App() {
   return (
     <AppProvider>
@@ -24,7 +26,25 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
+            {/* Route cho TẠO MỚI */}
+            <Route
+              path="/admin/products/new"
+              element={
+                <PrivateRoute requiredRole="ADMIN">
+                  <ProductCreate />
+                </PrivateRoute>
+              }
+            />
 
+            {/* Route cho CHỈNH SỬA */}
+            <Route
+              path="/admin/products/:productId"
+              element={
+                <PrivateRoute requiredRole="ADMIN">
+                  <ProductEdit />
+                </PrivateRoute>
+              }
+            />
             <Route path="users" element={<UserManagement />} />
             <Route path="products" element={<ProductManagement />} />
           </Route>
