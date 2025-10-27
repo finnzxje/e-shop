@@ -1,6 +1,7 @@
 package com.eshop.api.catalog.repository;
 
 import com.eshop.api.catalog.enums.Gender;
+import com.eshop.api.catalog.enums.ProductStatus;
 import com.eshop.api.catalog.model.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,7 @@ public interface ProductRepositoryCustom {
         Boolean inStock,
         BigDecimal priceMin,
         BigDecimal priceMax,
+        ProductStatus status,
         Pageable pageable
     );
 }
