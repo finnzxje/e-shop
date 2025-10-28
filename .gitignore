@@ -19,7 +19,7 @@ venv/
 checkdb.py
 data/
 seedSQL/
-images/
+
 
 .apt_generated
 .classpath
