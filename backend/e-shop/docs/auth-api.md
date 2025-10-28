@@ -10,7 +10,7 @@ The service uses stateless JWT bearer tokens. Successful authentication issues a
 
 `POST /api/auth/register`
 
-Creates a new customer account and returns the user profile (no tokens are generated on registration).
+Creates a new customer account, leaves it disabled, and triggers an activation email. No tokens are generated until the address is confirmed.
 
 **Request body**
 
@@ -33,7 +33,7 @@ Creates a new customer account and returns the user profile (no tokens are gener
     "email": "jane.doe@example.com",
     "firstName": "Jane",
     "lastName": "Doe",
-    "enabled": true,
+    "enabled": false,
     "createdAt": "2025-02-18T12:44:10.941Z",
     "token": null,
     "refreshToken": null,
@@ -48,7 +48,7 @@ Creates a new customer account and returns the user profile (no tokens are gener
 
 `POST /api/auth/login`
 
-Authenticates an existing user and returns both tokens alongside the user profile.
+Authenticates an existing (and activated) user and returns both tokens alongside the user profile. Accounts that have not been activated will fail authentication with a dedicated error.
 
 **Request body**
 
@@ -77,7 +77,8 @@ Authenticates an existing user and returns both tokens alongside the user profil
 
 **Error responses**
 
-- `401 Unauthorized` — invalid credentials.
+- `403 Forbidden` — account exists but is not activated yet.
+- `401 Unauthorized` — email/password combination is invalid.
 - `400 Bad Request` — malformed JSON body.
 
 ### Refresh Tokens
@@ -128,6 +129,52 @@ Returns the authenticated user's profile without issuing new tokens. Use this to
   ```
 
 - `401 Unauthorized` — missing or invalid access token.
+
+### Activate Account
+
+`GET /api/auth/activate?token=<token>`
+
+Confirms the activation token sent to the user's email address. Clients should call this endpoint after a user follows the link from their inbox.
+
+**Successful response** — `200 OK`:
+
+```json
+{
+  "activated": true,
+  "message": "Account activated successfully."
+}
+```
+
+**Error responses**
+
+- `400 Bad Request` — token missing, already used, or expired. Resend the activation email in this case.
+
+### Resend Activation Email
+
+`POST /api/auth/activate/resend`
+
+Requests a fresh activation token for a user who registered but has not confirmed their address yet.
+
+**Request body**
+
+```json
+{
+  "email": "jane.doe@example.com"
+}
+```
+
+**Responses**
+
+- `200 OK` — confirmation email queued again:
+
+  ```json
+  {
+    "activated": false,
+    "message": "Activation email sent."
+  }
+  ```
+- `404 Not Found` — no account exists for the provided email.
+- `409 Conflict` — the account is already activated.
 
 ### Test Current Token
 
@@ -205,3 +252,11 @@ The application seeds an administrator during startup for development and manual
 - Password: `123456`
 
 Use this account to exercise the admin-only endpoints.
+
+## Client Integration Notes
+
+- **Activation link routing** — activation emails point to the frontend at `http://localhost:5173/auth/activate?token=<token>` (configurable via `APP_ACTIVATION_BASE_URL`). The frontend route should read the `token` query param and call `GET /api/auth/activate?token=<token>` against the backend.
+- **Resend flow** — surface a “Resend activation email” action that calls `POST /api/auth/activate/resend` with the user's email. Handle `404` (unknown email) and `409` (already activated) with helpful messaging.
+- **Post-activation UX** — after a `200` response with `activated: true`, direct the user to the login page. If the backend returns `400`, surface the message and offer a “Resend activation email” option.
+- **Disabled accounts** — until activation succeeds, `/api/auth/login` responds with `403` and a message directing the user to verify their email. Surface that copy and offer the resend action.
+- **Session gating** — hide restricted areas until `/api/auth/me` confirms `enabled: true` for the current session.

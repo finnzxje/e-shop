@@ -4,6 +4,7 @@ import com.eshop.api.catalog.dto.PageResponse;
 import com.eshop.api.catalog.dto.ProductResponse;
 import com.eshop.api.catalog.dto.ProductSummaryResponse;
 import com.eshop.api.catalog.enums.Gender;
+import com.eshop.api.catalog.enums.ProductStatus;
 import com.eshop.api.catalog.model.Category;
 import com.eshop.api.catalog.model.Product;
 import com.eshop.api.catalog.repository.CategoryRepository;
@@ -15,6 +16,7 @@ import com.eshop.api.exception.ProductNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 @Service
@@ -35,12 +38,12 @@ public class ProductService {
     private final ProductMapper productMapper;
 
     public PageResponse<ProductSummaryResponse> getProducts(Pageable pageable) {
-        Page<Product> page = productRepository.findBy(pageable);
+        Page<Product> page = productRepository.findByStatus(ProductStatus.ACTIVE, pageable);
         return productMapper.toPageResponse(page);
     }
 
     public PageResponse<ProductSummaryResponse> getProductsByGender(Gender gender, Pageable pageable) {
-        Page<Product> page = productRepository.findByGender(gender, pageable);
+        Page<Product> page = productRepository.findByGenderAndStatus(gender, ProductStatus.ACTIVE, pageable);
         return productMapper.toPageResponse(page);
     }
 
@@ -51,7 +54,7 @@ public class ProductService {
 
         List<Integer> categoryIds = resolveCategoryHierarchy(categorySlug);
 
-        Page<Product> page = productRepository.findByCategory_IdIn(categoryIds, pageable);
+        Page<Product> page = productRepository.findByCategory_IdInAndStatus(categoryIds, ProductStatus.ACTIVE, pageable);
         return productMapper.toPageResponse(page);
     }
 
@@ -108,14 +111,15 @@ public class ProductService {
                 Boolean.TRUE.equals(inStock) ? Boolean.TRUE : null,
                 priceMin,
                 priceMax,
+                ProductStatus.ACTIVE,
                 pageable
             );
         } else if (gender != null && hasCategory) {
-            page = productRepository.findByGenderAndCategory_IdIn(gender, categoryIds, pageable);
+            page = productRepository.findByGenderAndCategory_IdInAndStatus(gender, categoryIds, ProductStatus.ACTIVE, pageable);
         } else if (gender != null) {
-            page = productRepository.findByGender(gender, pageable);
+            page = productRepository.findByGenderAndStatus(gender, ProductStatus.ACTIVE, pageable);
         } else {
-            page = productRepository.findByCategory_IdIn(categoryIds, pageable);
+            page = productRepository.findByCategory_IdInAndStatus(categoryIds, ProductStatus.ACTIVE, pageable);
         }
 
         return productMapper.toPageResponse(page);
@@ -124,13 +128,20 @@ public class ProductService {
     public PageResponse<ProductSummaryResponse> searchProducts(String query, Pageable pageable) {
         String normalizedQuery = normalizeQuery(query);
 
-        Page<Product> page = productRepository
-            .findByNameContainingIgnoreCaseOrSlugContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
-                normalizedQuery,
-                normalizedQuery,
-                normalizedQuery,
-                pageable
+        final String normalizedTerm = normalizedQuery.toLowerCase(Locale.ROOT);
+        Specification<Product> specification = (root, criteriaQuery, cb) -> {
+            String like = "%" + normalizedTerm + "%";
+            return cb.and(
+                cb.equal(root.get("status"), ProductStatus.ACTIVE),
+                cb.or(
+                    cb.like(cb.lower(root.get("name")), like),
+                    cb.like(cb.lower(root.get("slug")), like),
+                    cb.like(cb.lower(root.get("description")), like)
+                )
             );
+        };
+
+        Page<Product> page = productRepository.findAll(specification, pageable);
 
         return productMapper.toPageResponse(page);
     }

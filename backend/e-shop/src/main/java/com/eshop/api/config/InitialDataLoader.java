@@ -48,6 +48,17 @@ public class InitialDataLoader implements CommandLineRunner {
                 return created;
             });
 
+        roleRepository.findByName("STAFF")
+                .orElseGet(() -> {
+                    Role created = Role.builder()
+                            .name("STAFF")
+                            .description("Staff role with access to product and order management")
+                            .build();
+                    roleRepository.save(created);
+                    log.info("Created STAFF role");
+                    return created;
+                });
+
         bootstrapAdminUser(adminRole);
     }
 
