@@ -54,7 +54,6 @@ const ProductManagement: React.FC = () => {
   const [patchingStatusId, setPatchingStatusId] = useState<string | null>(null);
 
   useEffect(() => {
-    // ... (Toàn bộ useEffect của bạn giữ nguyên, không thay đổi)
     const fetchProducts = async () => {
       setLoading(true);
       setApiError(null);
@@ -79,9 +78,8 @@ const ProductManagement: React.FC = () => {
         const data = response.data;
         console.log(params);
         setProducts(data.content);
-        // Cập nhật state phân trang dựa trên response (thường là 0-based)
         setPagination({
-          page: data.page, // Giữ nguyên page từ response
+          page: data.page,
           totalPages: data.totalPages,
         });
       } catch (error) {
@@ -119,7 +117,6 @@ const ProductManagement: React.FC = () => {
   };
 
   const handlePageChange = (newPage: number) => {
-    // Chỉ cập nhật trang
     setFilters((prev) => ({
       ...prev,
       page: newPage,
@@ -149,7 +146,7 @@ const ProductManagement: React.FC = () => {
         }
       );
 
-      toast.success("Update successful");
+      toast.success("Update status successful!");
     } catch (error) {
       console.error("Lỗi cập nhật trạng thái:", error);
       // Lỗi: Báo cho người dùng và (lý tưởng) là fetch lại data

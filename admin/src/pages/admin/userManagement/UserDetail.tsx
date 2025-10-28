@@ -64,13 +64,10 @@ const UserDetail: React.FC = () => {
         );
         setUserDetail(response.data);
       } catch (err: any) {
-        // Log giữ tiếng Việt
         console.error("Lỗi khi tải chi tiết người dùng:", err);
         if (err.response?.status === 404) {
-          // Lỗi logic giữ tiếng Việt
           setError("Không tìm thấy người dùng này.");
         } else {
-          // Lỗi logic giữ tiếng Việt
           setError("Không thể tải chi tiết người dùng. Vui lòng thử lại.");
         }
       } finally {
@@ -82,9 +79,8 @@ const UserDetail: React.FC = () => {
   }, [userId, user?.token]);
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Not verified"; // ĐÃ SỬA (UI)
-    // Sửa locale để hiển thị ngày tháng kiểu US
-    return new Date(dateString).toLocaleString("en-US"); // ĐÃ SỬA (UI)
+    if (!dateString) return "Not verified"; 
+    return new Date(dateString).toLocaleString("en-US"); 
   };
 
   if (loading) {
@@ -98,7 +94,6 @@ const UserDetail: React.FC = () => {
   if (error) {
     return (
       <div className="container mx-auto p-4 text-center">
-        {/* Lỗi hiển thị cho người dùng (UI) -> Dịch sang tiếng Anh */}
         <h1 className="text-2xl font-bold text-red-600 mb-4">
           {error === "Không tìm thấy người dùng này."
             ? "User not found."

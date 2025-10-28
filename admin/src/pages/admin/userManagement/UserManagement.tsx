@@ -18,8 +18,9 @@ import {
   AlertCircle,
 } from "lucide-react";
 import api from "../../../config/axios";
-import { useAppProvider } from "../../../context/useContex"; // Đã sửa: "../../../context/useContex"
+import { useAppProvider } from "../../../context/useContex";
 import RoleEditModal from "./RoleEditModal";
+import toast from "react-hot-toast";
 
 interface AdminUserSummary {
   id: string;
@@ -112,7 +113,7 @@ const UserManagement: React.FC = () => {
       setUsers(content);
       setPagination(pageInfo);
     } catch (err: any) {
-      console.error("Error fetching user list:", err); // ĐÃ SỬA
+      console.error("Error fetching user list:", err);
       setError("Unable to load user list. Please try again later.");
     } finally {
       setLoading(false);
@@ -158,9 +159,10 @@ const UserManagement: React.FC = () => {
         { enabled: newStatus },
         { headers: { Authorization: `Bearer ${user?.token}` } }
       );
+      toast.success("Status change successful!");
       fetchUsers();
     } catch (err) {
-      console.error("Error updating status:", err); // ĐÃ SỬA
+      console.error("Error updating status:", err);
       setError("Status update failed.");
     } finally {
       setActionLoading((prev) => ({ ...prev, [targetUser.id]: false }));
@@ -188,12 +190,12 @@ const UserManagement: React.FC = () => {
       handleCloseModal();
       fetchUsers();
     } catch (err: any) {
-      console.error("Error saving roles:", err); // ĐÃ SỬA
+      console.error("Error saving roles:", err);
 
       if (err.response?.status === 404) {
-        throw new Error("One or more roles do not exist."); // ĐÃ SỬA
+        throw new Error("One or more roles do not exist.");
       }
-      throw new Error("Could not save roles. Please try again."); // ĐÃ SỬA
+      throw new Error("Could not save roles. Please try again.");
     }
   };
   // ===============================
@@ -201,8 +203,7 @@ const UserManagement: React.FC = () => {
   // --- Render ---
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">User Management</h1>{" "}
-      {/* ĐÃ SỬA */}
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">User Management</h1>
       <form
         onSubmit={handleFilterSubmit}
         className="bg-white p-4 rounded-lg shadow-md mb-6"
@@ -264,8 +265,8 @@ const UserManagement: React.FC = () => {
               className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">All status</option>
-              <option value="true">Active</option> {/* ĐÃ SỬA */}
-              <option value="false">Disabled</option> {/* ĐÃ SỬA */}
+              <option value="true">Active</option>
+              <option value="false">Disabled</option>
             </select>
           </div>
         </div>
@@ -313,7 +314,7 @@ const UserManagement: React.FC = () => {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    Full Name {/* ĐÃ SỬA */}
+                    Full Name
                   </th>
                   <th
                     scope="col"
@@ -331,13 +332,13 @@ const UserManagement: React.FC = () => {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    Date Created {/* ĐÃ SỬA */}
+                    Date Created
                   </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    Actions {/* ĐÃ SỬA */}
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -369,17 +370,16 @@ const UserManagement: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {u.enabled ? (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                          Active {/* ĐÃ SỬA */}
+                          Active
                         </span>
                       ) : (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                          Disabled {/* ĐÃ SỬA */}
+                          Disabled
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(u.createdAt).toLocaleDateString("en-US")}{" "}
-                      {/* ĐÃ SỬA */}
+                      {new Date(u.createdAt).toLocaleDateString("en-US")}
                     </td>
 
                     {/* === Actions === */}
@@ -394,7 +394,7 @@ const UserManagement: React.FC = () => {
                               ? "bg-red-500 hover:bg-red-600"
                               : "bg-green-500 hover:bg-green-600"
                           } disabled:opacity-50`}
-                          title={u.enabled ? "Disable" : "Activate"} // ĐÃ SỬA
+                          title={u.enabled ? "Disable" : "Activate"}
                         >
                           {actionLoading[u.id] ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -408,7 +408,7 @@ const UserManagement: React.FC = () => {
                         <button
                           onClick={() => handleOpenModal(u)}
                           className="p-2 rounded-full text-blue-600 hover:bg-blue-100"
-                          title="Edit roles" // ĐÃ SỬA
+                          title="Edit roles"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -416,7 +416,7 @@ const UserManagement: React.FC = () => {
                         <Link
                           to={`/admin/users/${u.id}`}
                           className="p-2 rounded-full text-gray-600 hover:bg-gray-100"
-                          title="View details" // ĐÃ SỬA
+                          title="View details"
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
@@ -437,35 +437,35 @@ const UserManagement: React.FC = () => {
                     disabled={!pagination.hasPrevious}
                     className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                   >
-                    Previous {/* ĐÃ SỬA */}
+                    Previous
                   </button>
                   <button
                     onClick={() => handlePageChange(pagination.page + 1)}
                     disabled={!pagination.hasNext}
                     className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
                   >
-                    Next {/* ĐÃ SỬA */}
+                    Next
                   </button>
                 </div>
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700">
-                      Showing {/* ĐÃ SỬA */}
+                      Showing
                       <span className="font-medium">
                         {pagination.page * PAGE_SIZE + 1}
-                      </span>{" "}
-                      to {/* ĐÃ SỬA */}
+                      </span>
+                      to
                       <span className="font-medium">
                         {Math.min(
                           (pagination.page + 1) * PAGE_SIZE,
                           pagination.totalElements
                         )}
-                      </span>{" "}
-                      of {/* ĐÃ SỬA */}
+                      </span>
+                      of
                       <span className="font-medium">
                         {pagination.totalElements}
-                      </span>{" "}
-                      results {/* ĐÃ SỬA */}
+                      </span>
+                      results
                     </p>
                   </div>
                   <div>
@@ -478,19 +478,18 @@ const UserManagement: React.FC = () => {
                         disabled={!pagination.hasPrevious}
                         className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                       >
-                        <span className="sr-only">Previous</span> {/* ĐÃ SỬA */}
+                        <span className="sr-only">Previous</span>
                         <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                       </button>
                       <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                        Page {pagination.page + 1} / {pagination.totalPages}{" "}
-                        {/* ĐÃ SỬA */}
+                        Page {pagination.page + 1} / {pagination.totalPages}
                       </span>
                       <button
                         onClick={() => handlePageChange(pagination.page + 1)}
                         disabled={!pagination.hasNext}
                         className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                       >
-                        <span className="sr-only">Next</span> {/* ĐÃ SỬA */}
+                        <span className="sr-only">Next</span>
                         <ChevronRight className="h-5 w-5" aria-hidden="true" />
                       </button>
                     </nav>
