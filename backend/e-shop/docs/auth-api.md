@@ -48,7 +48,7 @@ Creates a new customer account, leaves it disabled, and triggers an activation e
 
 `POST /api/auth/login`
 
-Authenticates an existing (and activated) user and returns both tokens alongside the user profile. Accounts that have not been activated will fail authentication.
+Authenticates an existing (and activated) user and returns both tokens alongside the user profile. Accounts that have not been activated will fail authentication with a dedicated error.
 
 **Request body**
 
@@ -77,7 +77,8 @@ Authenticates an existing (and activated) user and returns both tokens alongside
 
 **Error responses**
 
-- `401 Unauthorized` — invalid credentials.
+- `403 Forbidden` — account exists but is not activated yet.
+- `401 Unauthorized` — email/password combination is invalid.
 - `400 Bad Request` — malformed JSON body.
 
 ### Refresh Tokens
@@ -257,5 +258,5 @@ Use this account to exercise the admin-only endpoints.
 - **Activation link routing** — activation emails point to the frontend at `http://localhost:5173/auth/activate?token=<token>` (configurable via `APP_ACTIVATION_BASE_URL`). The frontend route should read the `token` query param and call `GET /api/auth/activate?token=<token>` against the backend.
 - **Resend flow** — surface a “Resend activation email” action that calls `POST /api/auth/activate/resend` with the user's email. Handle `404` (unknown email) and `409` (already activated) with helpful messaging.
 - **Post-activation UX** — after a `200` response with `activated: true`, direct the user to the login page. If the backend returns `400`, surface the message and offer a “Resend activation email” option.
-- **Disabled accounts** — until activation succeeds, `/api/auth/login` will fail even with correct credentials. Guide users to activate instead of showing a generic “invalid credentials” message.
+- **Disabled accounts** — until activation succeeds, `/api/auth/login` responds with `403` and a message directing the user to verify their email. Surface that copy and offer the resend action.
 - **Session gating** — hide restricted areas until `/api/auth/me` confirms `enabled: true` for the current session.
