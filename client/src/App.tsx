@@ -13,6 +13,7 @@ import PaymentResult from "./components/paymentResult";
 import Wishlist from "./pages/wishlist";
 import PurchasedItems from "./pages/purchasedItems";
 import NotFound from "./pages/notFoundPages";
+import ActivateAccount from "./pages/ActivateAccount";
 function App() {
   return (
     <BrowserRouter>
@@ -30,6 +31,7 @@ function App() {
           <Route path="/edit-address" element={<EditAddress />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/purchase" element={<PurchasedItems />} />
+          <Route path="/auth/activate" element={<ActivateAccount />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Footer />

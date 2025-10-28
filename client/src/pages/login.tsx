@@ -45,8 +45,7 @@ export default function Login() {
         setPassword("");
         navigate("/");
       } catch (error: any) {
-        // toast.error(error.response.data.message);
-        toast.error("Incorrect email or password");
+        toast.error(error.response.data.message);
       }
     }
   };
