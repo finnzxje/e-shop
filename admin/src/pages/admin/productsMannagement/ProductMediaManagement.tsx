@@ -7,12 +7,12 @@ import React, {
 import api from "../../../config/axios";
 import { useAppProvider } from "../../../context/useContex";
 import { Upload, Trash2, Loader2 } from "lucide-react";
-import type { ProductImage, Color } from "./types"; // Import từ file types.ts
-
+import type { ProductImage, Color } from "./types";
+import toast from "react-hot-toast";
 interface Props {
   productId: string;
-  initialImages: ProductImage[]; // Nhận hình ảnh từ ProductEdit
-  onUpdate: () => void; // Hàm để gọi khi có thay đổi (báo cha fetch lại)
+  initialImages: ProductImage[];
+  onUpdate: () => void;
 }
 
 // --- State cho form upload ---
@@ -21,7 +21,7 @@ const initialFormState = {
   altText: "",
   displayOrder: 0,
   isPrimary: false,
-  colorId: "", // Sẽ là ID của màu
+  colorId: "",
 };
 
 const ProductMediaManagement: React.FC<Props> = ({
@@ -108,9 +108,10 @@ const ProductMediaManagement: React.FC<Props> = ({
           },
         }
       );
-      // thành công!
-      setUploadForm(initialFormState); // Reset form
-      onUpdate(); // Báo cho component cha (ProductEdit) fetch lại
+
+      setUploadForm(initialFormState);
+      onUpdate();
+      toast.success("Photo uploaded successfully!");
     } catch (err: any) {
       console.error("Error uploading image:", err);
       setError(`Upload failed: ${err.response?.data?.message || err.message}`);
@@ -135,8 +136,8 @@ const ProductMediaManagement: React.FC<Props> = ({
           headers: { Authorization: `Bearer ${user.token}` },
         }
       );
-      // thành công!
-      onUpdate(); // Báo cho component cha (ProductEdit) fetch lại
+      toast.success("Photo deleted successfully!");
+      onUpdate();
     } catch (err: any) {
       console.error("Error deleting images:", err);
       alert(`Delete failure:${err.response?.data?.message || err.message}`);
@@ -286,7 +287,6 @@ const ProductMediaManagement: React.FC<Props> = ({
               >
                 <Trash2 size={14} />
               </button>
-              {/* TODO: Nút Edit (PATCH) có thể được thêm ở đây */}
             </div>
           ))
         )}

@@ -107,7 +107,6 @@ const ProductEdit: React.FC = () => {
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
-    // Update the Form's state
     setProductForm((prev) => ({
       ...prev,
       [name]:
@@ -154,7 +153,7 @@ const ProductEdit: React.FC = () => {
       });
 
       await fetchProduct();
-      toast.success("Update successful!");
+      toast.success("Updated information successfully!");
     } catch (error: any) {
       console.error("Error saving product:", error);
       if (error.response?.status === 409) {
