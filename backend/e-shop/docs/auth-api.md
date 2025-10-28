@@ -10,7 +10,7 @@ The service uses stateless JWT bearer tokens. Successful authentication issues a
 
 `POST /api/auth/register`
 
-Creates a new customer account and returns the user profile (no tokens are generated on registration).
+Creates a new customer account, leaves it disabled, and triggers an activation email. No tokens are generated until the address is confirmed.
 
 **Request body**
 
@@ -33,7 +33,7 @@ Creates a new customer account and returns the user profile (no tokens are gener
     "email": "jane.doe@example.com",
     "firstName": "Jane",
     "lastName": "Doe",
-    "enabled": true,
+    "enabled": false,
     "createdAt": "2025-02-18T12:44:10.941Z",
     "token": null,
     "refreshToken": null,
@@ -48,7 +48,7 @@ Creates a new customer account and returns the user profile (no tokens are gener
 
 `POST /api/auth/login`
 
-Authenticates an existing user and returns both tokens alongside the user profile.
+Authenticates an existing (and activated) user and returns both tokens alongside the user profile. Accounts that have not been activated will fail authentication.
 
 **Request body**
 
@@ -129,6 +129,25 @@ Returns the authenticated user's profile without issuing new tokens. Use this to
 
 - `401 Unauthorized` — missing or invalid access token.
 
+### Activate Account
+
+`GET /api/auth/activate?token=<token>`
+
+Confirms the activation token sent to the user's email address. Clients should call this endpoint after a user follows the link from their inbox.
+
+**Successful response** — `200 OK`:
+
+```json
+{
+  "activated": true,
+  "message": "Account activated successfully."
+}
+```
+
+**Error responses**
+
+- `400 Bad Request` — token missing, already used, or expired. Resend the activation email in this case.
+
 ### Test Current Token
 
 `GET /api/auth/test-token`
@@ -205,3 +224,10 @@ The application seeds an administrator during startup for development and manual
 - Password: `123456`
 
 Use this account to exercise the admin-only endpoints.
+
+## Client Integration Notes
+
+- **Activation link routing** — activation emails point to the frontend at `http://localhost:5173/auth/activate?token=<token>` (configurable via `APP_ACTIVATION_BASE_URL`). The frontend route should read the `token` query param and call `GET /api/auth/activate?token=<token>` against the backend.
+- **Post-activation UX** — after a `200` response with `activated: true`, direct the user to the login page. If the backend returns `400`, surface the message and offer a “Resend activation email” option.
+- **Disabled accounts** — until activation succeeds, `/api/auth/login` will fail even with correct credentials. Guide users to activate instead of showing a generic “invalid credentials” message.
+- **Session gating** — hide restricted areas until `/api/auth/me` confirms `enabled: true` for the current session.

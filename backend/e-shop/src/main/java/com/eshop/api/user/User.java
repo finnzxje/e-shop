@@ -45,7 +45,7 @@ public class User {
 
     @Column(name = "enabled", nullable = false)
     @Builder.Default
-    private Boolean enabled = true;
+    private Boolean enabled = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

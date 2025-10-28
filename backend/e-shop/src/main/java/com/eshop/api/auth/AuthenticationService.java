@@ -36,6 +36,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final AccountActivationService accountActivationService;
 
     public AuthResponse register(RegisterRequest request) {
         log.info("Registering new user with email: {}", request.getEmail());
@@ -49,13 +50,19 @@ public class AuthenticationService {
             throw new RoleNotFoundException("CUSTOMER role not found in the system");
         }
 
-        User user = User.builder().email(request.getEmail()).passwordHash(passwordEncoder.encode(request.getPassword())).firstName(
-                request.getFirstName()).lastName(request.getLastName()).enabled(true).roles(Collections.singleton(
-                customerRoleOpt.get())).build();
+        User user = User.builder()
+                .email(request.getEmail())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .roles(Collections.singleton(customerRoleOpt.get()))
+                .build();
 
         user = userRepository.save(user);
 
         log.info("Successfully registered user with ID: {}", user.getId());
+
+        accountActivationService.sendActivationToken(user);
 
         return new AuthResponse(user.getId(),
                 user.getEmail(),

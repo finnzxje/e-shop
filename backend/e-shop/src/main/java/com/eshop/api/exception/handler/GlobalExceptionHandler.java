@@ -1,6 +1,7 @@
 package com.eshop.api.exception.handler;
 
 import com.eshop.api.exception.ApiException;
+import com.eshop.api.exception.InvalidActivationTokenException;
 import com.eshop.api.exception.InvalidJwtException;
 import com.eshop.api.exception.RoleNotFoundException;
 import com.eshop.api.exception.UserAlreadyExistsException;
@@ -128,6 +129,22 @@ public class GlobalExceptionHandler {
         );
 
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(InvalidActivationTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidActivationTokenException(InvalidActivationTokenException ex,
+                                                                               WebRequest request) {
+        log.warn("Invalid activation token: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.BAD_REQUEST.value(),
+            "Bad Request",
+            ex.getMessage(),
+            Instant.now(),
+            request.getDescription(false).replace("uri=", "")
+        );
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

@@ -22,7 +22,7 @@ Content-Type: application/json
 }
 
 
-###
+### 
 
 POST http://localhost:8080/api/auth/login HTTP/1.1
 Content-Type: application/json
@@ -59,3 +59,8 @@ Content-Type: application/json
 
 GET http://localhost:8080/actuator/health HTTP/1.1
 Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc1ODI5Njg1NiwiZXhwIjoxNzU4MzAwNDU2fQ.slJmDwZHJ1th4LpBoMEXkOJDK_vPl44E7tF3n0RIHSw
+
+
+### 
+
+GET http://localhost:8080/api/auth/activate?token=afe3bd2b-3378-431e-b222-1ac09f421ffe HTTP/1.1
