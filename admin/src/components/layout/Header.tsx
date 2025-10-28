@@ -14,7 +14,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const handleLogout = () => {
     logout();
     toast.success("Signed out successfully!");
-    navigate("/admin/login");
+    navigate("/");
   };
 
   return (
