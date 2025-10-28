@@ -11,8 +11,7 @@ import {
   MapPin,
 } from "lucide-react";
 import api from "../../../config/axios";
-import { useAppProvider } from "../../../context/useContex"; // Đã sửa: ../../../context/useContex
-
+import { useAppProvider } from "../../../context/useContex";
 interface UserAddress {
   id: string;
   fullName: string;
@@ -48,7 +47,6 @@ const UserDetail: React.FC = () => {
 
   useEffect(() => {
     if (!userId || !user?.token) {
-      // Lỗi logic giữ tiếng Việt
       setError("Thiếu thông tin ID người dùng hoặc token.");
       setLoading(false);
       return;
