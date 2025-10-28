@@ -17,7 +17,7 @@ POST http://localhost:8080/api/auth/login HTTP/1.1
 Content-Type: application/json
 
 {
-  "email": "test@gmail.com",
+  "email": "huynhminhthinh003@gmail.com",
   "password": "testpassword"
 }
 
@@ -63,4 +63,14 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlb
 
 ### 
 
-GET http://localhost:8080/api/auth/activate?token=afe3bd2b-3378-431e-b222-1ac09f421ffe HTTP/1.1
+GET http://localhost:8080/api/auth/activate?token=26440601-48de-4ae0-9620-830507527eee HTTP/1.1
+
+
+### 
+
+POST http://localhost:8080/api/auth/activate/resend HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "huynhminhthinh003@gmail.com"
+}

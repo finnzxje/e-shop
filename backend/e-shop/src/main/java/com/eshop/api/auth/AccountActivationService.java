@@ -2,6 +2,8 @@ package com.eshop.api.auth;
 
 import com.eshop.api.email.EmailService;
 import com.eshop.api.exception.InvalidActivationTokenException;
+import com.eshop.api.exception.UserAlreadyActivatedException;
+import com.eshop.api.exception.UserNotFoundException;
 import com.eshop.api.user.User;
 import com.eshop.api.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +51,19 @@ public class AccountActivationService {
                 .toUriString();
 
         emailService.sendAccountActivationEmail(user, activationLink);
+    }
+
+    @Transactional
+    public void resendActivationToken(String email) {
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
+
+        if (Boolean.TRUE.equals(user.getEnabled())) {
+            throw new UserAlreadyActivatedException(email);
+        }
+
+        log.info("Resending activation email to {}", email);
+        sendActivationToken(user);
     }
 
     @Transactional

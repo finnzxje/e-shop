@@ -148,6 +148,33 @@ Confirms the activation token sent to the user's email address. Clients should c
 
 - `400 Bad Request` — token missing, already used, or expired. Resend the activation email in this case.
 
+### Resend Activation Email
+
+`POST /api/auth/activate/resend`
+
+Requests a fresh activation token for a user who registered but has not confirmed their address yet.
+
+**Request body**
+
+```json
+{
+  "email": "jane.doe@example.com"
+}
+```
+
+**Responses**
+
+- `200 OK` — confirmation email queued again:
+
+  ```json
+  {
+    "activated": false,
+    "message": "Activation email sent."
+  }
+  ```
+- `404 Not Found` — no account exists for the provided email.
+- `409 Conflict` — the account is already activated.
+
 ### Test Current Token
 
 `GET /api/auth/test-token`
@@ -228,6 +255,7 @@ Use this account to exercise the admin-only endpoints.
 ## Client Integration Notes
 
 - **Activation link routing** — activation emails point to the frontend at `http://localhost:5173/auth/activate?token=<token>` (configurable via `APP_ACTIVATION_BASE_URL`). The frontend route should read the `token` query param and call `GET /api/auth/activate?token=<token>` against the backend.
+- **Resend flow** — surface a “Resend activation email” action that calls `POST /api/auth/activate/resend` with the user's email. Handle `404` (unknown email) and `409` (already activated) with helpful messaging.
 - **Post-activation UX** — after a `200` response with `activated: true`, direct the user to the login page. If the backend returns `400`, surface the message and offer a “Resend activation email” option.
 - **Disabled accounts** — until activation succeeds, `/api/auth/login` will fail even with correct credentials. Guide users to activate instead of showing a generic “invalid credentials” message.
 - **Session gating** — hide restricted areas until `/api/auth/me` confirms `enabled: true` for the current session.

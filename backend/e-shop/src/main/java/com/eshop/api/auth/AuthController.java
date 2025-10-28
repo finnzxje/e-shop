@@ -6,6 +6,7 @@ import com.eshop.api.auth.dto.AuthStatusResponse;
 import com.eshop.api.auth.dto.LoginRequest;
 import com.eshop.api.auth.dto.RefreshTokenRequest;
 import com.eshop.api.auth.dto.RegisterRequest;
+import com.eshop.api.auth.dto.ResendActivationRequest;
 import com.eshop.api.exception.InvalidJwtException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -80,5 +81,11 @@ public class AuthController {
     public ResponseEntity<ActivationResponse> activateAccount(@RequestParam("token") String token) {
         accountActivationService.confirmToken(token);
         return ResponseEntity.ok(new ActivationResponse(true, "Account activated successfully."));
+    }
+
+    @PostMapping("/activate/resend")
+    public ResponseEntity<ActivationResponse> resendActivation(@Valid @RequestBody ResendActivationRequest request) {
+        accountActivationService.resendActivationToken(request.email());
+        return ResponseEntity.ok(new ActivationResponse(false, "Activation email sent."));
     }
 }
