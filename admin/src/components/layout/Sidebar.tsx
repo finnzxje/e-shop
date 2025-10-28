@@ -1,6 +1,11 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, ShoppingCart } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  ShoppingCart,
+  ClipboardList,
+} from "lucide-react";
 
 type SidebarProps = {
   isCollapsed: boolean;
@@ -17,6 +22,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
       to: "/admin/products",
       icon: <ShoppingCart size={20} />,
       text: "Product Management",
+    },
+    {
+      to: "/admin/orders",
+      icon: <ClipboardList size={20} />,
+      text: "Manage Orders",
     },
   ];
 

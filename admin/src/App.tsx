@@ -11,6 +11,8 @@ import ProductManagement from "./pages/admin/productsMannagement/ProductManageme
 import ProductCreate from "./pages/admin/productsMannagement/ProductCreate";
 import ProductEdit from "./pages/admin/productsMannagement/ProductEdit";
 import UserDetail from "./pages/admin/userManagement/UserDetail";
+import ManagerOrder from "./pages/admin/managerOrder/ManagerOrder";
+import TransactionDetail from "./pages/admin/managerOrder/TransactionDetail";
 function App() {
   return (
     <AppProvider>
@@ -49,6 +51,8 @@ function App() {
             <Route path="users" element={<UserManagement />} />
             <Route path="users/:userId" element={<UserDetail />} />
             <Route path="products" element={<ProductManagement />} />
+            <Route path="orders" element={<ManagerOrder />} />
+            <Route path="orders/:id" element={<TransactionDetail />} />
           </Route>
 
           {/* Chỉ STAFF được vào */}
