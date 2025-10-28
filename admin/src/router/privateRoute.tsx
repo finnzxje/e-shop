@@ -15,7 +15,7 @@ const PrivateRoute = ({ children, requiredRole }: PrivateRouteProps) => {
   }
 
   if (!user) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   if (requiredRole && user.roles[0] !== requiredRole) {
