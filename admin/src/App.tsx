@@ -6,14 +6,17 @@ import NotFound from "./pages/notFound";
 import PrivateRoute from "./router/privateRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
-import UserManagement from "./pages/admin/UserManagement";
-import ProductManagement from "./pages/admin/ProductManagement";
+import UserManagement from "./pages/admin/userManagement/UserManagement";
+import ProductManagement from "./pages/admin/productsMannagement/ProductManagement";
+import ProductCreate from "./pages/admin/productsMannagement/ProductCreate";
+import ProductEdit from "./pages/admin/productsMannagement/ProductEdit";
+import UserDetail from "./pages/admin/userManagement/UserDetail";
 function App() {
   return (
     <AppProvider>
       <Router>
         <Routes>
-          <Route path="/admin/login" element={<Login />} />
+          <Route path="/" element={<Login />} />
 
           <Route
             path="/admin"
@@ -24,8 +27,27 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
+            {/* Route cho TẠO MỚI */}
+            <Route
+              path="/admin/products/new"
+              element={
+                <PrivateRoute requiredRole="ADMIN">
+                  <ProductCreate />
+                </PrivateRoute>
+              }
+            />
 
+            {/* Route cho CHỈNH SỬA */}
+            <Route
+              path="/admin/products/:productId"
+              element={
+                <PrivateRoute requiredRole="ADMIN">
+                  <ProductEdit />
+                </PrivateRoute>
+              }
+            />
             <Route path="users" element={<UserManagement />} />
+            <Route path="users/:userId" element={<UserDetail />} />
             <Route path="products" element={<ProductManagement />} />
           </Route>
 

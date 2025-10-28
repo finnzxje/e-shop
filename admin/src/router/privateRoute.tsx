@@ -8,12 +8,17 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute = ({ children, requiredRole }: PrivateRouteProps) => {
-  const { user } = useAppProvider();
+  const { user, isLoading } = useAppProvider();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   if (!user) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/" replace />;
   }
-  if (requiredRole && !user.roles[0].includes(requiredRole)) {
+
+  if (requiredRole && user.roles[0] !== requiredRole) {
     return <Navigate to="/not-found" replace />;
   }
 
