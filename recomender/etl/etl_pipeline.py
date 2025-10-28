@@ -331,7 +331,7 @@ class ETLPipeline:
                 -- Image URL (primary image)
                 (SELECT image_url 
                  FROM product_images 
-                 WHERE product_id = p.id AND is_primary = true 
+                 WHERE product_id = p.id 
                  LIMIT 1) as primary_image_url
 
             FROM product_variants pv
