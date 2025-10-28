@@ -40,7 +40,7 @@ storage:
 app:
   base-url: /api/v1
   mail:
-    from-address: ${APP_MAIL_FROM:no-reply@eshop.local}
+    from-address: ${APP_MAIL_FROM:E-Shop no-reply <no-reply@eshop.local>}
   auth:
     activation:
       base-url: ${APP_ACTIVATION_BASE_URL:http://localhost:8080/api/auth/activate}
