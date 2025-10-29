@@ -262,16 +262,31 @@ const Carts = () => {
             onChange={(e) => setPaymentMethod(e.target.value)}
           >
             <option value="vnpay">VNPay</option>
-            <option value="cod">Thanh toán khi nhận hàng (COD)</option>
-            <option value="momo">Momo</option>
+            {/* <option value="cod">Thanh toán khi nhận hàng (COD)</option>
+            <option value="momo">Momo</option> */}
           </select>
         </div>
 
         {/* Tổng tiền */}
-        <div className="text-gray-500 mt-4 space-y-2">
+        <div className="text-gray-500 mt-4 space-y-3">
           <p className="flex justify-between">
             <span>Subtotal</span>
-            <span>${cart?.subtotal ?? 0}</span>
+            <span>${(cart?.subtotal ?? 0).toFixed(2)}</span>
+          </p>
+          <p className="flex justify-between">
+            <span>Shipping</span>
+            <span>$2.50</span>
+          </p>
+          <p className="flex justify-between text-red-500">
+            <span>Discount</span>
+            <span>-$5.00</span>
+          </p>
+          <hr className="border-gray-300 !my-4" />
+          <p className="flex justify-between text-gray-900 font-semibold text-lg">
+            <span>Total</span>
+            <span>
+              ${Math.max(0, (cart?.subtotal ?? 0) + 2.5 - 5.0).toFixed(2)}
+            </span>
           </p>
         </div>
 
