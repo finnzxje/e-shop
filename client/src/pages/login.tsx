@@ -17,7 +17,7 @@ export default function Login() {
     password?: string;
     resetEmail?: string;
   }>({});
-
+  const [errorsStatus, setErrorsStatus] = useState<string>("");
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { email?: string; password?: string } = {};
@@ -46,6 +46,7 @@ export default function Login() {
         navigate("/");
       } catch (error: any) {
         toast.error(error.response.data.message);
+        setErrorsStatus(error.response.status);
       }
     }
   };
@@ -129,7 +130,7 @@ export default function Login() {
           </div>
 
           {/* Password Help */}
-          <div className="text-lg">
+          <div className="text-lg flex justify-between">
             <button
               type="button"
               onClick={() => setOpenEmail(true)}
@@ -137,6 +138,16 @@ export default function Login() {
             >
               Password Help?
             </button>
+            {errorsStatus ? (
+              <div
+                onClick={() => navigate("/auth/activate")}
+                className="font-semibold hover:underline cursor-pointer"
+              >
+                Confirm account from gmail?
+              </div>
+            ) : (
+              ""
+            )}
           </div>
 
           {/* Login Button */}
