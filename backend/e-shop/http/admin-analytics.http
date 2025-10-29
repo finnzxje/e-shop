@@ -19,3 +19,15 @@ Authorization: Bearer {{admin_access_token}}
 
 GET http://localhost:8080/api/admin/analytics/summary?period=24h HTTP/1.1
 Authorization: Bearer {{admin_access_token}}
+
+
+### Revenue time series – daily buckets
+
+GET http://localhost:8080/api/admin/analytics/revenue?start=2025-10-01T00:00:00Z&end=2025-10-31T00:00:00Z&interval=weekly HTTP/1.1
+Authorization: Bearer {{admin_access_token}}
+
+
+### Revenue time series – weekly buckets
+
+GET http://localhost:8080/api/admin/analytics/revenue?start=2024-12-01T00:00:00Z&end=2025-02-01T00:00:00Z&interval=weekly HTTP/1.1
+Authorization: Bearer {{admin_access_token}}

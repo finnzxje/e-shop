@@ -36,3 +36,42 @@
 ### Notes
 - All monetary fields are rounded to two decimal places.
 - Conversion rate requires product view tracking (`product_views` table); absence of views yields `0.00`.
+
+## Revenue Time Series
+
+**Endpoint**: `GET /api/admin/analytics/revenue`  
+**Purpose**: Provides per-bucket revenue trends for charts.  
+**Auth**: Admin bearer token required.
+
+### Query Parameters
+- `start` (required): ISO-8601 timestamp (UTC) marking the inclusive window start.
+- `end` (required): ISO-8601 timestamp (UTC) marking the exclusive window end. Must be after `start`.
+- `interval` (optional, default `daily`): Either `daily` or `weekly`. Controls the bucket size (`date_trunc('day'|'week')`).
+
+### Response
+
+```json
+[
+  {
+    "bucketStart": "2025-01-01T00:00:00Z",
+    "bucketEnd": "2025-01-02T00:00:00Z",
+    "orderCount": 42,
+    "gross": 3120.75,
+    "net": 3050.75,
+    "refunds": 70.00
+  }
+]
+```
+
+- `gross`: Sum of captured order totals (`orders.total_amount`) within the bucket.
+- `refunds`: Sum of payment transactions marked `VOIDED`, using `captured_amount` when present.
+- `net`: `gross - refunds`, rounded to two decimals.
+- Empty buckets inside the range return zeroed metrics with proper bucket boundaries.
+
+### Error Codes
+- `400 Bad Request`: Missing/invalid `start` or `end`, or unsupported `interval`.
+- `401 Unauthorized`: Missing or invalid admin token.
+
+### Notes
+- Weekly buckets start on Monday at 00:00 in the application time zone (server default) to mirror Postgres `date_trunc('week', ...)` behaviour.
+- `end` is treated as exclusive; provide the following day/week start to include the final bucket fully.

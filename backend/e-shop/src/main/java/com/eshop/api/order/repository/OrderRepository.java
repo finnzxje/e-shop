@@ -3,6 +3,7 @@ package com.eshop.api.order.repository;
 import com.eshop.api.order.enums.OrderStatus;
 import com.eshop.api.order.enums.PaymentStatus;
 import com.eshop.api.order.model.Order;
+import com.eshop.api.order.repository.projection.OrderRevenueBucketProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -46,4 +47,22 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
     """)
     Long countOrdersPlacedSinceExcludingStatus(@Param("start") Instant start,
                                                @Param("excludedStatus") OrderStatus excludedStatus);
+
+    @Query(
+        value = """
+            SELECT date_trunc(:interval, o.placed_at) AS bucket_start,
+                   COUNT(*) AS order_count,
+                   COALESCE(SUM(o.total_amount), 0) AS gross_total
+            FROM orders o
+            WHERE o.placed_at >= :start AND o.placed_at < :end
+              AND o.status <> 'CANCELLED'
+              AND o.payment_status = 'CAPTURED'
+            GROUP BY bucket_start
+            ORDER BY bucket_start
+        """,
+        nativeQuery = true
+    )
+    List<OrderRevenueBucketProjection> aggregateCapturedRevenueByInterval(@Param("interval") String interval,
+                                                                          @Param("start") Instant start,
+                                                                          @Param("end") Instant end);
 }
