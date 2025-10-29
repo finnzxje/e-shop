@@ -57,15 +57,15 @@
     "bucketEnd": "2025-01-02T00:00:00Z",
     "orderCount": 42,
     "gross": 3120.75,
-    "net": 3050.75,
-    "refunds": 70.00
+    "net": 3120.75,
+    "refunds": 0.00
   }
 ]
 ```
 
 - `gross`: Sum of captured order totals (`orders.total_amount`) within the bucket.
-- `refunds`: Sum of payment transactions marked `VOIDED`, using `captured_amount` when present.
-- `net`: `gross - refunds`, rounded to two decimals.
+- `refunds`: Currently returns `0.00` (refund aggregation pending).
+- `net`: Matches `gross` until refunds are implemented.
 - Empty buckets inside the range return zeroed metrics with proper bucket boundaries.
 
 ### Error Codes

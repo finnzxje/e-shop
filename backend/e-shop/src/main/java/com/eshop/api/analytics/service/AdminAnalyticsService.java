@@ -11,7 +11,6 @@ import com.eshop.api.order.enums.PaymentStatus;
 import com.eshop.api.order.repository.OrderRepository;
 import com.eshop.api.order.repository.PaymentTransactionRepository;
 import com.eshop.api.order.repository.projection.OrderRevenueBucketProjection;
-import com.eshop.api.order.repository.projection.PaymentRefundBucketProjection;
 import com.eshop.api.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -107,18 +106,6 @@ public class AdminAnalyticsService {
             orderBuckets.put(projection.getBucketStart(), projection);
         }
 
-        List<PaymentRefundBucketProjection> refundAggregates = paymentTransactionRepository.aggregateRefundsByInterval(
-            interval.pgTruncKey,
-            start,
-            end
-        );
-
-        Map<Instant, BigDecimal> refundBuckets = new HashMap<>();
-        for (PaymentRefundBucketProjection projection : refundAggregates) {
-            BigDecimal value = projection.getRefundTotal() == null ? BigDecimal.ZERO : projection.getRefundTotal();
-            refundBuckets.put(projection.getBucketStart(), normalizeMoney(value));
-        }
-
         List<AdminRevenueTimeseriesPoint> points = new ArrayList<>();
         Instant bucketStart = alignToInterval(start, interval);
         BigDecimal zeroMoney = normalizeMoney(BigDecimal.ZERO);
@@ -129,16 +116,14 @@ public class AdminAnalyticsService {
 
             long orderCount = orders != null && orders.getOrderCount() != null ? orders.getOrderCount() : 0L;
             BigDecimal gross = orders != null ? normalizeMoney(orders.getGrossTotal()) : zeroMoney;
-            BigDecimal refunds = refundBuckets.getOrDefault(bucketStart, zeroMoney);
-            BigDecimal net = normalizeMoney(gross.subtract(refunds));
 
             points.add(new AdminRevenueTimeseriesPoint(
                 bucketStart,
                 bucketEnd,
                 orderCount,
                 gross,
-                net,
-                refunds
+                gross,
+                zeroMoney
             ));
 
             bucketStart = bucketEnd;
