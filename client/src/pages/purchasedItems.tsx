@@ -1,8 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
-import { Loader2, CheckCircle2, X } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  X,
+  ShoppingBag,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useAppProvider } from "../context/useContex";
 import api from "../config/axios";
 import { useNavigate } from "react-router-dom";
+
 interface Color {
   id: string;
   name: string;
@@ -63,6 +71,7 @@ interface Order {
   discountAmount: number;
   shippingAmount: number;
   totalAmount: number;
+  taxAmount: number;
 }
 interface PaginatedOrders {
   content: Order[];
@@ -75,7 +84,6 @@ interface EnrichedOrderItem extends OrderItem {
 interface EnrichedOrder extends Omit<Order, "items"> {
   items: EnrichedOrderItem[];
 }
-
 // --- COMPONENT CHÍNH ---
 
 const PurchasedItems = () => {
@@ -181,8 +189,6 @@ const PurchasedItems = () => {
     },
     [user?.token, navigate]
   );
-
-  // (Các hàm helper getOrderStatusDetails, getPaymentStatusDetails không thay đổi)
   const getOrderStatusDetails = (status: OrderStatus) => {
     switch (status) {
       case "PROCESSING":
@@ -241,20 +247,30 @@ const PurchasedItems = () => {
 
   // --- PHẦN GIAO DIỆN (Render) ---
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
+    <div className=" bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">🛒 My Orders</h1>
 
         {loading ? (
-          // (Loading spinner)
           <div className="flex justify-center py-10">
             <Loader2 className="animate-spin text-gray-500 w-8 h-8" />
           </div>
         ) : orders.length === 0 ? (
-          // (No orders)
-          <p className="text-gray-500 text-center py-10">
-            No purchased orders found.
-          </p>
+          <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 shadow-sm">
+            <ShoppingBag className="mx-auto w-12 h-12 text-gray-400" />
+            <h3 className="mt-4 text-lg font-medium text-gray-900">
+              No Orders Yet
+            </h3>
+            <p className="mt-2 text-sm text-gray-500">
+              You haven't placed any orders. Start shopping to see them here!
+            </p>
+            <button
+              onClick={() => navigate("/")}
+              className="mt-6 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+            >
+              Shop Now
+            </button>
+          </div>
         ) : (
           <div className="space-y-6">
             {orders.map((order) => {
@@ -296,7 +312,7 @@ const PurchasedItems = () => {
                     </div>
                   </header>
 
-                  {/* (Danh sách sản phẩm không thay đổi) */}
+                  {/* (Danh sách sản phẩm) */}
                   <div className="divide-y divide-gray-100">
                     {order.items.map((item) => {
                       const variant = item.variant?.[0];
@@ -329,12 +345,12 @@ const PurchasedItems = () => {
                               </div>
                             )}
                           </div>
-                          <div className="flex-shrink-0 text-sm text-gray-700 sm:text-right">
-                            <p>${item.unitPrice.toFixed(2)}</p>
-                            <p className="text-gray-500">
-                              Qty: {item.quantity}
+                          {/* ✨ SỬA: Bố cục giá/số lượng gọn gàng hơn */}
+                          <div className="flex-shrink-0 text-sm sm:text-right">
+                            <p className="text-gray-600">
+                              {item.quantity} x ${item.unitPrice.toFixed(2)}
                             </p>
-                            <p className="font-medium text-gray-900 mt-1">
+                            <p className="font-semibold text-gray-900 mt-1 text-base">
                               ${item.totalAmount.toFixed(2)}
                             </p>
                           </div>
@@ -343,22 +359,55 @@ const PurchasedItems = () => {
                     })}
                   </div>
 
-                  {/* === Footer của Card Đơn Hàng (ĐÃ SỬA) === */}
-                  <footer className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium text-gray-900">
-                        Total Amount:
-                      </span>
-                      <span className="text-xl font-bold text-gray-900 ml-2">
-                        ${order.totalAmount.toFixed(2)}
-                      </span>
+                  {/* (Footer của Card Đơn Hàng - Đã đẹp) */}
+                  <footer className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between gap-8">
+                    {/* Phần chi tiết giá */}
+                    <div className="flex-1">
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Subtotal:</span>
+                          <span className="font-medium text-gray-900">
+                            ${order.subtotalAmount.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Shipping:</span>
+                          <span className="font-medium text-gray-900">
+                            ${order.shippingAmount.toFixed(2)}
+                          </span>
+                        </div>
+                        {order.discountAmount > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Discount:</span>
+                            <span className="font-medium text-red-600">
+                              -${order.discountAmount.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Tax:</span>
+                          <span className="font-medium text-gray-900">
+                            ${order.taxAmount.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="!mt-3 pt-3 border-t border-gray-200">
+                          <div className="flex justify-between items-center">
+                            <span className="text-base font-bold text-gray-900">
+                              Total Amount:
+                            </span>
+                            <span className="text-xl font-bold text-gray-900">
+                              ${order.totalAmount.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="w-36 text-right">
+
+                    {/* Phần hành động */}
+                    <div className="w-36 text-right flex-shrink-0">
                       {order.orderStatus === "PROCESSING" && (
                         <button
-                          // ✨ SỬA: onClick mở modal
                           onClick={() => setOrderToConfirm(order)}
-                          // Vẫn disable nếu API đang chạy
                           disabled={isProcessingApi}
                           className="flex items-center justify-center w-full px-3 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
                         >
@@ -390,50 +439,42 @@ const PurchasedItems = () => {
           </div>
         )}
 
-        {/* (Phần phân trang không thay đổi) */}
         {totalPages > 1 && (
-          <div className="flex justify-center mt-8 space-x-2">
-            {/* ... Nút Prev/Next ... */}
+          <nav
+            className="flex items-center justify-between mt-8"
+            aria-label="Pagination"
+          >
             <button
               onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
               disabled={page === 0}
-              className={`px-4 py-2 rounded-lg border ${
-                page === 0
-                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  : "hover:bg-gray-100"
-              }`}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Prev
+              <ChevronLeft className="w-4 h-4" />
+              Previous
             </button>
-            <span className="px-3 py-2 text-gray-700">
+            <span className="text-sm font-medium text-gray-700">
               Page {page + 1} of {totalPages}
             </span>
             <button
               onClick={() => setPage((prev) => prev + 1)}
               disabled={page + 1 >= totalPages}
-              className={`px-4 py-2 rounded-lg border ${
-                page + 1 >= totalPages
-                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                  : "hover:bg-gray-100"
-              }`}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
+              <ChevronRight className="w-4 h-4" />
             </button>
-          </div>
+          </nav>
         )}
       </div>
 
-      {/* ✨ SỬA: Thêm JSX của MODAL XÁC NHẬN */}
       {orderToConfirm && (
         <div
-          // Lớp phủ nền mờ
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-          onClick={() => setOrderToConfirm(null)} // Đóng khi click ra ngoài
+          onClick={() => setOrderToConfirm(null)}
         >
           <div
-            // Hộp thoại
             className="bg-white rounded-2xl shadow-xl w-full max-w-md m-4"
-            onClick={(e) => e.stopPropagation()} // Ngăn click bên trong đóng modal
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between p-6 border-b">
               <h3 className="text-lg font-semibold text-gray-900">
@@ -466,9 +507,7 @@ const PurchasedItems = () => {
               </button>
               <button
                 type="button"
-                // Gọi hàm confirm
                 onClick={() => handleConfirm(orderToConfirm.orderId)}
-                // Disable khi đang gọi API
                 disabled={confirmingId === orderToConfirm.orderId}
                 className="flex items-center justify-center w-28 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
               >

@@ -73,6 +73,7 @@ const Carts = () => {
           shippingAmount: 2.5,
           discountAmount: 5.0,
           shippingMethod: "standard",
+          taxAmount: ((cart?.subtotal * 10) / 100).toFixed(2),
           // paymentMethod,
           notes: "Gift wrap if possible",
         },
@@ -277,6 +278,12 @@ const Carts = () => {
             <span>Shipping</span>
             <span>$2.50</span>
           </p>
+          <p className="flex justify-between">
+            <span>Tax{cart ? "(10%)" : ""}</span>
+            <span>
+              {cart ? `${((cart?.subtotal * 10) / 100).toFixed(2)}` : "10%"}
+            </span>
+          </p>
           <p className="flex justify-between text-red-500">
             <span>Discount</span>
             <span>-$5.00</span>
@@ -285,7 +292,16 @@ const Carts = () => {
           <p className="flex justify-between text-gray-900 font-semibold text-lg">
             <span>Total</span>
             <span>
-              ${Math.max(0, (cart?.subtotal ?? 0) + 2.5 - 5.0).toFixed(2)}
+              $
+              {cart
+                ? Math.max(
+                    0,
+                    (cart?.subtotal ?? 0) +
+                      (cart?.subtotal * 10) / 100 +
+                      2.5 -
+                      5.0
+                  ).toFixed(2)
+                : "0.00"}
             </span>
           </p>
         </div>
