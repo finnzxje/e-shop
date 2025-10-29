@@ -9,7 +9,7 @@ type HeaderProps = {
 };
 
 const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
-  const { logout } = useAppProvider();
+  const { logout, user } = useAppProvider();
   const navigate = useNavigate();
   const handleLogout = () => {
     logout();
@@ -48,8 +48,10 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               </div>
 
               <div className="hidden md:block">
-                <p className="text-sm font-semibold text-slate-700">Boss</p>
-                <p className="text-xs text-slate-500">Administrator</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-xs text-gray-800">Role: {user?.roles[0]}</p>
               </div>
             </div>
 

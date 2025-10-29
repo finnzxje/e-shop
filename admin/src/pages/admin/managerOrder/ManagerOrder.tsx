@@ -171,7 +171,7 @@ export default function ManagerOrder() {
               name="orderNumber"
               value={filterInputs.orderNumber}
               onChange={handleFilterInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md  px-4 py-2 border-gray-500 border shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="ORD-00010000"
             />
           </div>
@@ -189,7 +189,7 @@ export default function ManagerOrder() {
               name="status"
               value={filterInputs.status}
               onChange={handleFilterInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-500 border px-4 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">All Statuses</option>
               <option value="PENDING">Pending</option>

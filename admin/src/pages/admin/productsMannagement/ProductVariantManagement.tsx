@@ -1,4 +1,3 @@
-// src/components/admin/products/ProductVariantManagement.tsx
 import React, { useState, useEffect, type ChangeEvent } from "react";
 import api from "../../../config/axios";
 import { useAppProvider } from "../../../context/useContex";
@@ -66,7 +65,6 @@ const ProductVariantManagement: React.FC<Props> = ({
     fetchColors();
   }, [user?.token, productId]);
 
-  // --- Handlers cho Form Tạo Mới ---
   const handleAddRow = () => {
     setNewVariantRows([
       ...newVariantRows,
@@ -80,7 +78,6 @@ const ProductVariantManagement: React.FC<Props> = ({
     setNewVariantRows(list);
   };
 
-  // (Hàm handleRowChange giữ nguyên như bạn đã sửa)
   const handleRowChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     index: number
@@ -101,7 +98,6 @@ const ProductVariantManagement: React.FC<Props> = ({
     setNewVariantRows(list);
   };
 
-  // 3. Xử lý Tạo Mới (Bulk) - (Giữ nguyên)
   const handleCreateVariants = async () => {
     if (!newVariantColorId) {
       setError("Please select a color to add variation.");
@@ -146,7 +142,6 @@ const ProductVariantManagement: React.FC<Props> = ({
     }
   };
 
-  // 4. Xử lý Xóa Biến thể - (Giữ nguyên)
   const handleDeleteVariant = async (variantId: string) => {
     if (
       !window.confirm("Are you sure you want to delete this variant?") ||
@@ -198,8 +193,6 @@ const ProductVariantManagement: React.FC<Props> = ({
       <h3 className="text-xl font-semibold mb-4">
         Variation & Inventory Management
       </h3>
-
-      {/* --- Form Tạo mới Biến thể (Giữ nguyên) --- */}
       <div className="border-b pb-6 mb-6 space-y-4">
         <h4 className="font-semibold text-gray-700">
           Add variation by colorAdd variation by color
@@ -212,7 +205,7 @@ const ProductVariantManagement: React.FC<Props> = ({
           <select
             value={newVariantColorId}
             onChange={(e) => setNewVariantColorId(e.target.value)}
-            className="mt-1 block w-full md:w-1/3 border rounded-md shadow-sm"
+            className="mt-1 block w-full md:w-1/3 border px-2 py-1 rounded-md shadow-sm"
           >
             <option value="">-- Choose a color --</option>
             {allColors.map((color) => (
@@ -223,7 +216,6 @@ const ProductVariantManagement: React.FC<Props> = ({
           </select>
         </div>
 
-        {/* Bảng nhập liệu động (Giữ nguyên) */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">
             Size details
@@ -315,7 +307,6 @@ const ProductVariantManagement: React.FC<Props> = ({
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">
                 Warehouse
               </th>
-              {/* --- CẬP NHẬT: Sửa tiêu đề cột --- */}
               <th className="px-4 py-2 text-center text-xs font-medium text-gray-500">
                 Status
               </th>
@@ -351,8 +342,6 @@ const ProductVariantManagement: React.FC<Props> = ({
                   <td className="px-4 py-2 whitespace-nowrap text-sm">
                     {variant.quantityInStock}
                   </td>
-
-                  {/* --- CẬP NHẬT: Thêm nút bấm + loading --- */}
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-center">
                     {patchingStatusId === variant.id ? (
                       <Loader2 size={16} className="animate-spin mx-auto" />
@@ -375,7 +364,6 @@ const ProductVariantManagement: React.FC<Props> = ({
                   </td>
 
                   <td className="px-4 py-2 whitespace-nowrap text-sm text-right">
-                    {/* TODO: Nút Edit (PUT) và Adjust Stock */}
                     <button
                       onClick={() => handleDeleteVariant(variant.id)}
                       className="text-red-500 hover:text-red-700"
