@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { Product } from "../config/interface";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
-import api from "../config/axios";
 import { useAppProvider } from "../context/useContex";
 import toast from "react-hot-toast";
 
@@ -17,12 +16,11 @@ interface WishlistItem {
 }
 
 function ProductCard({ product }: { product: Product }) {
-  const { user, wishlist } = useAppProvider();
-
-  const [isWishlisted, setIsWishlisted] = useState<boolean>(() => {
-    if (!wishlist || !product) return false;
-    return wishlist.some((item: WishlistItem) => item.productId === product.id);
-  });
+  const { user, wishlist, addToWishlist, removeFromWishlist } =
+    useAppProvider();
+  const isWishlisted =
+    wishlist?.some((item: WishlistItem) => item.productId === product.id) ||
+    false;
 
   const [currentImage, setCurrentImage] = useState<string | null>(
     product.images?.[0]?.imageUrl || null
@@ -32,13 +30,6 @@ function ProductCard({ product }: { product: Product }) {
     new Map(product.images?.map((img) => [img.color.id, img])).values()
   );
 
-  useEffect(() => {
-    const inList =
-      wishlist?.some((item: WishlistItem) => item.productId === product.id) ||
-      false;
-    setIsWishlisted(inList);
-  }, [wishlist, product.id]);
-
   const toggleWishlist = async (productId: string) => {
     if (!user?.token) {
       toast.error("Please log in to add items to your wishlist.");
@@ -47,19 +38,10 @@ function ProductCard({ product }: { product: Product }) {
 
     try {
       if (isWishlisted) {
-        await api.delete(`/api/account/wishlist/${productId}`, {
-          headers: { Authorization: `Bearer ${user?.token}` },
-        });
+        await removeFromWishlist(productId);
       } else {
-        await api.post(
-          `/api/account/wishlist`,
-          { productId: productId },
-          {
-            headers: { Authorization: `Bearer ${user?.token}` },
-          }
-        );
+        await addToWishlist(productId);
       }
-      setIsWishlisted(!isWishlisted);
     } catch (err) {
       console.error("Failed to update wishlist:", err);
     }
@@ -74,6 +56,38 @@ function ProductCard({ product }: { product: Product }) {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       </div>
+
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          toggleWishlist(product.id);
+        }}
+        className={`p-2 absolute top-2 right-2 rounded-full transition-all duration-300 group z-10
+          ${
+            isWishlisted
+              ? "bg-black hover:bg-gray-800 active:bg-gray-900 shadow-lg"
+              : "bg-white hover:bg-black active:bg-gray-800 border border-gray-200 hover:border-black"
+          }`}
+      >
+        {isWishlisted ? (
+          <Heart
+            className="text-white cursor-pointer transform transition-all duration-300 ease-out 
+                       group-hover:scale-110 group-active:scale-90"
+            fill="currentColor"
+            strokeWidth={1.5}
+            size={20}
+          />
+        ) : (
+          <Heart
+            className="text-gray-700 group-hover:text-white cursor-pointer transform transition-all duration-200 ease-out 
+                       group-hover:scale-110
+                       group-active:scale-125 group-active:rotate-12"
+            strokeWidth={1.5}
+            size={20}
+          />
+        )}
+      </button>
+
       <div className="p-4 flex flex-col flex-1 space-y-2">
         <Link to={`/products/${product.slug}`}>
           <h3 className="text-gray-800 font-medium group-hover:underline text-[15px] line-clamp-2">
@@ -83,23 +97,6 @@ function ProductCard({ product }: { product: Product }) {
         <p className="text-gray-900 font-semibold">${product.basePrice}</p>
         <p className="text-sm text-gray-500">{product.category?.name}</p>
 
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            toggleWishlist(product.id);
-          }}
-          className="p-2 absolute top-0 rounded-full hover:bg-gray-100 transition-colors"
-        >
-          {isWishlisted ? (
-            <Heart
-              className="text-black cursor-pointer"
-              fill="currentColor"
-              strokeWidth={1.5}
-            />
-          ) : (
-            <Heart className="text-gray-600 cursor-pointer" strokeWidth={1.5} />
-          )}
-        </button>
         {/* Màu */}
         <div className="flex gap-2 mt-2">
           {uniqueColors.map((img) => {
@@ -108,18 +105,19 @@ function ProductCard({ product }: { product: Product }) {
               <button
                 key={img.id}
                 style={{ backgroundColor: img.color.hex || img.color.code }}
-                className="w-6 h-6 rounded-full border relative cursor-pointer"
+                className={`w-6 h-6 rounded-full border relative cursor-pointer
+                  ${
+                    isSelected
+                      ? "ring-2 ring-offset-1 ring-blue-500"
+                      : "border-gray-200"
+                  }
+                `}
                 onClick={(e) => {
                   e.preventDefault();
                   setCurrentImage(img.imageUrl);
                 }}
-              >
-                {isSelected && (
-                  <span className="absolute inset-0 flex items-center justify-center text-white text-sm font-bold">
-                    ✓
-                  </span>
-                )}
-              </button>
+                title={img.color.name}
+              ></button>
             );
           })}
         </div>

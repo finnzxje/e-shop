@@ -9,6 +9,7 @@ import api from "../config/axios";
 import type { Cart } from "../config/interface";
 import { linkSessionToUser } from "../services/trackingService";
 import { clearSessionId } from "../utils/sessionManager";
+import toast from "react-hot-toast";
 
 interface User {
   email: string;
@@ -82,6 +83,7 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const fetchWishlist = async () => {
+    if (!user?.token) return;
     try {
       const response = await api.get<WishlistItem[]>(`/api/account/wishlist`, {
         headers: { Authorization: `Bearer ${user?.token}` },
@@ -92,6 +94,40 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const removeFromWishlist = async (productId: string) => {
+    if (!user?.token) return;
+    try {
+      await api.delete(`/api/account/wishlist/${productId}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setWishlist((prev) =>
+        prev.filter((item) => item.productId !== productId)
+      );
+      toast.success("Removed from wishlist");
+    } catch (err) {
+      console.error("Failed to remove from wishlist:", err);
+      toast.error("Failed to remove item.");
+    }
+  };
+
+  const addToWishlist = async (productId: string) => {
+    if (!user?.token) {
+      toast.error("Please log in.");
+      return;
+    }
+    try {
+      const response = await api.post<WishlistItem>(
+        `/api/account/wishlist`,
+        { productId: productId },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+      setWishlist((prev) => [...prev, response.data]);
+      toast.success("Added to wishlist");
+    } catch (err) {
+      console.error("Failed to add to wishlist:", err);
+      toast.error("Failed to add item.");
+    }
+  };
   useEffect(() => {
     fetchTestToken();
   }, []);
@@ -118,9 +154,10 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
     cart,
     setCart,
     wishlist,
-    setWishlist,
     handleLogout,
     isAuthLoading,
+    addToWishlist,
+    removeFromWishlist,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

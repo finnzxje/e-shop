@@ -58,6 +58,7 @@ export default function ProductPage() {
 
   // ======== Fetch products ========
   const fetchFilteredProducts = async () => {
+    if (searchProduct.trim()) return;
     setLoading(true);
     try {
       let url = `/api/catalog/products/filter?page=${page}&size=${size}`;
@@ -106,14 +107,21 @@ export default function ProductPage() {
     }
   };
 
-  const handleSearch = () => {
-    setPage(0);
-    fetchSearchedProducts();
-  };
+  const handleSubmit = (event: any) => {
+    event.preventDefault();
 
-  // ======== Auto fetch ========
+    if (page === 0) {
+      fetchSearchedProducts();
+    } else {
+      setPage(0);
+    }
+  };
   useEffect(() => {
-    if (!searchProduct.trim()) fetchFilteredProducts();
+    if (searchProduct.trim()) {
+      fetchSearchedProducts();
+    } else {
+      fetchFilteredProducts();
+    }
   }, [
     selectedGender,
     selectedCategory,
@@ -154,8 +162,7 @@ export default function ProductPage() {
           <h2 className="text-3xl font-semibold text-gray-800 tracking-tight">
             Product Listing
           </h2>
-
-          <div className="flex items-center gap-3">
+          <form onSubmit={handleSubmit} className="flex items-center gap-3">
             <div className="relative w-full md:w-72">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -164,17 +171,17 @@ export default function ProductPage() {
                 onChange={(e) => setSearchProduct(e.target.value)}
                 placeholder="Search for products..."
                 className="w-full pl-12 pr-4 py-2.5 text-sm border border-gray-300 rounded-full shadow-sm 
-                 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 
-                 transition duration-200 placeholder:text-gray-400"
+                                                        focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 
+                                                        transition duration-200 placeholder:text-gray-400"
               />
             </div>
             <button
-              onClick={handleSearch}
+              type="submit"
               className="px-4 py-2 bg-gray-800 text-white rounded-full hover:bg-gray-700 transition"
             >
               Search
             </button>
-          </div>
+          </form>
         </div>
 
         {loading ? (
