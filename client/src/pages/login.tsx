@@ -17,7 +17,7 @@ export default function Login() {
     password?: string;
     resetEmail?: string;
   }>({});
-  const [errorsStatus, setErrorsStatus] = useState<string>("");
+  const [errorsStatus, setErrorsStatus] = useState<number>();
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { email?: string; password?: string } = {};
@@ -138,7 +138,7 @@ export default function Login() {
             >
               Password Help?
             </button>
-            {errorsStatus ? (
+            {errorsStatus === 403 ? (
               <div
                 onClick={() => navigate("/auth/activate")}
                 className="font-semibold hover:underline cursor-pointer"
