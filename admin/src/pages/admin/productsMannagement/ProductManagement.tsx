@@ -1,11 +1,10 @@
 import React, { useState, useEffect, type ChangeEvent } from "react";
 import { Link } from "react-router-dom";
-import { Plus, Search, Edit, Trash2, Loader2 } from "lucide-react"; // Thêm Loader2
+import { Plus, Search, Edit, Loader2 } from "lucide-react";
 import api from "../../../config/axios";
 import axios from "axios";
 import { useAppProvider } from "../../../context/useContex";
 import toast from "react-hot-toast";
-// --- Types (Đã cập nhật) ---
 
 type ProductSummary = {
   id: string;
@@ -61,7 +60,7 @@ const ProductManagement: React.FC = () => {
       const params = {
         search: filters.search || undefined,
         status: filters.status || undefined,
-        page: filters.page, // API thường bắt đầu từ 0
+        page: filters.page,
         size: filters.size,
         sort: "updatedAt,desc",
       };
@@ -123,13 +122,10 @@ const ProductManagement: React.FC = () => {
     }));
   };
 
-  // --- THÊM MỚI: Hàm xử lý gọi API PATCH status ---
   const handleStatusChange = async (productId: string, newStatus: string) => {
     // 1. Hiển thị loading cho riêng hàng này
     setPatchingStatusId(productId);
-
     // 2. Cập nhật state (Optimistic Update)
-    // Cập nhật UI ngay lập tức để người dùng thấy thay đổi
     setProducts((prevProducts) =>
       prevProducts.map((p) =>
         p.id === productId ? { ...p, status: newStatus.toUpperCase() } : p
@@ -149,8 +145,7 @@ const ProductManagement: React.FC = () => {
       toast.success("Update status successful!");
     } catch (error) {
       console.error("Lỗi cập nhật trạng thái:", error);
-      // Lỗi: Báo cho người dùng và (lý tưởng) là fetch lại data
-      // hoặc rollback state, ở đây ta chỉ cảnh báo
+
       alert(
         "Could not update status. Data may be out of sync, please reload the page."
       );
@@ -264,7 +259,7 @@ const ProductManagement: React.FC = () => {
                         onChange={(e) =>
                           handleStatusChange(product.id, e.target.value)
                         }
-                        // Ngăn click vào select box trigger sự kiện click của hàng (nếu có)
+                        // Ngăn click vào select box trigger sự kiện click của hàng
                         onClick={(e) => e.stopPropagation()}
                         className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full border-0 focus:ring-0 appearance-none bg-no-repeat bg-right pr-7
                           ${
@@ -291,37 +286,23 @@ const ProductManagement: React.FC = () => {
                   {/* Price */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                     {product.basePrice.toLocaleString("en-US", {
-                      // Use en-US for USD
                       style: "currency",
-                      currency: "USD", // Or your desired currency
+                      currency: "USD",
                     })}
                   </td>
                   {/* Last Updated */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(product.updatedAt).toLocaleString("en-US")}{" "}
-                    {/* Use en-US locale */}
                   </td>
                   {/* Actions */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link
                       to={`/admin/products/${product.id}`}
-                      className="text-blue-600 hover:text-blue-900 mr-4"
+                      className="text-blue-600 hover:text-blue-900 justify-center flex"
                       title="Edit"
                     >
                       <Edit size={18} />
                     </Link>
-                    <button
-                      // Add actual delete logic here
-                      onClick={() =>
-                        alert(
-                          `Delete product ${product.id} (DELETE API not set up)`
-                        )
-                      }
-                      className="text-red-600 hover:text-red-900"
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
                   </td>
                 </tr>
               ))}

@@ -181,7 +181,7 @@ const ProductMediaManagement: React.FC<Props> = ({
               name="altText"
               value={uploadForm.altText}
               onChange={handleFormChange}
-              className="mt-1 block w-full border rounded-md shadow-sm"
+              className="mt-1 block w-full border px-2 py-2 rounded-md shadow-sm"
             />
           </div>
           <div>
@@ -192,7 +192,7 @@ const ProductMediaManagement: React.FC<Props> = ({
               name="colorId"
               value={uploadForm.colorId}
               onChange={handleFormChange}
-              className="mt-1 block w-full border rounded-md shadow-sm"
+              className="mt-1 block w-full border px-2 py-2  rounded-md shadow-sm"
             >
               <option value="">No color assigned</option>
               {allColors.map((color) => (
@@ -211,7 +211,7 @@ const ProductMediaManagement: React.FC<Props> = ({
               name="displayOrder"
               value={uploadForm.displayOrder}
               onChange={handleFormChange}
-              className="mt-1 block w-full border rounded-md shadow-sm"
+              className="mt-1 block w-full border px-2 py-2  rounded-md shadow-sm"
             />
           </div>
           <div className="flex items-center pt-6">
@@ -221,7 +221,7 @@ const ProductMediaManagement: React.FC<Props> = ({
               name="isPrimary"
               checked={uploadForm.isPrimary}
               onChange={handleFormChange}
-              className="h-4 w-4 text-blue-600 rounded"
+              className="h-6 w-6 text-blue-600 rounded"
             />
             <label htmlFor="isPrimary" className="ml-2 text-sm text-gray-700">
               Set as main photo

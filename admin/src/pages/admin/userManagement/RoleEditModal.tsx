@@ -1,6 +1,8 @@
 import React, { useState, useEffect, type FormEvent } from "react";
 import { Loader2, X } from "lucide-react";
+import toast from "react-hot-toast";
 const ALL_AVAILABLE_ROLES = ["ADMIN", "CUSTOMER", "STAFF"];
+const DEFAULT_ROLE = ALL_AVAILABLE_ROLES[1];
 
 interface AdminUserSummary {
   id: string;
@@ -21,15 +23,15 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({
   onSave,
   user,
 }) => {
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedRole, setSelectedRole] = useState<string>(DEFAULT_ROLE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
-      setSelectedRoles(user.roles);
+      setSelectedRole(user.roles[0] || DEFAULT_ROLE);
     } else {
-      setSelectedRoles([]);
+      setSelectedRole(DEFAULT_ROLE);
     }
     setError(null);
     setIsSubmitting(false);
@@ -40,10 +42,7 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({
   }
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value, checked } = e.target;
-    setSelectedRoles((prev) =>
-      checked ? [...prev, value] : prev.filter((role) => role !== value)
-    );
+    setSelectedRole(e.target.value);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -52,10 +51,10 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({
     setError(null);
 
     try {
-      await onSave(user.id, selectedRoles);
+      await onSave(user.id, [selectedRole]);
+      toast.success("Role updated successfully!");
     } catch (err: any) {
       console.error("Error updating roles:", err);
-
       setError(err.message || "Could not update roles. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -76,7 +75,7 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({
         </button>
 
         {/* Header */}
-        <h2 className="text-xl font-bold text-gray-800 mb-2">Update Roles</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-2">Update Role</h2>
         <p className="text-sm text-gray-600 mb-6">
           For user: <strong className="font-medium">{user.email}</strong>
         </p>
@@ -90,18 +89,19 @@ const RoleEditModal: React.FC<RoleEditModalProps> = ({
           )}
 
           <div className="space-y-3">
-            <p className="font-medium text-gray-700">Select roles:</p>
+            <p className="font-medium text-gray-700">Select role:</p>
             {ALL_AVAILABLE_ROLES.map((role) => (
               <label
                 key={role}
                 className="flex items-center px-3 py-2 bg-gray-50 rounded-md border border-gray-200 hover:bg-gray-100 cursor-pointer"
               >
                 <input
-                  type="checkbox"
+                  type="radio"
                   value={role}
-                  checked={selectedRoles.includes(role)}
+                  checked={selectedRole === role}
                   onChange={handleRoleChange}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  name="role-selection"
+                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                 />
                 <span className="ml-3 text-sm font-medium text-gray-700">
                   {role}

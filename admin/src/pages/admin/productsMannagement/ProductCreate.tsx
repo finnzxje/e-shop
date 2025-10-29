@@ -1,4 +1,3 @@
-// src/components/admin/products/ProductCreate.tsx
 import React, {
   useState,
   useEffect,
@@ -9,10 +8,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import api from "../../../config/axios";
 import { useAppProvider } from "../../../context/useContex";
-import ProductForm from "./ProductForm"; // Import form UI
-import type { ProductFormPayload, Category } from "./types"; // (Import từ file types.ts)
+import ProductForm from "./ProductForm";
+import type { ProductFormPayload, Category } from "./types";
+import toast from "react-hot-toast";
 
-// State khởi tạo cho sản phẩm mới
 const initialState: ProductFormPayload = {
   name: "",
   slug: "",
@@ -38,7 +37,6 @@ const ProductCreate: React.FC = () => {
 
   // --- Data Fetching ---
   useEffect(() => {
-    // Chỉ fetch Categories
     const fetchCategories = async () => {
       try {
         const response = await api.get("/api/catalog/categories", {
@@ -100,15 +98,12 @@ const ProductCreate: React.FC = () => {
         status: product.status.toLowerCase(),
       };
 
-      // Chỉ dùng logic POST
       const response = await api.post(`/api/admin/catalog/products`, payload, {
         headers: { Authorization: `Bearer ${user?.token}` },
       });
-
-      // Điều hướng đến trang edit của sản phẩm vừa tạo
       const newId = response.data.id;
       navigate(`/admin/products/${newId}`);
-      // toast.success("Tạo sản phẩm thành công!"); // Nên thêm toast
+      toast.success("Create successful products!");
     } catch (error: any) {
       console.error("Lỗi khi tạo sản phẩm:", error);
       if (error.response?.status === 409) {

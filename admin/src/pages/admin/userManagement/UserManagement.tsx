@@ -450,20 +450,20 @@ const UserManagement: React.FC = () => {
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm text-gray-700">
-                      Showing
+                      Showing{" "}
                       <span className="font-medium">
-                        {pagination.page * PAGE_SIZE + 1}
+                        {pagination.page * PAGE_SIZE + 1}{" "}
                       </span>
-                      to
+                      to{" "}
                       <span className="font-medium">
                         {Math.min(
                           (pagination.page + 1) * PAGE_SIZE,
                           pagination.totalElements
-                        )}
+                        )}{" "}
                       </span>
-                      of
+                      of{" "}
                       <span className="font-medium">
-                        {pagination.totalElements}
+                        {pagination.totalElements}{" "}
                       </span>
                       results
                     </p>

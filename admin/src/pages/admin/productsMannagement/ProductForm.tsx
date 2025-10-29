@@ -11,7 +11,6 @@ interface ProductFormProps {
   error: string | null;
   isEditMode: boolean;
 
-  // Handlers passed from the parent component
   onFormSubmit: (e: FormEvent) => void;
   onProductChange: (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
