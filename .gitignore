@@ -48,3 +48,4 @@ backend/e-shop/src/main/resources/data/*_seed_*.sql
 *.pdf
 *-requirements.md
 *.jpg
+**/AGENTS.md
