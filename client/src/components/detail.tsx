@@ -1,14 +1,24 @@
-import { useState, useEffect } from "react";
-import { X, Check, ShoppingBag, Zap, Package } from "lucide-react";
+import { useState } from "react";
+import { X, Check, ShoppingBag, Zap, Package, Heart } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { ProductReviews } from "./productReviews";
-// Import hook logic
 import { useProductDetail } from "../hooks/useProductDetail";
-
+import { useAppProvider } from "../context/useContex";
+import toast from "react-hot-toast";
+interface WishlistItem {
+  id: string;
+  productId: string;
+  productName: string;
+  productSlug: string;
+  basePrice: number;
+  productActive: boolean;
+  addedAt: string;
+}
 export default function Detail() {
   const { slug } = useParams<{ slug: string }>();
+  const { user, wishlist, addToWishlist, removeFromWishlist } =
+    useAppProvider();
 
-  // Gọi hook logic (không thay đổi)
   const {
     product,
     loading,
@@ -28,16 +38,27 @@ export default function Detail() {
     handlAddToCart,
   } = useProductDetail(slug);
 
-  // State UI cho zoom (không thay đổi)
+  // State UI cho zoom
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const isWishlisted =
+    wishlist?.some((item: WishlistItem) => item.productId === product?.id) ||
+    false;
+  const toggleWishlist = async (productId: string) => {
+    if (!user?.token) {
+      toast.error("Please log in to add items to your wishlist.");
+      return;
+    }
 
-  // Effect khóa cuộn (không thay đổi)
-  useEffect(() => {
-    document.body.style.overflow = zoomImage ? "hidden" : "auto";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [zoomImage]);
+    try {
+      if (isWishlisted) {
+        await removeFromWishlist(productId);
+      } else {
+        await addToWishlist(productId);
+      }
+    } catch (err) {
+      console.error("Failed to update wishlist:", err);
+    }
+  };
 
   // --- RENDER ---
 
@@ -46,7 +67,6 @@ export default function Detail() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          {/* Đã dịch */}
           <p className="text-base text-gray-500">Loading product...</p>
         </div>
       </div>
@@ -58,7 +78,6 @@ export default function Detail() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <div className="text-4xl mb-3">😢</div>
-          {/* Đã dịch */}
           <p className="text-base text-red-600 font-semibold">
             {error || "Product not found"}
           </p>
@@ -86,7 +105,6 @@ export default function Detail() {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 right-2 bg-white/80 px-2 py-1 rounded-md">
-                  {/* Đã dịch */}
                   <p className="text-xs font-medium text-gray-700">
                     Click to zoom
                   </p>
@@ -145,8 +163,7 @@ export default function Detail() {
                 <hr className="border-gray-100" />
 
                 {/* 2. Chọn màu */}
-                <div>
-                  {/* Đã dịch & In đậm */}
+                <div className="relative">
                   <h3 className="text-sm font-semibold text-gray-800 mb-3">
                     Color: {selectedColor?.name}
                   </h3>
@@ -178,6 +195,34 @@ export default function Detail() {
                       </button>
                     ))}
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleWishlist(product.id);
+                    }}
+                    className={`p-2 absolute top-0 right-0 rounded-full transition-all duration-300 group
+              ${
+                isWishlisted
+                  ? "bg-black hover:bg-gray-800 active:bg-gray-900 shadow-lg"
+                  : "bg-white hover:bg-black active:bg-gray-800 border border-gray-200 hover:border-black"
+              }`}
+                  >
+                    {isWishlisted ? (
+                      <Heart
+                        className="text-white cursor-pointer transform transition-all duration-300 ease-out 
+                 group-hover:scale-110 group-active:scale-90"
+                        fill="currentColor"
+                        strokeWidth={1.5}
+                      />
+                    ) : (
+                      <Heart
+                        className="text-gray-700 group-hover:text-white cursor-pointer transform transition-all duration-200 ease-out 
+                 group-hover:scale-110
+                 group-active:scale-125 group-active:rotate-12"
+                        strokeWidth={1.5}
+                      />
+                    )}
+                  </button>
                 </div>
 
                 {/* 3. Chọn Size */}
@@ -219,7 +264,7 @@ export default function Detail() {
                       {selectedVariant.quantityInStock > 0 ? (
                         <div className="flex items-center gap-2 text-green-600">
                           <Check className="w-4 h-4" strokeWidth={2.5} />
-                          {/* Đã dịch */}
+
                           <span className="font-medium text-sm">
                             In Stock ({selectedVariant.quantityInStock})
                           </span>
@@ -227,7 +272,7 @@ export default function Detail() {
                       ) : (
                         <div className="flex items-center gap-2 text-red-600">
                           <X className="w-4 h-4" strokeWidth={2.5} />
-                          {/* Đã dịch */}
+
                           <span className="font-medium text-sm">
                             Out of Stock
                           </span>
@@ -283,7 +328,6 @@ export default function Detail() {
                     className="w-full bg-gray-800 text-white py-3 rounded-md font-semibold text-base hover:bg-gray-900 transition-all disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <ShoppingBag className="w-4 h-4" />
-                    {/* Đã dịch */}
                     Add to Bag
                   </button>
                   <button
@@ -293,7 +337,6 @@ export default function Detail() {
                     className="w-full bg-white text-gray-800 border border-gray-800 py-3 rounded-md font-semibold text-base hover:bg-gray-50 transition-all disabled:bg-gray-200 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4" />
-                    {/* Đã dịch */}
                     Buy Now
                   </button>
                 </div>
@@ -311,7 +354,6 @@ export default function Detail() {
                 </p>
                 {product.taxonomyPath && product.taxonomyPath.length > 0 && (
                   <p className="text-xs text-gray-600 mt-4">
-                    {/* Đã dịch */}
                     <span className="font-medium text-gray-800">
                       Category:{" "}
                     </span>
@@ -344,7 +386,6 @@ export default function Detail() {
 
         {/* Component Đánh giá */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-8 border-t border-gray-200">
-          {/* Component này đã được dịch ở các bước trước */}
           <ProductReviews productId={product.id} />
         </div>
       </div>
