@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,4 +15,6 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     Optional<User> findByEmailIgnoreCase(String email);
     
     boolean existsByEmailIgnoreCase(String email);
+
+    long countByCreatedAtGreaterThanEqual(Instant createdAt);
 }
