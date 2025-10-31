@@ -5,6 +5,7 @@ import {
   Users,
   ShoppingCart,
   ClipboardList,
+  LifeBuoy,
 } from "lucide-react";
 
 type SidebarProps = {
@@ -27,6 +28,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
       to: "/admin/orders",
       icon: <ClipboardList size={20} />,
       text: "Manage Orders",
+    },
+    {
+      to: "/admin/support-chat",
+      icon: <LifeBuoy size={20} />,
+      text: "Customer Support",
     },
   ];
 
