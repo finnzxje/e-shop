@@ -10,13 +10,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.2.1",
     "@tailwindcss/vite": "^4.1.13",
+    "@types/sockjs-client": "^1.5.4",
     "axios": "^1.12.2",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.9.1",
+    "sockjs-client": "^1.6.1",
     "swiper": "^12.0.1",
     "tailwindcss": "^4.1.13",
     "uuid": "^13.0.0"
