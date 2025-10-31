@@ -13,6 +13,7 @@ import ProductEdit from "./pages/admin/productsMannagement/ProductEdit";
 import UserDetail from "./pages/admin/userManagement/UserDetail";
 import ManagerOrder from "./pages/admin/managerOrder/ManagerOrder";
 import TransactionDetail from "./pages/admin/managerOrder/TransactionDetail";
+import AdminSupportChat from "./pages/admin/AdminSupportChat";
 function App() {
   return (
     <AppProvider>
@@ -53,6 +54,7 @@ function App() {
             <Route path="products" element={<ProductManagement />} />
             <Route path="orders" element={<ManagerOrder />} />
             <Route path="orders/:id" element={<TransactionDetail />} />
+            <Route path="support-chat" element={<AdminSupportChat />} />
           </Route>
 
           {/* Chỉ STAFF được vào */}
