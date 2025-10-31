@@ -1,6 +1,7 @@
 import React, {
   useState,
   useEffect,
+  useRef,
   type ChangeEvent,
   type FormEvent,
 } from "react";
@@ -9,13 +10,13 @@ import { useAppProvider } from "../../../context/useContex";
 import { Upload, Trash2, Loader2 } from "lucide-react";
 import type { ProductImage, Color } from "./types";
 import toast from "react-hot-toast";
+
 interface Props {
   productId: string;
   initialImages: ProductImage[];
   onUpdate: () => void;
 }
 
-// --- State cho form upload ---
 const initialFormState = {
   file: null as File | null,
   altText: "",
@@ -36,12 +37,12 @@ const ProductMediaManagement: React.FC<Props> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Đồng bộ state với prop
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     setImages(initialImages);
   }, [initialImages]);
 
-  // 2. Fetch danh sách tất cả màu sắc để chọn
   useEffect(() => {
     const fetchColors = async () => {
       if (!user?.token) return;
@@ -76,7 +77,7 @@ const ProductMediaManagement: React.FC<Props> = ({
     }
   };
 
-  // 3. Xử lý Upload
+  // Xử lý Upload
   const handleUploadSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!uploadForm.file) {
@@ -112,6 +113,11 @@ const ProductMediaManagement: React.FC<Props> = ({
       setUploadForm(initialFormState);
       onUpdate();
       toast.success("Photo uploaded successfully!");
+
+      // 4. Reset giá trị của input file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } catch (err: any) {
       console.error("Error uploading image:", err);
       setError(`Upload failed: ${err.response?.data?.message || err.message}`);
@@ -120,28 +126,62 @@ const ProductMediaManagement: React.FC<Props> = ({
     }
   };
 
-  // 4. Xử lý Xóa
-  const handleDeleteImage = async (imageId: string) => {
-    if (
-      !window.confirm("Are you sure you want to delete this image?") ||
-      !user?.token
-    ) {
-      return;
-    }
+  const performDelete = async (imageId: string) => {
+    const deleteToastId = toast.loading("Deleting image...");
 
     try {
       await api.delete(
         `/api/admin/catalog/products/${productId}/images/${imageId}`,
         {
-          headers: { Authorization: `Bearer ${user.token}` },
+          headers: { Authorization: `Bearer ${user?.token}` },
         }
       );
-      toast.success("Photo deleted successfully!");
+
+      toast.success("Photo deleted successfully!", { id: deleteToastId });
       onUpdate();
     } catch (err: any) {
       console.error("Error deleting images:", err);
-      alert(`Delete failure:${err.response?.data?.message || err.message}`);
+      const errorMessage = err.response?.data?.message || err.message;
+      toast.error(`Delete failure: ${errorMessage}`, { id: deleteToastId });
     }
+  };
+
+  const handleDeleteImage = (imageId: string) => {
+    if (!user?.token) {
+      return;
+    }
+
+    toast(
+      (t) => (
+        <div className="bg-white p-4 rounded-lg flex flex-col gap-3">
+          <p className="font-semibold text-gray-800">
+            Are you sure you want to delete?
+          </p>
+          <p className="text-sm text-gray-600">This action cannot be undone.</p>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1 rounded-md text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                performDelete(imageId);
+              }}
+              className="px-3 py-1 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        position: "top-center",
+        duration: 5000,
+      }
+    );
   };
 
   return (
@@ -163,6 +203,7 @@ const ProductMediaManagement: React.FC<Props> = ({
             type="file"
             accept="image/*"
             onChange={handleFormChange}
+            ref={fileInputRef}
             className="mt-1 block w-full text-sm text-gray-500
               file:mr-4 file:py-2 file:px-4
               file:rounded-full file:border-0

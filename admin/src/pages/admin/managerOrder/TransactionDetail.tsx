@@ -114,7 +114,7 @@ export default function TransactionDetail() {
       <div className="mb-4">
         <button
           onClick={() => navigate(-1)}
-          className="flex cursor-pointer items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+          className="flex cursor-pointer items-center text-sm font-medium text-blue-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft size={18} className="mr-1" />
           Back to Transactions
