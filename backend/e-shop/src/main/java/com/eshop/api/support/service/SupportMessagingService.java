@@ -19,6 +19,7 @@ import com.eshop.api.user.User;
 import com.eshop.api.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -35,6 +36,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -280,7 +282,8 @@ public class SupportMessagingService {
             .map(Role::getName)
             .map(name -> name == null ? null : name.toUpperCase(Locale.ENGLISH))
             .collect(Collectors.toSet());
-        return roleNames.contains("ROLE_ADMIN") || roleNames.contains("ADMIN");
+
+        return roleNames.contains("ROLE_ADMIN") || roleNames.contains("ADMIN") || roleNames.contains("STAFF");
     }
 
     private List<String> sanitizeAttachments(List<String> attachments) {
