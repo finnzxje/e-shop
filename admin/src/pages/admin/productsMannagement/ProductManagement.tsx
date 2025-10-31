@@ -48,7 +48,7 @@ const ProductManagement: React.FC = () => {
     size: 10,
   });
   const [apiError, setApiError] = useState<string | null>(null);
-
+  const [searchTerm, setSearchTerm] = useState<string>("");
   // State để theo dõi ID sản phẩm đang được cập nhật status
   const [patchingStatusId, setPatchingStatusId] = useState<string | null>(null);
 
@@ -121,7 +121,16 @@ const ProductManagement: React.FC = () => {
       page: newPage,
     }));
   };
-
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      setFilters((prev) => ({
+        ...prev,
+        search: searchTerm,
+        page: 0,
+      }));
+    }
+  };
   const handleStatusChange = async (productId: string, newStatus: string) => {
     // 1. Hiển thị loading cho riêng hàng này
     setPatchingStatusId(productId);
@@ -178,8 +187,9 @@ const ProductManagement: React.FC = () => {
               type="text"
               name="search"
               placeholder="Search name, slug, description..."
-              value={filters.search}
-              onChange={handleFilterChange}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               className="w-full px-4 py-2 border rounded-lg pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <Search

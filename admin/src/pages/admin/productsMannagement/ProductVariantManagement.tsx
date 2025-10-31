@@ -3,6 +3,7 @@ import api from "../../../config/axios";
 import { useAppProvider } from "../../../context/useContex";
 import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import type { ProductVariant, Color, ColorMediaAggregate } from "./types";
+import toast from "react-hot-toast";
 
 interface Props {
   productId: string;
@@ -134,6 +135,7 @@ const ProductVariantManagement: React.FC<Props> = ({
       setNewVariantRows([
         { size: "", sku: "", price: 0, quantity: 0, active: true },
       ]);
+      toast.success("Create a successful variation!");
     } catch (err: any) {
       console.error("Error creating variant:", err);
       setError(`Create failure: ${err.response?.data?.message || err.message}`);
@@ -142,25 +144,65 @@ const ProductVariantManagement: React.FC<Props> = ({
     }
   };
 
-  const handleDeleteVariant = async (variantId: string) => {
-    if (
-      !window.confirm("Are you sure you want to delete this variant?") ||
-      !user?.token
-    ) {
-      return;
-    }
+  const performDeleteVariant = async (variantId: string) => {
+    const deleteToastId = toast.loading("Deleting variant...");
     try {
       await api.delete(
         `/api/admin/catalog/products/${productId}/variants/${variantId}`,
         {
-          headers: { Authorization: `Bearer ${user.token}` },
+          headers: { Authorization: `Bearer ${user?.token}` },
         }
       );
+      toast.success("Variant deleted successfully!", { id: deleteToastId });
       onUpdate();
     } catch (err: any) {
       console.error("Lỗi xóa biến thể:", err);
-      alert(`Xóa thất bại: ${err.response?.data?.message || err.message}`);
+      const errorMessage = err.response?.data?.message || err.message;
+      toast.error(`Delete failure: ${errorMessage}`, { id: deleteToastId });
     }
+  };
+
+  const handleDeleteVariant = (variantId: string) => {
+    if (!user?.token) {
+      return;
+    }
+
+    toast(
+      (t) => (
+        <div className="bg-white p-4 rounded-lg flex flex-col gap-3">
+          <p className="font-semibold text-gray-800">
+            Are you sure you want to delete?
+          </p>
+          <p className="text-sm text-gray-600">
+            This variant will be permanently removed.
+          </p>
+          <div className="flex gap-2 justify-end">
+            {/* Nút Hủy */}
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="px-3 py-1 rounded-md text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            >
+              Cancel
+            </button>
+
+            {/* Nút Xóa */}
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                performDeleteVariant(variantId);
+              }}
+              className="px-3 py-1 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      ),
+      {
+        position: "top-center",
+        duration: 5000,
+      }
+    );
   };
 
   // --- CẬP NHẬT: Hàm xử lý PATCH status ---
@@ -180,6 +222,7 @@ const ProductVariantManagement: React.FC<Props> = ({
       );
 
       onUpdate();
+      toast.success("Changed variant status successfully!");
     } catch (err: any) {
       console.error("Lỗi cập nhật trạng thái variant:", err);
       alert(`Update failed: ${err.response?.data?.message || err.message}`);
