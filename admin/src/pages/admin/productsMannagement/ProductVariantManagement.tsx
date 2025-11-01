@@ -1,6 +1,6 @@
 import React, { useState, useEffect, type ChangeEvent } from "react";
 import api from "../../../config/axios";
-import { useAppProvider } from "../../../context/useContex";
+import { useAppProvider } from "../../../context/useContext";
 import { Plus, Trash2, Loader2, Save } from "lucide-react";
 import type { ProductVariant, Color, ColorMediaAggregate } from "./types";
 import toast from "react-hot-toast";

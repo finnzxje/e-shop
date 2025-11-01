@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import api from "../../../config/axios";
 import { Loader2, ChevronLeft, ChevronRight, Search, Eye } from "lucide-react";
 import toast from "react-hot-toast";
-import { useAppProvider } from "../../../context/useContex";
+import { useAppProvider } from "../../../context/useContext";
 
 interface Customer {
   id: string;

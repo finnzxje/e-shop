@@ -7,18 +7,28 @@ import {
   ClipboardList,
   LifeBuoy,
 } from "lucide-react";
+import { useAppProvider } from "../../context/useContext";
 
 type SidebarProps = {
   isCollapsed: boolean;
 };
 
+type UserRole = "ADMIN" | "STAFF";
+
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
   const location = useLocation();
   const pathname = location.pathname;
+  const { user } = useAppProvider();
+  const userRole = user?.roles[0] as UserRole;
 
   const navLinks = [
     { to: "/admin", icon: <LayoutDashboard size={20} />, text: "Dashboard" },
-    { to: "/admin/users", icon: <Users size={20} />, text: "Manage Users" },
+    {
+      to: "/admin/users",
+      icon: <Users size={20} />,
+      text: "Manage Users",
+      requiredRole: "ADMIN",
+    },
     {
       to: "/admin/products",
       icon: <ShoppingCart size={20} />,
@@ -35,6 +45,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
       text: "Customer Support",
     },
   ];
+
+  const filteredNavLinks = navLinks.filter((link) => {
+    if (!link.requiredRole) {
+      return true;
+    }
+
+    return userRole === link.requiredRole;
+  });
 
   return (
     <aside
@@ -83,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
         }`}
       >
         <ul>
-          {navLinks.map((link) => (
+          {filteredNavLinks.map((link) => (
             <li key={link.to} className="mb-4 relative group">
               <Link
                 to={link.to}

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import { useAppProvider } from "../context/useContex";
+import { useAppProvider } from "../context/useContext";
 import toast from "react-hot-toast";
 import api from "../config/axios";
 export default function Login() {
@@ -34,9 +34,7 @@ export default function Login() {
         localStorage.setItem("accessToken", userData.token);
         setUser(userData);
         toast.success("Login successful!");
-
-        if (userData.roles[0] === "ADMIN") navigate("/admin");
-        else navigate("/staff");
+        navigate("/admin");
       } catch (error: any) {
         toast.error("Incorrect email or password");
       }

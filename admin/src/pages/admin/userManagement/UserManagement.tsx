@@ -18,7 +18,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import api from "../../../config/axios";
-import { useAppProvider } from "../../../context/useContex";
+import { useAppProvider } from "../../../context/useContext";
 import RoleEditModal from "./RoleEditModal";
 import toast from "react-hot-toast";
 
@@ -248,6 +248,7 @@ const UserManagement: React.FC = () => {
               <option value="">All roles</option>
               <option value="ADMIN">ADMIN</option>
               <option value="CUSTOMER">CUSTOMER</option>
+              <option value="STAFF">STAFF</option>
             </select>
           </div>
           <div>
@@ -359,6 +360,8 @@ const UserManagement: React.FC = () => {
                             className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               role === "ADMIN"
                                 ? "bg-red-100 text-red-800"
+                                : role === "STAFF"
+                                ? "bg-blue-100 text-blue-800"
                                 : "bg-green-100 text-green-800"
                             }`}
                           >

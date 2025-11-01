@@ -7,7 +7,7 @@ import React, {
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import api from "../../../config/axios";
-import { useAppProvider } from "../../../context/useContex";
+import { useAppProvider } from "../../../context/useContext";
 import ProductForm from "./ProductForm";
 import type { ProductFormPayload, Category } from "./types";
 import toast from "react-hot-toast";

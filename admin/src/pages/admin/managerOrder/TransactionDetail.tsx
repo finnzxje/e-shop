@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../../../config/axios";
 import { Loader2, ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
-import { useAppProvider } from "../../../context/useContex";
+import { useAppProvider } from "../../../context/useContext";
 
 const StatusBadge = ({ status }: { status: string }) => {
   let colorClasses = "bg-gray-100 text-gray-800";
