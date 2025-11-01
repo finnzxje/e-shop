@@ -3,6 +3,7 @@
 ## REST Endpoints
 
 ### Start a Conversation
+
 - **POST** `/api/support/conversations`
 - **Body**
   ```json
@@ -16,23 +17,28 @@
 - Requires authenticated customer (JWT access token).
 
 ### List Customer Conversations
+
 - **GET** `/api/support/conversations?page=0&size=20`
 - Returns paginated conversations for the authenticated customer.
 
 ### List Staff Conversations
+
 - **GET** `/api/admin/support/conversations?status=OPEN&status=WAITING_CUSTOMER`
 - Optional `status` filter (repeatable). When omitted, defaults to `OPEN`, `WAITING_CUSTOMER`, `WAITING_STAFF`.
 - Requires `ROLE_ADMIN`.
 
 ### List Assigned Conversations
+
 - **GET** `/api/admin/support/conversations/assigned`
 - Shows conversations currently assigned to the authenticated staff member.
 
 ### Fetch Messages
+
 - **GET** `/api/support/conversations/{conversationId}/messages`
 - Customer and staff share the same endpoint; authorization is derived from the JWT.
 
 ### Send Message (REST)
+
 - **POST** `/api/support/conversations/{conversationId}/messages`
 - **Body**
   ```json
@@ -44,6 +50,7 @@
 - Returns the persisted `SupportMessageResponse`.
 
 ### Update Conversation Status
+
 - **PATCH** `/api/admin/support/conversations/{conversationId}/status`
 - **Body** `{ "status": "CLOSED" }`
 - Assigns the conversation to the acting staff member if none is present.
@@ -51,16 +58,20 @@
 ## WebSocket/STOMP
 
 ### Endpoint
+
 - SockJS/WebSocket endpoint: `ws://{host}:{port}/ws`
 - Requires `Authorization: Bearer <access_token>` header on the CONNECT frame (or `access_token` header).
 
 ### Application Destinations
+
 - Send messages to `/app/support/{conversationId}/messages` with payload identical to the REST send request.
 
 ### Subscriptions
+
 - Subscribe to `/topic/support/conversations/{conversationId}` to receive `SupportMessageResponse` events in real time.
 
 ### Example STOMP CONNECT Frame
+
 ```
 CONNECT
 Authorization: Bearer eyJ...token
@@ -73,6 +84,7 @@ heart-beat:0,0
 ## Data Contracts
 
 ### SupportConversationSummaryResponse
+
 ```json
 {
   "id": "7a2e2b56-...",
@@ -94,6 +106,7 @@ heart-beat:0,0
 ```
 
 ### SupportMessageResponse
+
 ```json
 {
   "id": "23fd...",

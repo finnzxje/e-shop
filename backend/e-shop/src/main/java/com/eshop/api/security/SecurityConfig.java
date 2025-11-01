@@ -44,8 +44,8 @@ public class SecurityConfig {
                 "/api/catalog/**",
                 "/swagger-ui/**",
                 "/v3/api-docs/**",
-                "/ws/**").permitAll().requestMatchers("/actuator/**").permitAll().requestMatchers("/api/admin/**").hasRole(
-                "ADMIN").anyRequest().authenticated()).addFilterBefore(jwtFilter,
+                "/ws/**").permitAll().requestMatchers("/actuator/**").permitAll().requestMatchers("/api/admin/**").hasAnyRole(
+                "ADMIN", "STAFF").anyRequest().authenticated()).addFilterBefore(jwtFilter,
                 UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
