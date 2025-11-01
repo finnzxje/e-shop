@@ -1,27 +1,34 @@
 import { Navigate } from "react-router-dom";
-import { useAppProvider } from "../context/useContex";
+import { useAppProvider } from "../context/useContext";
 import type { JSX } from "react/jsx-runtime";
+
+// Định nghĩa rõ ràng các vai trò mà hệ thống của bạn sử dụng
+type UserRole = "ADMIN" | "STAFF";
 
 interface PrivateRouteProps {
   children: JSX.Element;
-  requiredRole?: "ADMIN" | "STAFF";
+  requiredRoles?: UserRole[];
 }
 
-const PrivateRoute = ({ children, requiredRole }: PrivateRouteProps) => {
+const PrivateRoute = ({ children, requiredRoles }: PrivateRouteProps) => {
   const { user, isLoading } = useAppProvider();
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Loading...
+      </div>
+    );
   }
-
   if (!user) {
     return <Navigate to="/" replace />;
   }
 
-  if (requiredRole && user.roles[0] !== requiredRole) {
+  const userRole = user.roles[0] as UserRole;
+
+  if (requiredRoles && !requiredRoles.includes(userRole)) {
     return <Navigate to="/not-found" replace />;
   }
-
   return children;
 };
 

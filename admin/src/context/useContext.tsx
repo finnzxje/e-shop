@@ -8,6 +8,7 @@ interface User {
   enabled: boolean;
   roles: "ADMIN" | "STAFF";
   token?: string;
+  createdAt: string;
 }
 
 interface AppContextType {

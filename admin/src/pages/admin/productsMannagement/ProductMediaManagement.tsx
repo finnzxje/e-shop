@@ -6,7 +6,7 @@ import React, {
   type FormEvent,
 } from "react";
 import api from "../../../config/axios";
-import { useAppProvider } from "../../../context/useContex";
+import { useAppProvider } from "../../../context/useContext";
 import { Upload, Trash2, Loader2 } from "lucide-react";
 import type { ProductImage, Color } from "./types";
 import toast from "react-hot-toast";

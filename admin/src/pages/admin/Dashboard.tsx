@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import api from "../../config/axios";
-import { useAppProvider } from "../../context/useContex";
+import { useAppProvider } from "../../context/useContext";
 interface SummaryData {
   revenue: number;
   orders: number;

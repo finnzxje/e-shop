@@ -8,7 +8,7 @@ import React, {
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import api from "../../../config/axios";
-import { useAppProvider } from "../../../context/useContex";
+import { useAppProvider } from "../../../context/useContext";
 import ProductForm from "./ProductForm";
 import ProductMediaManagement from "./ProductMediaManagement";
 import ProductVariantManagement from "./ProductVariantManagement";

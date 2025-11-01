@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Plus, Search, Edit, Loader2 } from "lucide-react";
 import api from "../../../config/axios";
 import axios from "axios";
-import { useAppProvider } from "../../../context/useContex";
+import { useAppProvider } from "../../../context/useContext";
 import toast from "react-hot-toast";
 
 type ProductSummary = {

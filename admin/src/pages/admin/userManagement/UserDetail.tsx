@@ -11,7 +11,7 @@ import {
   MapPin,
 } from "lucide-react";
 import api from "../../../config/axios";
-import { useAppProvider } from "../../../context/useContex";
+import { useAppProvider } from "../../../context/useContext";
 interface UserAddress {
   id: string;
   fullName: string;
@@ -79,8 +79,8 @@ const UserDetail: React.FC = () => {
   }, [userId, user?.token]);
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Not verified"; 
-    return new Date(dateString).toLocaleString("en-US"); 
+    if (!dateString) return "Not verified";
+    return new Date(dateString).toLocaleString("en-US");
   };
 
   if (loading) {
