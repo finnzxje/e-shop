@@ -36,7 +36,7 @@ Content-Type: application/json
 ### 
 
 GET http://localhost:8080/api/auth/me HTTP/1.1
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MTIzNDE4NSwiZXhwIjoxNzYxNTk0MTg1fQ.ZiRasw99RyoUJrU3VRFYCRrzDr9J0B0EbPFAoX-4A2Y
+Authorization: Bearer {{profileAccessToken}}
 
 
 ### 
@@ -73,4 +73,64 @@ Content-Type: application/json
 
 {
   "email": "huynhminhthinh003@gmail.com"
+}
+
+
+### 
+
+@profileAccessToken = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MjI3NDk3NiwiZXhwIjoxNzYyNjM0OTc2fQ.XYgGFdMBBU_CmS78B-lRtfDL_6eL7txS7119irnnsok
+
+
+### Get current profile
+
+GET http://localhost:8080/api/account/profile HTTP/1.1
+Authorization: Bearer {{profileAccessToken}}
+
+
+### Update profile
+
+PUT http://localhost:8080/api/account/profile HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{profileAccessToken}}
+
+{
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "phone": "+1 555 000 1234"
+}
+
+
+### Change password
+
+PATCH http://localhost:8080/api/account/profile/password HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{profileAccessToken}}
+
+{
+  "confirmPassword": "testpassword",
+  "currentPassword": "newSecret123",
+  "newPassword": "testpassword"
+}
+
+
+### Request password reset (public)
+
+POST http://localhost:8080/api/auth/password/reset/request HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "vuadeptraitg@gmail.com"
+}
+
+
+### Confirm password reset (public)
+
+POST http://localhost:8080/api/auth/password/reset/confirm HTTP/1.1
+Content-Type: application/json
+
+{
+  "confirmPassword": "brandNew123",
+  "email": "test@gmail.com",
+  "newPassword": "brandNew123",
+  "token": "1234"
 }

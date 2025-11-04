@@ -45,6 +45,8 @@ app:
     activation:
       base-url: ${APP_ACTIVATION_BASE_URL:http://localhost:8080/api/auth/activate}
       token-expiration-minutes: ${APP_ACTIVATION_TOKEN_EXPIRATION_MINUTES:1440}
+    password-reset:
+      token-expiration-minutes: ${APP_PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES:15}
   jwt:
     secret: ${JWT_SECRET:b@N3OeiLg$!bG9l!$^FHS*D(!*jasd(!@FHASD}
     access-expiration-seconds: 360000

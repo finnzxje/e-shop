@@ -1,8 +1,6 @@
 package com.eshop.api.email;
 
 import com.eshop.api.user.User;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,22 +19,13 @@ public class EmailService {
     private String defaultFromAddress;
 
     public void sendAccountActivationEmail(User user, String activationLink) {
-        MimeMessage message = mailSender.createMimeMessage();
+        log.info("Sending account activation email to {}", user.getEmail());
+        sendHtmlEmail(user.getEmail(), "Activate your E-Shop account", buildActivationBody(user, activationLink));
+    }
 
-        try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
-                    "UTF-8");
-            helper.setFrom(defaultFromAddress);
-            helper.setTo(user.getEmail());
-            helper.setSubject("Activate your E-Shop account");
-            helper.setText(buildActivationBody(user, activationLink), true);
-
-            log.info("Sending account activation email to {}", user.getEmail());
-            mailSender.send(message);
-        } catch (MessagingException e) {
-            log.error("Failed to send activation email to {}", user.getEmail(), e);
-            throw new RuntimeException("Failed to send activation email", e);
-        }
+    public void sendPasswordResetToken(User user, String token) {
+        log.info("Sending password reset token to {}", user.getEmail());
+        sendHtmlEmail(user.getEmail(), "Reset your E-Shop password", buildPasswordResetBody(user, token));
     }
 
     private String buildActivationBody(User user, String activationLink) {
@@ -55,5 +44,37 @@ public class EmailService {
                 <p>If you did not sign up for this account, you can safely ignore this email.</p>
                 <p>-- The E-Shop Team</p>
                 """.formatted(greeting, activationLink);
+    }
+
+    private String buildPasswordResetBody(User user, String token) {
+        String greeting = user.getFirstName() != null && !user.getFirstName().isBlank()
+                ? "Hi " + user.getFirstName() + ","
+                : "Hi there,";
+
+        return """
+                <p>%s</p>
+                <p>We received a request to reset your password. Use the verification code below to continue.</p>
+                <p style="font-size:24px;font-weight:600;letter-spacing:6px;">%s</p>
+                <p>This code expires soon. If you didn't request a reset, you can safely ignore this email.</p>
+                <p>-- The E-Shop Team</p>
+                """.formatted(greeting, token);
+    }
+
+    private void sendHtmlEmail(String recipient, String subject, String htmlBody) {
+        var message = mailSender.createMimeMessage();
+
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
+                    "UTF-8");
+            helper.setFrom(defaultFromAddress);
+            helper.setTo(recipient);
+            helper.setSubject(subject);
+            helper.setText(htmlBody, true);
+
+            mailSender.send(message);
+        } catch (jakarta.mail.MessagingException e) {
+            log.error("Failed to send email to {}", recipient, e);
+            throw new RuntimeException("Failed to send email", e);
+        }
     }
 }

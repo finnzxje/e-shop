@@ -40,6 +40,7 @@ public class SecurityConfig {
                 AbstractHttpConfigurer::disable).authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/register",
                 "/api/auth/login",
                 "/api/auth/refresh",
+                "/api/auth/password/reset/**",
                 "api/auth/activate/**",
                 "/api/catalog/**",
                 "/swagger-ui/**",
