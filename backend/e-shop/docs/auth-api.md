@@ -176,6 +176,49 @@ Requests a fresh activation token for a user who registered but has not confirme
 - `404 Not Found` — no account exists for the provided email.
 - `409 Conflict` — the account is already activated.
 
+### Request Password Reset
+
+`POST /api/auth/password/reset/request`
+
+Initiates the password reset flow. The backend always responds with `202 Accepted`, regardless of whether the email exists, to avoid leaking account information.
+
+**Request body**
+
+```json
+{
+  "email": "jane.doe@example.com"
+}
+```
+
+**Response** — `202 Accepted`
+
+### Confirm Password Reset
+
+`POST /api/auth/password/reset/confirm`
+
+Completes the password reset using the 4-digit token that was emailed to the user.
+
+**Request body**
+
+```json
+{
+  "email": "jane.doe@example.com",
+  "token": "8341",
+  "newPassword": "new-secret",
+  "confirmPassword": "new-secret"
+}
+```
+
+**Response** — `204 No Content`
+
+**Error responses**
+
+- `400 Bad Request` — token invalid, expired, already used, or password validation failed.
+
+**Notes**
+
+- Tokens expire after `app.auth.password-reset.token-expiration-minutes` (15 minutes by default). Requesting a new token invalidates any previous ones.
+
 ### Test Current Token
 
 `GET /api/auth/test-token`
@@ -259,4 +302,5 @@ Use this account to exercise the admin-only endpoints.
 - **Resend flow** — surface a “Resend activation email” action that calls `POST /api/auth/activate/resend` with the user's email. Handle `404` (unknown email) and `409` (already activated) with helpful messaging.
 - **Post-activation UX** — after a `200` response with `activated: true`, direct the user to the login page. If the backend returns `400`, surface the message and offer a “Resend activation email” option.
 - **Disabled accounts** — until activation succeeds, `/api/auth/login` responds with `403` and a message directing the user to verify their email. Surface that copy and offer the resend action.
+- **Password reset** — build a two-step flow: first call `POST /api/auth/password/reset/request` to send the 4-digit code, then prompt for the code plus new password and call `POST /api/auth/password/reset/confirm`. Always show a generic success message after the request step to avoid account enumeration.
 - **Session gating** — hide restricted areas until `/api/auth/me` confirms `enabled: true` for the current session.
