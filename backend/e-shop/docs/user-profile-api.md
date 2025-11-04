@@ -56,11 +56,36 @@ Content-Type: application/json
 
 Returns the updated profile payload.
 
+## Change Password
+
+`PATCH /password`
+
+Updates the authenticated user's password. The request must include the current password, the new password, and a confirmation of the new password.
+
+### Request Body
+
+```json
+{
+  "currentPassword": "old-secret",
+  "newPassword": "new-secret",
+  "confirmPassword": "new-secret"
+}
+```
+
+### Response
+
+```
+Status: 204 No Content
+```
+
 ## Validation Rules
 
 - `firstName` is required and must be 80 characters or fewer.
 - `lastName` is required and must be 80 characters or fewer.
 - `phone` is optional but must be 30 characters or fewer when provided.
+- `currentPassword` is required when changing the password and must match the existing password.
+- `newPassword` must be at least 6 characters and different from the current password.
+- `confirmPassword` must match `newPassword`.
 
 ## Error Responses
 

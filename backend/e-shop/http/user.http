@@ -98,3 +98,16 @@ Authorization: Bearer {{profileAccessToken}}
   "lastName": "Doe",
   "phone": "+1 555 000 1234"
 }
+
+
+### Change password
+
+PATCH http://localhost:8080/api/account/profile/password HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{profileAccessToken}}
+
+{
+  "confirmPassword": "testpassword",
+  "currentPassword": "newSecret123",
+  "newPassword": "testpassword"
+}

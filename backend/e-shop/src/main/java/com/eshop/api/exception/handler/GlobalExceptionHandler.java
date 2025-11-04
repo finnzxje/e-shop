@@ -3,6 +3,7 @@ package com.eshop.api.exception.handler;
 import com.eshop.api.exception.ApiException;
 import com.eshop.api.exception.InvalidActivationTokenException;
 import com.eshop.api.exception.InvalidJwtException;
+import com.eshop.api.exception.InvalidPasswordChangeException;
 import com.eshop.api.exception.RoleNotFoundException;
 import com.eshop.api.exception.UserAlreadyExistsException;
 import com.eshop.api.exception.dto.ErrorResponse;
@@ -135,6 +136,22 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidActivationTokenException(InvalidActivationTokenException ex,
                                                                                WebRequest request) {
         log.warn("Invalid activation token: {}", ex.getMessage());
+
+        ErrorResponse errorResponse = new ErrorResponse(
+            HttpStatus.BAD_REQUEST.value(),
+            "Bad Request",
+            ex.getMessage(),
+            Instant.now(),
+            request.getDescription(false).replace("uri=", "")
+        );
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InvalidPasswordChangeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPasswordChangeException(InvalidPasswordChangeException ex,
+                                                                              WebRequest request) {
+        log.warn("Invalid password change request: {}", ex.getMessage());
 
         ErrorResponse errorResponse = new ErrorResponse(
             HttpStatus.BAD_REQUEST.value(),
