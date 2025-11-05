@@ -15,6 +15,7 @@ import PurchasedItems from "./pages/purchasedItems";
 import NotFound from "./pages/notFoundPages";
 import ActivateAccount from "./pages/ActivateAccount";
 import SupportChat from "./pages/SupportChat";
+import MyProfile from "./pages/MyProfile";
 function AppContent() {
   const location = useLocation();
   const isContactPage = location.pathname === "/contact";
@@ -34,6 +35,7 @@ function AppContent() {
         <Route path="/purchase" element={<PurchasedItems />} />
         <Route path="/auth/activate" element={<ActivateAccount />} />
         <Route path="/contact" element={<SupportChat />} />
+        <Route path="/my-profile" element={<MyProfile />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {!isContactPage && <Footer />}

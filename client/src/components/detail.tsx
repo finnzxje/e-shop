@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Check, ShoppingBag, Zap, Package, Heart } from "lucide-react";
+import { X, Check, ShoppingBag, Package, Heart } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { ProductReviews } from "./productReviews";
 import { useProductDetail } from "../hooks/useProductDetail";
@@ -330,7 +330,7 @@ export default function Detail() {
                     <ShoppingBag className="w-4 h-4" />
                     Add to Bag
                   </button>
-                  <button
+                  {/* <button
                     disabled={
                       !selectedVariant || selectedVariant.quantityInStock === 0
                     }
@@ -338,7 +338,7 @@ export default function Detail() {
                   >
                     <Zap className="w-4 h-4" />
                     Buy Now
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
