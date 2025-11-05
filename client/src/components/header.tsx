@@ -120,7 +120,7 @@ export const Header = () => {
             onMouseLeave={() => setActiveParent(null)}
           >
             <span className={sportsLinkClasses}>
-              Sports
+              Category
               <ChevronDown
                 size={16}
                 className="transition-transform group-hover:rotate-180"
@@ -277,7 +277,7 @@ export const Header = () => {
                   isSportsActive ? "font-bold text-black" : ""
                 }`}
               >
-                <span>Sports</span>
+                <span>Category</span>
                 <ChevronDown
                   size={16}
                   className={`transition-transform ${
