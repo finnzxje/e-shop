@@ -59,6 +59,11 @@ cp ../.env .env  # optional: reuse root .env for mail settings
 
 Configuration defaults live in `application.yml`. Override secrets via environment variables or a `.env.properties` file (Spring Boot will auto-load it).
 
+Default credentials created on startup:
+
+- Admin — `admin@gmail.com` / `123456`
+- Demo customer (email already verified) — `demo.customer@eshop.local` / `123456`
+
 Swagger UI is available at `http://localhost:8080/swagger-ui.html` once the service is running.
 
 ### Storefront (`client`)
