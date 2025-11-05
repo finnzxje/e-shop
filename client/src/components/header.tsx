@@ -58,6 +58,7 @@ export const Header = () => {
 
   const handleLogouts = () => {
     handleLogout();
+    navigate("/");
     toast.success("Logout success!");
   };
 
@@ -119,7 +120,7 @@ export const Header = () => {
             onMouseLeave={() => setActiveParent(null)}
           >
             <span className={sportsLinkClasses}>
-              Sports
+              Category
               <ChevronDown
                 size={16}
                 className="transition-transform group-hover:rotate-180"
@@ -199,19 +200,36 @@ export const Header = () => {
           </Link>
         ) : (
           <div className="relative group">
-            <img src={profile} alt="profile" className="w-10" />
-            <ul className="hidden group-hover:block absolute top-10 right-0 bg-white border border-gray-200 shadow w-30 z-40 rounded-md py-2.5 text-sm">
-              <Link
-                to="/purchase"
-                className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer"
-              >
-                My Orders
-              </Link>
-              <li
-                onClick={handleLogouts}
-                className="p-1.5 pl-3 hover:bg-primary/10 cursor-pointer"
-              >
-                Logout
+            <img src={profile} alt="profile" className="w-10 cursor-pointer" />
+
+            <ul
+              className="hidden group-hover:block absolute top-10 -right-7 bg-white 
+               border border-gray-200 shadow-lg w-max-content z-40 
+               rounded-md py-1.5 text-sm"
+            >
+              <li>
+                <Link
+                  to="/my-profile"
+                  className="block w-full py-1.5 px-4 hover:bg-primary/10 whitespace-nowrap"
+                >
+                  My Profile
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/purchase"
+                  className="block w-full py-1.5 px-4 hover:bg-primary/10 whitespace-nowrap"
+                >
+                  My Orders
+                </Link>
+              </li>
+              <li>
+                <span
+                  onClick={handleLogouts}
+                  className="block w-full py-1.5 px-4 hover:bg-primary/10 cursor-pointer whitespace-nowrap"
+                >
+                  Logout
+                </span>
               </li>
             </ul>
           </div>
@@ -259,7 +277,7 @@ export const Header = () => {
                   isSportsActive ? "font-bold text-black" : ""
                 }`}
               >
-                <span>Sports</span>
+                <span>Category</span>
                 <ChevronDown
                   size={16}
                   className={`transition-transform ${
