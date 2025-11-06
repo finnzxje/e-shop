@@ -488,10 +488,10 @@ if __name__ == "__main__":
     # Database configuration
     DB_CONFIG = {
         'host': 'localhost',
-        'port': 5432,
-        'database': 'ecommerce_db',
-        'user': 'postgres',
-        'password': 'your_password'
+        'port': 5433,
+        'database': 'eshop',
+        'user': 'app',
+        'password': 'secret'
     }
     
     # Run ETL Pipeline
@@ -501,7 +501,7 @@ if __name__ == "__main__":
     # Print summary
     print("\n" + "="*60)
     print("ETL SUMMARY")
-    print("="*60)
+    
     print(f"Interactions: {len(result['interactions'])} records")
     print(f"Users: {len(result['user_features'])} users")
     print(f"Items: {len(result['item_features'])} items")
