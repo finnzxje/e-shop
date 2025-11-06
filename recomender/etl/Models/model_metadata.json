@@ -1,0 +1,20 @@
+{
+  "trained_at": "2025-11-04T01:56:23.951350",
+  "n_users": 495,
+  "n_items": 1549,
+  "model_params": {
+    "no_components": 256,
+    "learning_rate": 0.15,
+    "loss": "bpr",
+    "max_sampled": 30,
+    "item_alpha": 1e-08,
+    "user_alpha": 1e-08,
+    "epochs": 100,
+    "patience": 15,
+    "reduce_clip_dims": true,
+    "clip_target_dims": 64,
+    "test_percentage": 0.1,
+    "val_percentage": 0.1
+  },
+  "best_val_score": 0.0008928571478463709
+}

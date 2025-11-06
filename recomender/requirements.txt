@@ -1,38 +1,52 @@
+# ========================================
+# Deep Learning & Embeddings (GPU)
+# ========================================
+# torch==2.1.2+cu118           # GPU build (CUDA 11.8)
+# torchvision==0.16.2+cu118
+# --extra-index-url https://download.pytorch.org/whl/cu118
 
-# Database
-psycopg2-binary==2.9.9
+# transformers>=4.30.0
+# clip @ git+https://github.com/openai/CLIP.git
+# clip-by-openai >= 1.0
+# pillow==10.1.0
 
-# Data processing
-pandas==2.1.4
+# ========================================
+# Vector Search & ML Tools
+# ========================================
+# faiss-gpu == 1.7.4             # GPU version of FAISS
+scikit-learn>=1.3.2
+scipy>=1.11.4
 numpy==1.26.2
+tqdm>=4.65.0
 
-# Configuration
+# ========================================
+# API Layer
+# ========================================
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+
+# ========================================
+# Database & Cache
+# ========================================
+psycopg2-binary==2.9.9
+redis>=4.5.0
+pgvector==0.2.4
+
+# ========================================
+# Data Processing
+# ========================================
+pandas==2.1.4
 python-dotenv==1.0.0
-
-# Scheduling
 schedule==1.2.0
 
-# Logging (built-in, no install needed)
-# logging
+# ========================================
+# Utilities
+# ========================================
+requests>=2.31.0
+#logging  # built-in, no need to install
 
-# Optional: For future steps
-
-#CLIP Embedding (khi cần bước tiếp theo)
-torch==2.1.2
-torchvision==0.16.2
-pillow==10.1.0
-clip-by-openai==1.0
-
-# LightFM Training
+# ========================================
+# Optional (for model training)
+# ========================================
 # lightfm==1.17
-# scikit-learn==1.3.2
-# scipy==1.11.4
-
-# FastAPI Serving
-# fastapi==0.109.0
-# uvicorn[standard]==0.27.0
-# pydantic==2.5.3
-
-# Vector Database (pgvector)
-# psycopg[binary]==3.1.18
-# pgvector==0.2.4
