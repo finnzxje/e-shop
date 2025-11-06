@@ -1,7 +1,7 @@
 import React, { useState, useEffect, type ChangeEvent } from "react";
 import api from "../../../config/axios";
 import { useAppProvider } from "../../../context/useContext";
-import { Plus, Trash2, Loader2, Save } from "lucide-react";
+import { Plus, Trash2, Loader2, Save, X, Edit, Check } from "lucide-react";
 import type { ProductVariant, Color, ColorMediaAggregate } from "./types";
 import toast from "react-hot-toast";
 
@@ -14,9 +14,18 @@ interface Props {
 type NewVariantRow = {
   size: string;
   sku: string;
+  price: string;
+  quantity: string;
+  active: boolean;
+};
+
+type VariantUpdatePayload = {
+  size: string;
+  sku: string;
   price: number;
   quantity: number;
   active: boolean;
+  colorId: number;
 };
 
 const ProductVariantManagement: React.FC<Props> = ({
@@ -30,16 +39,21 @@ const ProductVariantManagement: React.FC<Props> = ({
 
   const [newVariantColorId, setNewVariantColorId] = useState<string>("");
   const [newVariantRows, setNewVariantRows] = useState<NewVariantRow[]>([
-    { size: "", sku: "", price: 0, quantity: 0, active: true },
+    { size: "", sku: "", price: "", quantity: "", active: true },
   ]);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(
+    null
+  );
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const [patchingStatusId, setPatchingStatusId] = useState<string | null>(null);
 
   useEffect(() => {
     setVariants(initialVariants);
+    setEditingVariant(null);
   }, [initialVariants]);
 
   useEffect(() => {
@@ -69,7 +83,7 @@ const ProductVariantManagement: React.FC<Props> = ({
   const handleAddRow = () => {
     setNewVariantRows([
       ...newVariantRows,
-      { size: "", sku: "", price: 0, quantity: 0, active: true },
+      { size: "", sku: "", price: "", quantity: "", active: true },
     ]);
   };
 
@@ -89,8 +103,13 @@ const ProductVariantManagement: React.FC<Props> = ({
 
     if (name === "active") {
       item.active = (e.target as HTMLInputElement).checked;
-    } else if (name === "price" || name === "quantity") {
-      item[name] = parseFloat(value) || 0;
+    } else if (name === "price") {
+      const sanitizedValue = value.replace(/[^0-9.]/g, "");
+      if (sanitizedValue.split(".").length > 2) return;
+      item[name] = sanitizedValue;
+    } else if (name === "quantity") {
+      const sanitizedValue = value.replace(/[^0-9]/g, "");
+      item[name] = sanitizedValue;
     } else if (name === "size" || name === "sku") {
       item[name] = value;
     }
@@ -110,11 +129,18 @@ const ProductVariantManagement: React.FC<Props> = ({
     setError(null);
 
     const validVariants = newVariantRows
+      .map((v) => ({
+        ...v,
+        price: parseFloat(v.price) || 0,
+        quantity: parseInt(v.quantity, 10) || 0,
+      }))
       .filter((v) => v.size && v.sku && v.price > 0)
       .map((v) => ({ ...v, currency: "USD" }));
 
     if (validVariants.length === 0) {
-      setError("Please fill in at least 1 valid variation (Size, SKU, Price).");
+      setError(
+        "Please fill in at least 1 valid variation (Size, SKU, Price > 0)."
+      );
       setIsSubmitting(false);
       return;
     }
@@ -133,7 +159,7 @@ const ProductVariantManagement: React.FC<Props> = ({
       onUpdate();
       setNewVariantColorId("");
       setNewVariantRows([
-        { size: "", sku: "", price: 0, quantity: 0, active: true },
+        { size: "", sku: "", price: "", quantity: "", active: true },
       ]);
       toast.success("Create a successful variation!");
     } catch (err: any) {
@@ -166,7 +192,6 @@ const ProductVariantManagement: React.FC<Props> = ({
     if (!user?.token) {
       return;
     }
-
     toast(
       (t) => (
         <div className="bg-white p-4 rounded-lg flex flex-col gap-3">
@@ -177,15 +202,12 @@ const ProductVariantManagement: React.FC<Props> = ({
             This variant will be permanently removed.
           </p>
           <div className="flex gap-2 justify-end">
-            {/* Nút Hủy */}
             <button
               onClick={() => toast.dismiss(t.id)}
               className="px-3 py-1 rounded-md text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
             >
               Cancel
             </button>
-
-            {/* Nút Xóa */}
             <button
               onClick={() => {
                 toast.dismiss(t.id);
@@ -205,13 +227,15 @@ const ProductVariantManagement: React.FC<Props> = ({
     );
   };
 
-  // --- CẬP NHẬT: Hàm xử lý PATCH status ---
   const handleStatusToggle = async (
     variantId: string,
     currentStatus: boolean
   ) => {
     if (!user?.token) return;
-
+    if (editingVariant && editingVariant.id === variantId) {
+      toast.error("Please save or cancel your edits before changing status.");
+      return;
+    }
     const newStatus = !currentStatus;
     setPatchingStatusId(variantId);
     try {
@@ -220,7 +244,6 @@ const ProductVariantManagement: React.FC<Props> = ({
         { active: newStatus },
         { headers: { Authorization: `Bearer ${user.token}` } }
       );
-
       onUpdate();
       toast.success("Changed variant status successfully!");
     } catch (err: any) {
@@ -231,15 +254,90 @@ const ProductVariantManagement: React.FC<Props> = ({
     }
   };
 
+  const handleEditClick = (variant: ProductVariant) => {
+    setEditingVariant({ ...variant });
+  };
+
+  const handleEditCancel = () => {
+    setEditingVariant(null);
+  };
+
+  const handleEditChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    if (!editingVariant) return;
+
+    const { name, value } = e.target;
+
+    setEditingVariant((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev };
+
+      if (name === "price" || name === "quantityInStock") {
+        updated[name] = parseFloat(value) || 0;
+      } else if (name === "size" || name === "variantSku") {
+        updated[name] = value;
+      } else if (name === "color") {
+        const newColorId = parseInt(value, 10);
+        const newColor = allColors.find((c) => c.id === newColorId);
+        if (newColor) {
+          updated.color = newColor;
+        }
+      }
+      return updated;
+    });
+  };
+
+  const handleUpdateVariant = async () => {
+    if (!editingVariant || !user?.token) return;
+
+    if (
+      !editingVariant.size ||
+      !editingVariant.variantSku ||
+      editingVariant.price <= 0
+    ) {
+      toast.error("Size, SKU, and Price (must be > 0) are required.");
+      return;
+    }
+
+    setIsUpdating(true);
+    const updateToastId = toast.loading("Updating variant...");
+
+    const payload: VariantUpdatePayload = {
+      size: editingVariant.size,
+      sku: editingVariant.variantSku,
+      price: editingVariant.price,
+      quantity: editingVariant.quantityInStock,
+      active: editingVariant.active,
+      colorId: editingVariant.color.id,
+    };
+
+    try {
+      await api.put(
+        `/api/admin/catalog/products/${productId}/variants/${editingVariant.id}`,
+        payload,
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      toast.success("Variant updated successfully!", { id: updateToastId });
+      setEditingVariant(null);
+      onUpdate();
+    } catch (err: any) {
+      console.error("Error updating variant:", err);
+      const msg = err.response?.data?.message || err.message;
+      toast.error(`Update failed: ${msg}`, { id: updateToastId });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h3 className="text-xl font-semibold mb-4">
         Variation & Inventory Management
       </h3>
       <div className="border-b pb-6 mb-6 space-y-4">
-        <h4 className="font-semibold text-gray-700">
-          Add variation by colorAdd variation by color
-        </h4>
+        <h4 className="font-semibold text-gray-700">Add variation by color</h4>
         {error && <div className="text-red-600 text-sm mb-2">{error}</div>}
         <div>
           <label className="block text-sm font-medium text-gray-700">
@@ -281,19 +379,23 @@ const ProductVariantManagement: React.FC<Props> = ({
                 onChange={(e) => handleRowChange(e, index)}
                 className="border rounded-md px-2 py-1 col-span-2"
               />
+
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 name="price"
                 placeholder="Price"
-                value={row.price === 0 ? "" : row.price}
+                value={row.price}
                 onChange={(e) => handleRowChange(e, index)}
                 className="border rounded-md px-2 py-1 col-span-1"
               />
+
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
                 name="quantity"
                 placeholder="Quantity"
-                value={row.quantity === 0 ? "" : row.quantity}
+                value={row.quantity}
                 onChange={(e) => handleRowChange(e, index)}
                 className="border rounded-md px-2 py-1 col-span-1"
               />
@@ -338,6 +440,7 @@ const ProductVariantManagement: React.FC<Props> = ({
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">
                 Color
               </th>
+
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">
                 Size
               </th>
@@ -353,7 +456,9 @@ const ProductVariantManagement: React.FC<Props> = ({
               <th className="px-4 py-2 text-center text-xs font-medium text-gray-500">
                 Status
               </th>
-              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500"></th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -364,58 +469,177 @@ const ProductVariantManagement: React.FC<Props> = ({
                 </td>
               </tr>
             ) : (
-              variants.map((variant) => (
-                <tr key={variant.id}>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm flex items-center">
-                    <span
-                      className="w-4 h-4 rounded-full mr-2 border"
-                      style={{ backgroundColor: variant.color.hex }}
-                    ></span>
-                    {variant.color.name}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm">
-                    {variant.size}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm">
-                    {variant.variantSku}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm">
-                    {variant.price.toLocaleString("vi-VN")}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm">
-                    {variant.quantityInStock}
-                  </td>
-                  <td className="px-4 py-2 whitespace-nowrap text-sm text-center">
-                    {patchingStatusId === variant.id ? (
-                      <Loader2 size={16} className="animate-spin mx-auto" />
-                    ) : (
-                      <button
-                        onClick={() =>
-                          handleStatusToggle(variant.id, variant.active)
-                        }
-                        className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full
-                          ${
-                            variant.active
-                              ? "bg-green-100 text-green-800 hover:bg-green-200"
-                              : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                          }
-                        `}
-                      >
-                        {variant.active ? "Active" : "Inactive"}
-                      </button>
-                    )}
-                  </td>
+              variants.map((variant) => {
+                const isEditing = !!(
+                  editingVariant && editingVariant.id === variant.id
+                );
 
-                  <td className="px-4 py-2 whitespace-nowrap text-sm text-right">
-                    <button
-                      onClick={() => handleDeleteVariant(variant.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              ))
+                return (
+                  <tr
+                    key={variant.id}
+                    className={isEditing ? "bg-blue-50" : ""}
+                  >
+                    {/* --- THAY ĐỔI 2: Cột Color --- */}
+                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                      {isEditing ? (
+                        <select
+                          name="color"
+                          value={editingVariant.color.id}
+                          onChange={handleEditChange}
+                          className="w-full border rounded-md px-2 py-1 text-sm"
+                        >
+                          {allColors.map((color) => (
+                            <option key={color.id} value={color.id}>
+                              {color.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="flex items-center">
+                          <span
+                            className="w-4 h-4 rounded-full mr-2 border"
+                            style={{ backgroundColor: variant.color.hex }}
+                          ></span>
+                          {variant.color.name}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Size */}
+                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="size"
+                          value={editingVariant.size}
+                          onChange={handleEditChange}
+                          className="w-20 border rounded-md px-2 py-1"
+                        />
+                      ) : (
+                        variant.size
+                      )}
+                    </td>
+
+                    {/* SKU */}
+                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="variantSku"
+                          value={editingVariant.variantSku}
+                          onChange={handleEditChange}
+                          className="w-40 border rounded-md px-2 py-1"
+                        />
+                      ) : (
+                        variant.variantSku
+                      )}
+                    </td>
+
+                    {/* Price */}
+                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          name="price"
+                          value={
+                            editingVariant.price === 0
+                              ? ""
+                              : editingVariant.price
+                          }
+                          onChange={handleEditChange}
+                          className="w-24 border rounded-md px-2 py-1"
+                        />
+                      ) : (
+                        variant.price.toLocaleString("vi-VN")
+                      )}
+                    </td>
+
+                    {/* Warehouse */}
+                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          name="quantityInStock"
+                          value={
+                            editingVariant.quantityInStock === 0
+                              ? ""
+                              : editingVariant.quantityInStock
+                          }
+                          onChange={handleEditChange}
+                          className="w-20 border rounded-md px-2 py-1"
+                        />
+                      ) : (
+                        variant.quantityInStock
+                      )}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-center">
+                      {patchingStatusId === variant.id ? (
+                        <Loader2 size={16} className="animate-spin mx-auto" />
+                      ) : (
+                        <button
+                          onClick={() =>
+                            handleStatusToggle(variant.id, variant.active)
+                          }
+                          disabled={isEditing} // <-- Đã sửa (lỗi 2)
+                          className={`px-3 py-1 text-xs leading-5 font-semibold rounded-full
+                            ${
+                              variant.active
+                                ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                            }
+                            ${isEditing ? "opacity-50 cursor-not-allowed" : ""}
+                          `}
+                        >
+                          {variant.active ? "Active" : "Inactive"}
+                        </button>
+                      )}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-right">
+                      {isEditing ? (
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={handleUpdateVariant}
+                            disabled={isUpdating}
+                            className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                          >
+                            {isUpdating ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Check size={16} />
+                            )}
+                          </button>
+                          <button
+                            onClick={handleEditCancel}
+                            disabled={isUpdating}
+                            className="text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-3 justify-end">
+                          <button
+                            onClick={() => handleEditClick(variant)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteVariant(variant.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

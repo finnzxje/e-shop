@@ -6,7 +6,7 @@ interface User {
   firstName: string;
   lastName: string;
   enabled: boolean;
-  roles: "ADMIN" | "STAFF";
+  roles: string[];
   token?: string;
   createdAt: string;
 }
