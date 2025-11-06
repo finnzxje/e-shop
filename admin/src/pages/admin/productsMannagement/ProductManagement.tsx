@@ -75,7 +75,7 @@ const ProductManagement: React.FC = () => {
         );
 
         const data = response.data;
-        console.log(params);
+        // console.log(params);
         setProducts(data.content);
         setPagination({
           page: data.page,
