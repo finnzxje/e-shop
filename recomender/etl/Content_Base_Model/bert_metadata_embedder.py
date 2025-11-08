@@ -509,7 +509,7 @@ class HybridEmbeddingPipeline:
             )
             
             self.conn.commit()
-            logger.info(f"✓ Saved {len(embeddings)} hybrid embeddings to database")
+            logger.info(f" Saved {len(embeddings)} hybrid embeddings to database")
             
         except Exception as e:
             self.conn.rollback()

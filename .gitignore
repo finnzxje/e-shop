@@ -17,7 +17,8 @@ Thumbs.db
 .vscode/
 venv/
 checkdb.py
-data/
+recomender/etl/data/
+recomender/etl/data/processed/*.pt
 seedSQL/
 
 venv311/

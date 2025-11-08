@@ -414,15 +414,38 @@ class ETLPipeline:
     #     return df
     def save_features_to_db(self, user_features_df: pd.DataFrame, item_features_df: pd.DataFrame):
         """
-        Bước 4: Lưu features vào database (optional)
+        Bước 4: Lưu features vào database 
         """
         cursor = self.conn.cursor()
         
         try:
-            # Clear old features
+            # 🔹 Tạo bảng nếu chưa tồn tại
+            cursor.execute("""
+            CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+    
+            CREATE TABLE IF NOT EXISTS user_features (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id TEXT NOT NULL,
+                feature_type TEXT,
+                feature_name TEXT,
+                feature_value TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+    
+            CREATE TABLE IF NOT EXISTS item_features (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                variant_id TEXT NOT NULL,
+                feature_type TEXT,
+                feature_name TEXT,
+                feature_value TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            """)
+            
+            # delete existing data
             cursor.execute("TRUNCATE TABLE user_features, item_features CASCADE;")
             
-            # Save user features
+            # save user features
             user_feature_cols = [
                 'customer_segment', 'price_segment', 'rating_behavior',
                 'preferred_category_id', 'preferred_color_id', 'preferred_size', 'preferred_gender'
@@ -437,7 +460,7 @@ class ETLPipeline:
                             VALUES (gen_random_uuid(), %s, 'behavioral', %s, %s, NOW())
                         """, (row['user_id'], col, str(row[col])))
             
-            # Save item features  
+            # save item features
             item_feature_cols = [
                 'category_id', 'category_name', 'size', 'color_id', 
                 'color_name', 'gender', 'price_range'
@@ -453,11 +476,12 @@ class ETLPipeline:
                         """, (row['variant_id'], col, str(row[col])))
             
             self.conn.commit()
-            print("   ✓ Features saved to database")
+            print("    Features saved to database")
             
         except Exception as e:
             self.conn.rollback()
-            print(f"   ⚠️  Warning: Could not save features to database: {e}")
+            print(f"     Warning: Could not save features to database: {e}")
+    
     
     def export_for_training(self, interactions_df: pd.DataFrame, 
                            user_features_df: pd.DataFrame, 
@@ -479,7 +503,7 @@ class ETLPipeline:
         user_features_df.to_pickle(f"{output_dir}/user_features.pkl")
         item_features_df.to_pickle(f"{output_dir}/item_features.pkl")
         
-        print(f"   ✓ Data exported to {output_dir}/")
+        print(f"    Data exported to {output_dir}/")
         print(f"     - interactions: {len(interactions_df)} rows")
         print(f"     - user_features: {len(user_features_df)} rows")
         print(f"     - item_features: {len(item_features_df)} rows")

@@ -162,9 +162,3 @@ Stop the test database when done:
 ```bash
 docker compose -f docker-compose.test.yml down
 ```
-
-## Troubleshooting
-
-- Ensure Docker containers have finished applying Flyway migrations before starting the front-ends.
-- MinIO requires the bucket configured in `application.yml` (default `products`); create it via the console if not present.
-- If you change database ports or credentials, update both Spring Boot properties and any ETL `.env` files.
