@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env.properties
   datasource:
     url: jdbc:postgresql://localhost:5433/eshop
     username: app
@@ -11,13 +13,40 @@ spring:
     enabled: true
     baseline-on-migrate: true # if DB already has tables
     locations: classpath:db/migration
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 management:
   endpoints:
     web:
       exposure:
         include: "health"
+storage:
+  minio:
+    endpoint: ${STORAGE_MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${STORAGE_MINIO_ACCESS_KEY:admin}
+    secret-key: ${STORAGE_MINIO_SECRET_KEY:admin123}
+    bucket: ${STORAGE_MINIO_BUCKET:products}
+    region: ${STORAGE_MINIO_REGION:us-east-1}
+    public-url: ${STORAGE_MINIO_PUBLIC_URL:http://localhost:9000}
 app:
   base-url: /api/v1
+  mail:
+    from-address: ${APP_MAIL_FROM:E-Shop no-reply <no-reply@eshop.local>}
+  auth:
+    activation:
+      base-url: ${APP_ACTIVATION_BASE_URL:http://localhost:8080/api/auth/activate}
+      token-expiration-minutes: ${APP_ACTIVATION_TOKEN_EXPIRATION_MINUTES:1440}
+    password-reset:
+      token-expiration-minutes: ${APP_PASSWORD_RESET_TOKEN_EXPIRATION_MINUTES:15}
   jwt:
     secret: ${JWT_SECRET:b@N3OeiLg$!bG9l!$^FHS*D(!*jasd(!@FHASD}
     access-expiration-seconds: 360000

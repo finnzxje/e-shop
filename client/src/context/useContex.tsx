@@ -7,10 +7,9 @@ import {
 } from "react";
 import api from "../config/axios";
 import type { Cart } from "../config/interface";
-import toast from "react-hot-toast";
-// --- TÍCH HỢP (1): IMPORT CÁC HÀM SESSION ---
 import { linkSessionToUser } from "../services/trackingService";
 import { clearSessionId } from "../utils/sessionManager";
+import toast from "react-hot-toast";
 
 interface User {
   email: string;
@@ -35,8 +34,9 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [cart, setCart] = useState<Cart | null>(null);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-  // --- TÍCH HỢP (2): TẠO HÀM DỌN DẸP DỮ LIỆU ---
-  // Hàm nội bộ để dọn dẹp state và localStorage, bao gồm cả session ID
+
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
   const clearUserData = () => {
     setUser(null);
     setCart(null);
@@ -44,32 +44,30 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");
     clearSessionId();
-
-    // <-- Đảm bảo session ID được xóa khi đăng xuất
-    toast.success("Logout success!");
   };
 
-  //Fetch User Auth Status
   const fetchTestToken = async () => {
-    const savedUser = localStorage.getItem("user");
-    if (!savedUser) {
-      clearUserData(); // Dùng hàm dọn dẹp
-      return;
-    }
-    const parsedUser: any = JSON.parse(savedUser);
     try {
+      const savedUser = localStorage.getItem("user");
+      if (!savedUser) {
+        clearUserData();
+        return;
+      }
+      const parsedUser: any = JSON.parse(savedUser);
       const authUser: any = await api.get("/api/auth/test-token", {
         headers: { Authorization: `Bearer ${parsedUser.token}` },
       });
       if (authUser.data.authenticated) {
-        setUser(parsedUser); // <-- Sẽ kích hoạt useEffect bên dưới
+        setUser(parsedUser);
         localStorage.setItem("accessToken", parsedUser.token);
       } else {
-        clearUserData(); // Dùng hàm dọn dẹp nếu token không hợp lệ
+        clearUserData();
       }
     } catch (error: any) {
       console.log(error.message);
-      clearUserData(); // Dùng hàm dọn dẹp nếu API lỗi
+      clearUserData();
+    } finally {
+      setIsAuthLoading(false);
     }
   };
 
@@ -85,6 +83,7 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const fetchWishlist = async () => {
+    if (!user?.token) return;
     try {
       const response = await api.get<WishlistItem[]>(`/api/account/wishlist`, {
         headers: { Authorization: `Bearer ${user?.token}` },
@@ -95,28 +94,56 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const removeFromWishlist = async (productId: string) => {
+    if (!user?.token) return;
+    try {
+      await api.delete(`/api/account/wishlist/${productId}`, {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setWishlist((prev) =>
+        prev.filter((item) => item.productId !== productId)
+      );
+      toast.success("Removed from wishlist");
+    } catch (err) {
+      console.error("Failed to remove from wishlist:", err);
+      toast.error("Failed to remove item.");
+    }
+  };
+
+  const addToWishlist = async (productId: string) => {
+    if (!user?.token) {
+      toast.error("Please log in.");
+      return;
+    }
+    try {
+      const response = await api.post<WishlistItem>(
+        `/api/account/wishlist`,
+        { productId: productId },
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+      setWishlist((prev) => [...prev, response.data]);
+      toast.success("Added to wishlist");
+    } catch (err) {
+      console.error("Failed to add to wishlist:", err);
+      toast.error("Failed to add item.");
+    }
+  };
   useEffect(() => {
     fetchTestToken();
   }, []);
 
-  // --- TÍCH HỢP (3): GỌI linkSessionToUser ---
   useEffect(() => {
-    // Chỉ chạy khi 'user' có giá trị (đã đăng nhập)
     if (user && user.token) {
-      // Tải giỏ hàng và wishlist
       fetchCart();
       fetchWishlist();
 
-      // (QUAN TRỌNG) Gọi API để liên kết session ẩn danh với user
       linkSessionToUser(user.token);
     } else {
-      // Đảm bảo dữ liệu được xóa nếu user là null
       setCart(null);
       setWishlist([]);
     }
-  }, [user]); // Chạy mỗi khi user thay đổi (đăng nhập/đăng xuất)
+  }, [user]);
 
-  // Hàm đăng xuất để cung cấp cho context
   const handleLogout = () => {
     clearUserData();
   };
@@ -127,8 +154,10 @@ export const AppContextProvider = ({ children }: { children: ReactNode }) => {
     cart,
     setCart,
     wishlist,
-    setWishlist,
-    handleLogout, // <-- Cung cấp hàm đăng xuất
+    handleLogout,
+    isAuthLoading,
+    addToWishlist,
+    removeFromWishlist,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

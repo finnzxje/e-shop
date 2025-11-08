@@ -119,10 +119,10 @@ const WishlistCard = ({ product, onRemove }: WishlistCardProps) => {
 
 // --- COMPONENT CHA: Wishlist ---
 const Wishlist = () => {
-  const { user } = useAppProvider();
+  const { user, wishlist, removeFromWishlist } = useAppProvider();
   const navigate = useNavigate(); // Khởi tạo navigate
   const [dataWishlist, setDataWishlist] = useState<Product[]>([]);
-
+  const [isLoading, setIsLoading] = useState(true); // Thêm state loading
   // Hàm fetch chi tiết sản phẩm
   const fetchImagesForProducts = async (productsData: Wishlists[]) => {
     return await Promise.all(
@@ -140,46 +140,35 @@ const Wishlist = () => {
     );
   };
 
-  // Hàm fetch danh sách wishlist
-  const fetchWlishList = async () => {
-    try {
-      const response = await api.get<Wishlists[]>(`/api/account/wishlist`, {
-        headers: { Authorization: `Bearer ${user?.token}` },
-      });
-      const wishlistItems: Wishlists[] = response.data;
-      const productsWithImages = await fetchImagesForProducts(wishlistItems);
-      const validProducts = productsWithImages.filter(
-        (p): p is Product => p !== null
-      );
-      setDataWishlist(validProducts);
-    } catch (error) {
-      console.error("Failed to fetch wishlist:", error);
-      setDataWishlist([]);
-    }
-  };
-
   // Hàm XÓA một item khỏi wishlist
   const handleRemoveItem = async (productId: string) => {
-    try {
-      await api.delete(`/api/account/wishlist/${productId}`, {
-        headers: { Authorization: `Bearer ${user?.token}` },
-      });
-      setDataWishlist((prevWishlist) =>
-        prevWishlist.filter((product) => product.id !== productId)
-      );
-    } catch (err) {
-      console.error("Failed to remove item from wishlist:", err);
-    }
+    // Chỉ cần gọi hàm toàn cục.
+    // Context sẽ cập nhật 'wishlist'
+    // 'useEffect' bên dưới sẽ tự động chạy lại và cập nhật 'dataWishlist'
+    await removeFromWishlist(productId);
   };
-
   useEffect(() => {
-    if (user?.token) {
-      fetchWlishList();
-    } else {
-      setDataWishlist([]);
-    }
-  }, [user]);
+    const fetchDetails = async () => {
+      setIsLoading(true);
+      if (user?.token && wishlist && wishlist.length > 0) {
+        // Dùng 'wishlist' (từ context) để fetch chi tiết
+        const productsWithImages = await fetchImagesForProducts(wishlist);
+        const validProducts = productsWithImages.filter(
+          (p): p is Product => p !== null
+        );
+        setDataWishlist(validProducts);
+      } else {
+        // Nếu không đăng nhập hoặc wishlist rỗng, xóa data chi tiết
+        setDataWishlist([]);
+      }
+      setIsLoading(false);
+    };
 
+    fetchDetails();
+  }, [user, wishlist]); // <-- *** Phụ thuộc vào 'wishlist' TOÀN CỤC ***
+  if (isLoading) {
+    return <div className="container mx-auto p-4">Loading...</div>; // Hoặc một spinner đẹp hơn
+  }
   // --- PHẦN RENDER ---
   return (
     <div className="container mx-auto p-4">

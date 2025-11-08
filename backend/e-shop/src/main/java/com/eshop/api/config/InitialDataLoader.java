@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -26,29 +27,12 @@ public class InitialDataLoader implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        Role adminRole = roleRepository.findByName("ADMIN")
-            .orElseGet(() -> {
-                Role created = Role.builder()
-                    .name("ADMIN")
-                    .description("Administrator role with full access")
-                    .build();
-                roleRepository.save(created);
-                log.info("Created ADMIN role");
-                return created;
-            });
-
-        roleRepository.findByName("CUSTOMER")
-            .orElseGet(() -> {
-                Role created = Role.builder()
-                    .name("CUSTOMER")
-                    .description("Customer role with limited access")
-                    .build();
-                roleRepository.save(created);
-                log.info("Created CUSTOMER role");
-                return created;
-            });
+        Role adminRole = ensureRole("ADMIN", "Administrator role with full access");
+        Role customerRole = ensureRole("CUSTOMER", "Customer role with limited access");
+        ensureRole("STAFF", "Staff role with access to product and order management");
 
         bootstrapAdminUser(adminRole);
+        bootstrapDemoCustomer(customerRole);
     }
 
     private void bootstrapAdminUser(Role adminRole) {
@@ -69,5 +53,39 @@ public class InitialDataLoader implements CommandLineRunner {
 
         userRepository.save(adminUser);
         log.info("Created default admin user with email {}", adminEmail);
+    }
+
+    private void bootstrapDemoCustomer(Role customerRole) {
+        final String demoEmail = "demo.customer@eshop.local";
+
+        if (userRepository.existsByEmailIgnoreCase(demoEmail)) {
+            return;
+        }
+
+        User demoUser = User.builder()
+            .email(demoEmail)
+            .passwordHash(passwordEncoder.encode("123456"))
+            .firstName("Demo")
+            .lastName("Customer")
+            .enabled(true)
+            .emailVerifiedAt(Instant.now())
+            .roles(new HashSet<>(Set.of(customerRole)))
+            .build();
+
+        userRepository.save(demoUser);
+        log.info("Created default demo customer with email {}", demoEmail);
+    }
+
+    private Role ensureRole(String name, String description) {
+        return roleRepository.findByName(name)
+            .orElseGet(() -> {
+                Role created = Role.builder()
+                    .name(name)
+                    .description(description)
+                    .build();
+                roleRepository.save(created);
+                log.info("Created {} role", name);
+                return created;
+            });
     }
 }

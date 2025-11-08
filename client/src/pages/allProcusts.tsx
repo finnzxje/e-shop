@@ -1,6 +1,5 @@
-// src/pages/ProductPage.tsx
 import { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import api from "../config/axios";
 import type { Product, Category } from "../config/interface";
 import FilterSidebar from "../components/filterSidebar";
@@ -10,7 +9,7 @@ export default function ProductPage() {
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get("category");
   const genderParam = searchParams.get("gender");
-
+  const categorySlugPost = searchParams.get("categorySlug");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +18,7 @@ export default function ProductPage() {
     genderParam
   );
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    categoryParam
+    categoryParam || categorySlugPost
   );
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [priceMin, setPriceMin] = useState<number | null>(null);
@@ -27,17 +26,20 @@ export default function ProductPage() {
   const [sort, setSort] = useState<string | null>(null);
   const [searchProduct, setSearchProduct] = useState<string>("");
 
-  // pagination
   const [page, setPage] = useState(0);
   const [size] = useState(20);
   const [totalPages, setTotalPages] = useState(0);
+  useEffect(() => {
+    const newCategorySlug = searchParams.get("categorySlug");
+    const newCategory = searchParams.get("category");
 
+    setSelectedCategory(newCategorySlug || newCategory || null);
+  }, [searchParams]);
   const fetchImagesForProducts = async (productsData: Product[]) => {
     return await Promise.all(
       productsData.map(async (p: Product) => {
         try {
           const res = await api.get(`/api/catalog/products/${p.slug}`);
-          console.log(res.data);
           const images = res.data.images || [];
           return { ...p, images };
         } catch (err) {
@@ -51,11 +53,12 @@ export default function ProductPage() {
   const mapProductsWithFirstImage = (productsData: Product[]) =>
     productsData.map((p: Product) => ({
       ...p,
-      image: p.images?.[0]?.imageUrl || null, // gắn ảnh đầu tiên
+      image: p.images?.[0]?.imageUrl || null,
     }));
 
   // ======== Fetch products ========
   const fetchFilteredProducts = async () => {
+    if (searchProduct.trim()) return;
     setLoading(true);
     try {
       let url = `/api/catalog/products/filter?page=${page}&size=${size}`;
@@ -104,14 +107,21 @@ export default function ProductPage() {
     }
   };
 
-  const handleSearch = () => {
-    setPage(0);
-    fetchSearchedProducts();
-  };
+  const handleSubmit = (event: any) => {
+    event.preventDefault();
 
-  // ======== Auto fetch ========
+    if (page === 0) {
+      fetchSearchedProducts();
+    } else {
+      setPage(0);
+    }
+  };
   useEffect(() => {
-    if (!searchProduct.trim()) fetchFilteredProducts();
+    if (searchProduct.trim()) {
+      fetchSearchedProducts();
+    } else {
+      fetchFilteredProducts();
+    }
   }, [
     selectedGender,
     selectedCategory,
@@ -152,8 +162,7 @@ export default function ProductPage() {
           <h2 className="text-3xl font-semibold text-gray-800 tracking-tight">
             Product Listing
           </h2>
-
-          <div className="flex items-center gap-3">
+          <form onSubmit={handleSubmit} className="flex items-center gap-3">
             <div className="relative w-full md:w-72">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -162,17 +171,17 @@ export default function ProductPage() {
                 onChange={(e) => setSearchProduct(e.target.value)}
                 placeholder="Search for products..."
                 className="w-full pl-12 pr-4 py-2.5 text-sm border border-gray-300 rounded-full shadow-sm 
-                 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 
-                 transition duration-200 placeholder:text-gray-400"
+                                                        focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-gray-400 
+                                                        transition duration-200 placeholder:text-gray-400"
               />
             </div>
             <button
-              onClick={handleSearch}
+              type="submit"
               className="px-4 py-2 bg-gray-800 text-white rounded-full hover:bg-gray-700 transition"
             >
               Search
             </button>
-          </div>
+          </form>
         </div>
 
         {loading ? (

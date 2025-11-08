@@ -40,10 +40,13 @@ public class SecurityConfig {
                 AbstractHttpConfigurer::disable).authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/register",
                 "/api/auth/login",
                 "/api/auth/refresh",
+                "/api/auth/password/reset/**",
+                "api/auth/activate/**",
                 "/api/catalog/**",
                 "/swagger-ui/**",
-                "/v3/api-docs/**").permitAll().requestMatchers("/actuator/**").permitAll().requestMatchers("/api/admin/**").hasRole("ADMIN").anyRequest().authenticated()).addFilterBefore(
-                jwtFilter,
+                "/v3/api-docs/**",
+                "/ws/**").permitAll().requestMatchers("/actuator/**").permitAll().requestMatchers("/api/admin/**").hasAnyRole(
+                "ADMIN", "STAFF").anyRequest().authenticated()).addFilterBefore(jwtFilter,
                 UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -51,7 +54,8 @@ public class SecurityConfig {
 
     @Bean public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174"));
+        configuration.setAllowedOriginPatterns(List.of("*")); // TODO: REMOVE THIS LATER
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

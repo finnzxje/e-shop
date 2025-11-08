@@ -1,6 +1,7 @@
 package com.eshop.api.catalog.repository;
 
 import com.eshop.api.catalog.enums.Gender;
+import com.eshop.api.catalog.enums.ProductStatus;
 import com.eshop.api.catalog.model.Color;
 import com.eshop.api.catalog.model.Product;
 import com.eshop.api.catalog.model.ProductVariant;
@@ -39,6 +40,7 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         Boolean inStock,
         BigDecimal priceMin,
         BigDecimal priceMax,
+        ProductStatus status,
         Pageable pageable
     ) {
         CriteriaBuilder cb = entityManager.getCriteriaBuilder();
@@ -57,6 +59,10 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         if (categoryIds != null && !categoryIds.isEmpty()) {
             predicates.add(root.get("category").get("id").in(categoryIds));
+        }
+
+        if (status != null) {
+            predicates.add(cb.equal(root.get("status"), status));
         }
 
         if (colors != null && !colors.isEmpty()) {
@@ -116,6 +122,10 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
 
         if (categoryIds != null && !categoryIds.isEmpty()) {
             countPredicates.add(countRoot.get("category").get("id").in(categoryIds));
+        }
+
+        if (status != null) {
+            countPredicates.add(cb.equal(countRoot.get("status"), status));
         }
 
         if (colors != null && !colors.isEmpty()) {

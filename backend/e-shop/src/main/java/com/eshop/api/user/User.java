@@ -45,7 +45,7 @@ public class User {
 
     @Column(name = "enabled", nullable = false)
     @Builder.Default
-    private Boolean enabled = true;
+    private Boolean enabled = false;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -57,7 +57,7 @@ public class User {
     @Builder.Default
     private Instant updatedAt = Instant.now();
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_roles",
         joinColumns = @JoinColumn(name = "user_id"),

@@ -3,6 +3,7 @@ package com.eshop.api.auth;
 import com.eshop.api.auth.dto.AuthResponse;
 import com.eshop.api.auth.dto.LoginRequest;
 import com.eshop.api.auth.dto.RegisterRequest;
+import com.eshop.api.exception.AccountNotActivatedException;
 import com.eshop.api.exception.InvalidJwtException;
 import com.eshop.api.exception.RoleNotFoundException;
 import com.eshop.api.exception.UserAlreadyExistsException;
@@ -13,10 +14,10 @@ import com.eshop.api.user.User;
 import com.eshop.api.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,7 +36,7 @@ public class AuthenticationService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
-    private final AuthenticationManager authenticationManager;
+    private final AccountActivationService accountActivationService;
 
     public AuthResponse register(RegisterRequest request) {
         log.info("Registering new user with email: {}", request.getEmail());
@@ -49,13 +50,19 @@ public class AuthenticationService {
             throw new RoleNotFoundException("CUSTOMER role not found in the system");
         }
 
-        User user = User.builder().email(request.getEmail()).passwordHash(passwordEncoder.encode(request.getPassword())).firstName(
-                request.getFirstName()).lastName(request.getLastName()).enabled(true).roles(Collections.singleton(
-                customerRoleOpt.get())).build();
+        User user = User.builder()
+                .email(request.getEmail())
+                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .roles(Collections.singleton(customerRoleOpt.get()))
+                .build();
 
         user = userRepository.save(user);
 
         log.info("Successfully registered user with ID: {}", user.getId());
+
+        accountActivationService.sendActivationToken(user);
 
         return new AuthResponse(user.getId(),
                 user.getEmail(),
@@ -69,18 +76,26 @@ public class AuthenticationService {
     public AuthResponse login(LoginRequest request) {
         log.info("Authenticating user: {}", request.getEmail());
 
-        Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
-                request.getEmail(),
-                request.getPassword()));
+        User user = userRepository.findByEmailIgnoreCase(request.getEmail())
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
 
-        if (!authentication.isAuthenticated()) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new BadCredentialsException("Invalid credentials");
         }
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        if (!Boolean.TRUE.equals(user.getEnabled())) {
+            throw new AccountNotActivatedException(request.getEmail());
+        }
 
-        User user = userRepository.findByEmailIgnoreCase(request.getEmail()).orElseThrow(() -> new RuntimeException(
-                "User not found"));
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                user.getEmail(),
+                null,
+                user.getRoles().stream()
+                        .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                        .toList()
+        );
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         List<String> roles = getRoleNames(user);
 

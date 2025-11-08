@@ -1,0 +1,33 @@
+### 
+
+@admin_access_token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJpYXQiOjE3NjE3NTYwNjYsImV4cCI6MTc2MjExNjA2Nn0.d4r2gUkrW3H80KU4FoLIKywJc88Zhq-V3kLsW_IffSk
+
+
+### Dashboard summary – default period (30 days)
+
+GET http://localhost:8080/api/admin/analytics/summary HTTP/1.1
+Authorization: Bearer {{admin_access_token}}
+
+
+### Dashboard summary – explicit 7-day window
+
+GET http://localhost:8080/api/admin/analytics/summary?period=7d HTTP/1.1
+Authorization: Bearer {{admin_access_token}}
+
+
+### Dashboard summary – last 24 hours
+
+GET http://localhost:8080/api/admin/analytics/summary?period=24h HTTP/1.1
+Authorization: Bearer {{admin_access_token}}
+
+
+### Revenue time series – daily buckets
+
+GET http://localhost:8080/api/admin/analytics/revenue?start=2025-10-01T00:00:00Z&end=2025-10-31T00:00:00Z&interval=weekly HTTP/1.1
+Authorization: Bearer {{admin_access_token}}
+
+
+### Revenue time series – weekly buckets
+
+GET http://localhost:8080/api/admin/analytics/revenue?start=2024-12-01T00:00:00Z&end=2025-02-01T00:00:00Z&interval=weekly HTTP/1.1
+Authorization: Bearer {{admin_access_token}}

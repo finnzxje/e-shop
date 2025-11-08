@@ -34,24 +34,29 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
     })
     Optional<Product> findWithDetailsBySlug(String slug);
 
-    @EntityGraph(attributePaths = "category")
-    Page<Product> findBy(Pageable pageable);
+    @EntityGraph(attributePaths = {
+        "category",
+        "tags",
+        "variants",
+        "variants.color",
+        "variants.attributeValues",
+        "variants.attributeValues.attribute",
+        "images",
+        "images.color"
+    })
+    Optional<Product> findWithDetailsById(UUID id);
 
     @EntityGraph(attributePaths = "category")
-    Page<Product> findByGender(Gender gender, Pageable pageable);
+    Page<Product> findByStatus(ProductStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = "category")
-    Page<Product> findByCategory_IdIn(List<Integer> categoryIds, Pageable pageable);
+    Page<Product> findByGenderAndStatus(Gender gender, ProductStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = "category")
-    Page<Product> findByGenderAndCategory_IdIn(Gender gender, List<Integer> categoryIds, Pageable pageable);
+    Page<Product> findByCategory_IdInAndStatus(List<Integer> categoryIds, ProductStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = "category")
-    Page<Product> findByNameContainingIgnoreCaseOrSlugContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
-        String name,
-        String slug,
-        String description,
-        Pageable pageable);
+    Page<Product> findByGenderAndCategory_IdInAndStatus(Gender gender, List<Integer> categoryIds, ProductStatus status, Pageable pageable);
 
     @EntityGraph(attributePaths = "category")
     Page<Product> findAll(Specification<Product> specification, Pageable pageable);

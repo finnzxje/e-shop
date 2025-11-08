@@ -1,0 +1,79 @@
+### Support Conversation API
+
+@access_token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJDVVNUT01FUiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0QGdtYWlsLmNvbSIsImlhdCI6MTc2MTgzODE2OCwiZXhwIjoxNzYyMTk4MTY4fQ.wNZ6pUnD1P-3ox-jkBP9wxlFMpTf0r_k8yDvg9C8s-w
+@admin_token = eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJBRE1JTiJdLCJ0b2tlblR5cGUiOiJBQ0NFU1MiLCJzdWIiOiJ0ZXN0MkBnbWFpbC5jb20iLCJpYXQiOjE3NjE5MDM0MzMsImV4cCI6MTc2MjI2MzQzM30.n_gs1wK_--I3n6shFy0S0IWvAN93NG3ebu_TXB-LaRg
+@conversation_id = 73e2925a-4896-40dd-88d1-29b2ed247eb7
+
+
+### Create a support conversation (customer)
+
+POST http://localhost:8080/api/support/conversations HTTP/1.1
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "attachmentUrls": [],
+  "message": "Hi, could you help me update the delivery address?",
+  "subject": "Order ORD-2025-0001"
+}
+
+
+### List customer conversations
+
+GET http://localhost:8080/api/support/conversations?page=0&size=10 HTTP/1.1
+Authorization: Bearer {{access_token}}
+
+
+### Fetch messages for a conversation
+
+GET http://localhost:8080/api/support/conversations/{{conversation_id}}/messages HTTP/1.1
+Authorization: Bearer {{access_token}}
+
+
+### Send a message into a conversation
+
+POST http://localhost:8080/api/support/conversations/{{conversation_id}}/messages HTTP/1.1
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "attachmentUrls": [
+    "https://cdn.example.com/support/evidence.png"
+  ],
+  "body": "Just sharing a screenshot."
+}
+
+
+### Admin: list open conversations
+
+GET http://localhost:8080/api/admin/support/conversations?status=OPEN&status=WAITING_CUSTOMER HTTP/1.1
+Authorization: Bearer {{admin_token}}
+
+
+### Admin: list assigned conversations
+
+GET http://localhost:8080/api/admin/support/conversations/assigned HTTP/1.1
+Authorization: Bearer {{admin_token}}
+
+
+### Admin: respond to a conversation
+
+POST http://localhost:8080/api/admin/support/conversations/{{conversation_id}}/messages HTTP/1.1
+Authorization: Bearer {{access_token}}
+Content-Type: application/json
+
+{
+  "attachmentUrls": [],
+  "body": "Thanks for the details, we will update it right away."
+}
+
+
+### Admin: close a conversation
+
+PATCH http://localhost:8080/api/admin/support/conversations/{{conversation_id}}/status HTTP/1.1
+Authorization: Bearer {{admin_token}}
+Content-Type: application/json
+
+{
+  "status": "CLOSED"
+}
