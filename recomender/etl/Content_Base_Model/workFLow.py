@@ -1,12 +1,12 @@
 """
-Complete Workflow: CLIP → BERT → Hybrid → LightFM → Recommendations
+Complete Workflow: CLIP → BERT → Hybrid → Recommendations
+(no LightFM)
 """
 
 import numpy as np
 import pandas as pd
 import sys
 import os
-
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import Config  # Updated import path
@@ -56,39 +56,12 @@ print(f"  Saved to: data/processed/hybrid_embeddings.npy")
 print()
 
 # ============================================================================
-# STEP 4: TRAIN LIGHTFM WITH HYBRID EMBEDDINGS
-# ============================================================================
-
-print("="*70)
-print("STEP 4: Training LightFM with Hybrid Embeddings")
-print("="*70)
-
-# Update your LightFM training script to use hybrid embeddings
-# Instead of: clip_item_embeddings.npy
-# Use: hybrid_embeddings.npy
-
-print("""
-Update your LightFM training script:
-
-# OLD:
-embeddings_matrix = np.load("data/processed/clip_item_embeddings.npy")
-
-# NEW:
-embeddings_matrix = np.load("data/processed/hybrid_embeddings.npy")
-
-Then run:
-python train_lightfm_item_only.py
-""")
-
-# ============================================================================
-# STEP 5: RECOMMENDATIONS
+# STEP 4: RECOMMENDATIONS (Direct cosine similarity)
 # ============================================================================
 
 print("\n" + "="*70)
-print("STEP 5: Making Recommendations")
+print("STEP 4: Making Recommendations")
 print("="*70)
-
-from bert_metadata_embedder import HybridEmbeddingFusion
 
 class HybridRecommender:
     """
@@ -109,50 +82,27 @@ class HybridRecommender:
     def get_similar_products(self, product_id: str, k: int = 10) -> list:
         """
         Find k most similar products using cosine similarity
-        
-        Args:
-            product_id: Variant ID of clicked product
-            k: Number of recommendations
-        
-        Returns:
-            List of (product_id, similarity_score) tuples
         """
         if product_id not in self.id_to_idx:
-            print(f"Product {product_id} not found")
+            print(f"Product {product_id} not found in embeddings")
             return []
         
-        # Get query embedding
         query_idx = self.id_to_idx[product_id]
         query_emb = self.embeddings[query_idx]
         
-        # Calculate cosine similarities
         similarities = np.dot(self.embeddings, query_emb)
         
-        # Get top-k (excluding self)
+        # Exclude itself and get top-k
         top_indices = np.argsort(-similarities)[1:k+1]
         
-        recommendations = [
+        return [
             (self.idx_to_id[idx], float(similarities[idx]))
             for idx in top_indices
         ]
-        
-        return recommendations
     
     def batch_recommend(self, product_ids: list, k: int = 10) -> dict:
-        """
-        Batch recommendation for multiple products
-        
-        Args:
-            product_ids: List of product IDs
-            k: Number of recommendations per product
-        
-        Returns:
-            Dict: {product_id: [(rec_id, score), ...]}
-        """
-        results = {}
-        for pid in product_ids:
-            results[pid] = self.get_similar_products(pid, k)
-        return results
+        """Batch recommendation"""
+        return {pid: self.get_similar_products(pid, k) for pid in product_ids}
 
 
 # Example usage
@@ -160,8 +110,6 @@ print("\nExample: Get recommendations for a product")
 print("-" * 70)
 
 recommender = HybridRecommender()
-
-# Example product ID (use actual ID from your data)
 example_product_id = recommender.variant_ids[0]
 recommendations = recommender.get_similar_products(example_product_id, k=5)
 
@@ -175,10 +123,8 @@ print("="*70)
 print("""
 Summary:
 --------
-1.  CLIP embeddings (image + text)
-2. BERT metadata embeddings (category, color, price, etc.)
+1. CLIP embeddings (image + text)
+2. BERT metadata embeddings
 3. Hybrid fusion (70% CLIP + 30% metadata)
-4. Train LightFM with hybrid embeddings
-5. Make personalized recommendations
+4. Recommendation using cosine similarity (no LightFM)
 """)
-
