@@ -1,0 +1,193 @@
+services:
+  # PostgreSQL
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: recom_postgres
+    environment:
+      POSTGRES_DB: eshop
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eshop-network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: eshop-redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - eshop-network
+
+  # ETL
+  etl:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: eshop-etl
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["etl", "--lookback-days", "90"]
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=eshop
+      - DB_USER=app
+      - DB_PASSWORD=secret
+    volumes:
+      - ../etl/data:/app/data
+      - ../etl/logs:/app/logs
+      - ../etl/config.py:/app/config.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - eshop-network
+    profiles:
+      - etl
+
+  # CLIP Embeddings
+  clip-embeddings:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: eshop-clip
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["clip"]
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=eshop
+      - DB_USER=app
+      - DB_PASSWORD=secret
+      # - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - ../etl/data:/app/data
+      - ../etl/logs:/app/logs
+      - ../etl/config.py:/app/config.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - eshop-network
+    profiles:
+      - clip
+    # runtime: nvidia
+
+  # Workflow
+  workflow:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: eshop-workflow
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["workflow"]
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=eshop
+      - DB_USER=app
+      - DB_PASSWORD=secret
+      # - CUDA_VISIBLE_DEVICES=0
+    volumes:
+      - ../etl/data:/app/data
+      - ../etl/logs:/app/logs
+      - ../etl/config.py:/app/config.py
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - eshop-network
+    profiles:
+      - workflow
+    # runtime: nvidia
+
+  # Build FAISS
+  build-faiss:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: eshop-build-faiss
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["build-faiss"]
+    volumes:
+      - ../etl/data:/app/data
+      - ../etl/logs:/app/logs
+    networks:
+      - eshop-network
+    profiles:
+      - build-index
+
+  # FAISS API
+  api:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: eshop-api-cpu
+    command: uvicorn faiss_api:eshop --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../etl/data:/app/data
+      - ../etl/logs:/app/logs
+      - ../etl/Content_Base_Model/faiss_api.py:/app/faiss_api.py
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - eshop-network
+    restart: unless-stopped
+
+  # Gradio Tester
+  gradio-tester:
+    build:
+      context: ..
+      dockerfile: Docker/Dockerfile
+    container_name: eshop-gradio
+    command: python gradio_tester.py
+    environment:
+      - API_URL=http://api:8000
+    ports:
+      - "7860:7860"
+    volumes:
+      - ../etl/data:/app/data
+      - ../etl/gradio_tester.py:/app/gradio_tester.py
+    depends_on:
+      - api
+    networks:
+      - eshop-network
+    profiles:
+      - testing
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  eshop-network:
+    driver: bridge
