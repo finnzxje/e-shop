@@ -44,11 +44,11 @@ logger = logging.getLogger(__name__)
 class Config:
     """Application configuration"""
     
-    # Paths
-    EMBEDDINGS_PATH = "../data/processed/hybrid_embeddings.npy"
-    VARIANT_IDS_PATH = "../data/processed/hybrid_variant_ids.npy"
-    FAISS_INDEX_PATH = "../data/faiss/hybrid_index.faiss"
-    PRODUCT_METADATA_PATH = "../data/processed/item_features.csv"
+    # Paths inside container
+    EMBEDDINGS_PATH = "data/processed/hybrid_embeddings.npy"
+    VARIANT_IDS_PATH = "data/processed/hybrid_variant_ids.npy"
+    FAISS_INDEX_PATH = "data/faiss/hybrid_index.faiss"
+    PRODUCT_METADATA_PATH = "data/processed/item_features.csv"
     
     # FAISS settings
     EMBEDDING_DIM = 512
@@ -58,7 +58,7 @@ class Config:
     FAISS_NPROBE = 10
     
     # Redis settings
-    REDIS_HOST = "localhost"
+    REDIS_HOST = "redis"
     REDIS_PORT = 6379
     REDIS_DB = 0
     REDIS_CACHE_TTL = 3600  # 1 hour
