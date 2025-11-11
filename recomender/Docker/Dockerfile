@@ -35,11 +35,11 @@ WORKDIR /app
 FROM base as dependencies
 
 # Copy requirements
-COPY requirements.txt .
+COPY etl/requirements.txt .
 
 # Install Python packages
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
 
 # ============================================================================
 # Stage 2: Application
@@ -49,16 +49,16 @@ FROM dependencies as application
 # Copy application code from etl folder
 COPY etl/ .
 
-# Create necessary directories
+# Create necessary directories with absolute paths
 RUN mkdir -p \
-    ./data/raw/downloads \
-    ./data/raw/mapped_images \
-    ./data/processed \
-    ./data/faiss \
-    logs
+    /app/data/raw/downloads \
+    /app/data/raw/mapped_images \
+    /app/data/processed \
+    /app/data/faiss \
+    /app/logs
 
 # Copy entrypoint
-COPY Docker/entrypoint.sh /app/
+COPY Docker/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 # Set entrypoint

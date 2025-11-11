@@ -20,7 +20,7 @@ checkdb.py
 recomender/etl/data/
 recomender/etl/data/processed/*.pt
 seedSQL/
-
+recomender/etl/Content_Base_Model/.gradio
 venv311/
 
 .apt_generated
