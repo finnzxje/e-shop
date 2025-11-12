@@ -21,6 +21,8 @@ services:
     build:
       context: ./backend/e-shop
     container_name: eshop-api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/eshop
       SPRING_DATASOURCE_USERNAME: app
@@ -39,6 +41,7 @@ services:
       STORAGE_MINIO_BUCKET: products
       STORAGE_MINIO_REGION: us-east-1
       STORAGE_MINIO_PUBLIC_URL: http://localhost:9000
+      RECOMMENDER_BASE_URL: ${RECOMMENDER_BASE_URL:-http://host.docker.internal:8000}
     ports:
       - "8080:8080"
     depends_on:

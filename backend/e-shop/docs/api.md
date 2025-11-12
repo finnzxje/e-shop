@@ -242,6 +242,8 @@ Content-Type: application/json
 
 If the recommender service is unreachable the API responds with `503 Service Unavailable`. When `k` is outside the supported range the API responds with `400 Bad Request`.
 
+> **Docker tip:** when the Spring Boot API runs inside a container, set the `RECOMMENDER_BASE_URL` environment variable to an address reachable from that container (e.g. `http://host.docker.internal:8000` if the Python service is published on port `8000` on the host, or to the recommender container name when both stacks share a Docker network).
+
 ```json
 {
   "content": [],
