@@ -201,6 +201,47 @@ Status: 200 OK
 Content-Type: application/json
 ```
 
+### GET `/products/variants/{variantId}/recommendations`
+
+Returns a list of visually similar products for the provided variant. Recommendations are sourced from the Python recommender service (configured via `recommendation.base-url`) and enriched with catalog data so the frontend always receives `productId` + a representative image.
+
+#### Path Parameters
+
+- `variantId` — UUID of the variant the shopper is currently viewing.
+
+#### Query Parameters
+
+- `k` — optional maximum number of items to return. Must be between `1` and `20`. Defaults to `5`.
+
+#### Response
+
+```
+Status: 200 OK
+Content-Type: application/json
+```
+
+```json
+{
+  "queryVariantId": "5d0982c2-6314-43cf-ae57-6f3fb04f22d5",
+  "recommendations": [
+    {
+      "productId": "8e2f404b-2e3a-450c-9a3d-65cbbe3d412d",
+      "variantId": "9a7a7fa1-3c5d-4b12-8dc7-7e5d8bff9871",
+      "productName": "W's Long-Sleeved Mainstay Top",
+      "productSlug": "ws-long-sleeved-mainstay-top",
+      "price": 59.0,
+      "similarityScore": 0.93,
+      "imageUrl": "https://cdn.local/products/8e2f404b/main.jpg"
+    }
+  ],
+  "responseTimeMs": 0.34,
+  "fromCache": true,
+  "totalResults": 1
+}
+```
+
+If the recommender service is unreachable the API responds with `503 Service Unavailable`. When `k` is outside the supported range the API responds with `400 Bad Request`.
+
 ```json
 {
   "content": [],

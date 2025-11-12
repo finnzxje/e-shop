@@ -1,8 +1,11 @@
 package com.eshop.api.catalog.repository;
 
 import com.eshop.api.catalog.model.ProductVariant;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,4 +20,7 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     boolean existsByVariantSkuIgnoreCase(String variantSku);
 
     boolean existsByVariantSkuIgnoreCaseAndIdNot(String variantSku, UUID id);
+
+    @EntityGraph(attributePaths = "product")
+    List<ProductVariant> findByIdIn(Collection<UUID> ids);
 }
