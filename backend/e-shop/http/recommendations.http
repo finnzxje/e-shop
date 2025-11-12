@@ -1,0 +1,24 @@
+### 
+
+@variant_id = 947945d6-c747-42e3-9d3d-d8b41ca5933e
+
+
+### Fetch top 5 similar products for a given variant
+
+GET http://localhost:8080/api/catalog/products/variants/{{variant_id}}/recommendations?k=5 HTTP/1.1
+
+
+### 
+
+
+### Fetch recommendations with default limit (k omitted)
+
+GET http://localhost:8080/api/catalog/products/variants/2b6ae79d-4169-415e-8b53-d9e87c832240/recommendations HTTP/1.1
+
+
+### 
+
+
+### Example of invalid k (expect 400)
+
+GET http://localhost:8080/api/catalog/products/variants/2b6ae79d-4169-415e-8b53-d9e87c832240/recommendations?k=0 HTTP/1.1

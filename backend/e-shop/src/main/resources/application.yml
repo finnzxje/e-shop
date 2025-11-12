@@ -64,3 +64,8 @@ app:
       order-type: ${VNPAY_ORDER_TYPE:other}
       order-info-prefix: ${VNPAY_ORDER_INFO_PREFIX:E-Shop Order}
       expire-after-minutes: ${VNPAY_EXPIRE_AFTER_MINUTES:15}
+recommendation:
+  base-url: ${RECOMMENDER_BASE_URL:http://localhost:8000}
+  enabled: true
+  connect-timeout: 2s
+  read-timeout: 3s
