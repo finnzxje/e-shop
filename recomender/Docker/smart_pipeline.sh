@@ -1,10 +1,7 @@
 #!/bin/bash
 
 # ============================================================================
-# Smart E-Shop Pipeline - Skip completed steps
-# ============================================================================
-# Checks if data exists before running each step
-# Only runs what's needed!
+# Smart E-Shop Pipeline - Run from Docker folder
 # ============================================================================
 
 set -e
@@ -18,12 +15,13 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # ============================================================================
-# Configuration
+# Configuration - ADJUSTED FOR DOCKER FOLDER
 # ============================================================================
 
-DATA_PROCESSED_DIR="./etl/data/processed"
-DATA_FAISS_DIR="./etl/data/faiss"
-DATA_RAW_DIR="./etl/data/raw"
+# Đường dẫn tương đối từ folder Docker/
+DATA_PROCESSED_DIR="../etl/data/processed"
+DATA_FAISS_DIR="../etl/data/faiss"
+DATA_RAW_DIR="../etl/data/raw"
 
 # Required files for each stage
 ITEM_FEATURES_FILE="${DATA_PROCESSED_DIR}/item_features.csv"
@@ -61,6 +59,7 @@ print_banner() {
     echo -e "${GREEN}"
     echo "============================================================================"
     echo "  Smart E-Shop Recommendation Pipeline"
+    echo "  Running from Docker folder"
     echo "  Automatically skips completed steps"
     echo "============================================================================"
     echo -e "${NC}"
@@ -107,21 +106,8 @@ check_etl_complete() {
     
     local all_exist=true
     
-    # Check item_features.csv
     if ! check_file_exists "$ITEM_FEATURES_FILE" "item_features.csv"; then
         all_exist=false
-    fi
-    
-    # Check interactions.csv (optional but good to have)
-    if [ -f "${DATA_PROCESSED_DIR}/interactions.csv" ]; then
-        log_success "interactions.csv exists"
-    fi
-    
-    # Check if images downloaded
-    if check_directory_not_empty "${DATA_RAW_DIR}/downloads" "Product images"; then
-        :
-    else
-        log_warning "No product images found (optional)"
     fi
     
     if [ "$all_exist" = true ]; then
@@ -163,7 +149,6 @@ check_faiss_complete() {
     log_info "Checking FAISS index..."
     
     if check_file_exists "$FAISS_INDEX_FILE" "FAISS index"; then
-        # Also check for mappings file
         local mappings_file="${FAISS_INDEX_FILE%.faiss}_mappings.pkl"
         if [ -f "$mappings_file" ]; then
             log_success "FAISS index is complete"
@@ -304,20 +289,17 @@ run_build_faiss() {
 run_smart_pipeline() {
     print_banner
     
-    # Show current status
     show_pipeline_status
     
     echo ""
     echo -e "${BLUE}Starting smart pipeline execution...${NC}"
     echo ""
     
-    # Track what we need to run
     local need_etl=false
     local need_clip=false
     local need_workflow=false
     local need_faiss=false
     
-    # Determine what needs to run
     if [ "$ETL_STATUS" = "incomplete" ]; then
         need_etl=true
         need_clip=true
@@ -341,12 +323,10 @@ run_smart_pipeline() {
         return 0
     fi
     
-    # Start infrastructure if not running
     log_info "Ensuring infrastructure is running..."
     docker compose up -d postgres redis
     sleep 5
     
-    # Run required stages
     if [ "$need_etl" = true ]; then
         run_etl || exit 1
     else
@@ -371,7 +351,6 @@ run_smart_pipeline() {
         log_skip "FAISS index - already built"
     fi
     
-    # Start API
     echo ""
     log_info "Starting API server..."
     docker compose up -d api
@@ -391,7 +370,6 @@ run_smart_pipeline() {
         echo ""
         echo "Commands:"
         echo "  View logs:       ${CYAN}docker compose logs -f api${NC}"
-        echo "  Test UI:         ${CYAN}make gradio${NC}"
         echo "  Stop services:   ${CYAN}docker compose down${NC}"
         echo ""
     else
@@ -401,73 +379,15 @@ run_smart_pipeline() {
 }
 
 # ============================================================================
-# Force Re-run Functions
-# ============================================================================
-
-force_etl() {
-    log_warning "Forcing ETL re-run..."
-    rm -f "$ITEM_FEATURES_FILE"
-    run_etl
-}
-
-force_clip() {
-    log_warning "Forcing CLIP re-run..."
-    rm -f "$CLIP_EMBEDDINGS_FILE" "$VARIANT_IDS_FILE"
-    run_clip
-}
-
-force_workflow() {
-    log_warning "Forcing Workflow re-run..."
-    rm -f "$HYBRID_EMBEDDINGS_FILE" "$HYBRID_VARIANT_IDS_FILE"
-    run_workflow
-}
-
-force_faiss() {
-    log_warning "Forcing FAISS rebuild..."
-    rm -f "$FAISS_INDEX_FILE"
-    run_build_faiss
-}
-
-force_all() {
-    log_warning "Forcing complete pipeline re-run..."
-    rm -f "$ITEM_FEATURES_FILE"
-    rm -f "$CLIP_EMBEDDINGS_FILE" "$VARIANT_IDS_FILE"
-    rm -f "$HYBRID_EMBEDDINGS_FILE" "$HYBRID_VARIANT_IDS_FILE"
-    rm -f "$FAISS_INDEX_FILE"
-    run_smart_pipeline
-}
-
-# ============================================================================
-# CLI Commands
-# ============================================================================
-
-show_help() {
-    echo "Smart E-Shop Pipeline"
-    echo ""
-    echo "Usage: $0 [command]"
-    echo ""
-    echo "Commands:"
-    echo "  auto (default)    Run smart pipeline (skip completed steps)"
-    echo "  status            Show pipeline status"
-    echo "  force-etl         Force re-run ETL"
-    echo "  force-clip        Force re-run CLIP embeddings"
-    echo "  force-workflow    Force re-run hybrid workflow"
-    echo "  force-faiss       Force rebuild FAISS index"
-    echo "  force-all         Force complete re-run"
-    echo "  api               Start API only"
-    echo "  clean-cache       Clean cache files only"
-    echo "  clean-all         Clean all generated data"
-    echo "  help              Show this help"
-    echo ""
-    echo "Examples:"
-    echo "  $0                # Auto-run (recommended)"
-    echo "  $0 status         # Check what's done"
-    echo "  $0 force-faiss    # Rebuild index only"
-}
-
-# ============================================================================
 # Main Entry Point
 # ============================================================================
+
+# Check if we're in Docker folder
+if [ ! -f "docker-compose.yml" ]; then
+    log_error "This script must be run from the Docker folder!"
+    log_info "Usage: cd Docker && ./smart_pipeline.sh"
+    exit 1
+fi
 
 case "${1:-auto}" in
     auto)
@@ -479,56 +399,9 @@ case "${1:-auto}" in
         echo ""
         ;;
     
-    force-etl)
-        force_etl
-        ;;
-    
-    force-clip)
-        force_clip
-        ;;
-    
-    force-workflow)
-        force_workflow
-        ;;
-    
-    force-faiss)
-        force_faiss
-        ;;
-    
-    force-all)
-        force_all
-        ;;
-    
-    api)
-        log_info "Starting API only..."
-        docker compose up -d postgres redis api
-        log_success "API started at http://localhost:8000"
-        ;;
-    
-    clean-cache)
-        log_warning "Cleaning cache files..."
-        rm -f "${DATA_FAISS_DIR}"/*.faiss
-        log_success "Cache cleaned"
-        ;;
-    
-    clean-all)
-        log_warning "This will remove all generated data!"
-        read -p "Are you sure? (y/N) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            rm -rf "${DATA_PROCESSED_DIR}"/*
-            rm -rf "${DATA_FAISS_DIR}"/*
-            log_success "All data cleaned"
-        fi
-        ;;
-    
-    help|--help|-h)
-        show_help
-        ;;
-    
     *)
         log_error "Unknown command: $1"
-        show_help
+        echo "Usage: ./smart_pipeline.sh [auto|status]"
         exit 1
         ;;
 esac

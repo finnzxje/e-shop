@@ -76,7 +76,7 @@ class Config:
 
 class RecommendationItem(BaseModel):
     """Single recommendation"""
-    product_id: str
+    variant_id: str 
     similarity_score: float
     product_name: Optional[str] = None
     category_name: Optional[str] = None
@@ -86,7 +86,7 @@ class RecommendationItem(BaseModel):
 
 class RecommendationResponse(BaseModel):
     """API response"""
-    query_product_id: str
+    query_variant_id: str
     recommendations: List[RecommendationItem]
     response_time_ms: float
     from_cache: bool = False
@@ -501,93 +501,116 @@ async def health_check():
     )
 
 
-@eshop.get("/recommend/{product_id}", response_model=RecommendationResponse)
+@eshop.get("/recommend/{variant_id}", response_model=RecommendationResponse)
 async def get_recommendations(
-    product_id: str,
+    variant_id: str,
     k: int = Query(default=Config.DEFAULT_K, ge=1, le=Config.MAX_K, description="Number of recommendations")
 ):
     """
     Get recommendations for a product variant.
     Args:
-        product_id: Variant ID of the clicked product
+        variant_id: Variant ID of the clicked product
         k: Number of recommendations to return
     """
     start_time = time.time()
 
-    #  Check cache
-    cached = cache_manager.get(product_id, k)
+    # Check cache
+    cached = cache_manager.get(variant_id, k)
     if cached:
         cached['response_time_ms'] = (time.time() - start_time) * 1000
         cached['from_cache'] = True
         return RecommendationResponse(**cached)
 
-    # Search FAISS
+    # Get query product metadata
+    query_meta = faiss_manager.product_metadata.get(variant_id, {})
+    query_gender = query_meta.get("gender")
+    query_product_id = query_meta.get("product_id")  # Parent product ID
+
+    # Search FAISS - get more results to filter
     try:
-        rec_ids, rec_scores = faiss_manager.search(product_id, k * 3)  
+        rec_ids, rec_scores = faiss_manager.search(variant_id, k * 5)  
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-    # get query metadata    
-    query_meta = faiss_manager.product_metadata.get(product_id, {})
-    query_gender = query_meta.get("gender")
-
-    # list to hold recommendations
-    same_gender_recs = []
-    diff_gender_recs = []
-
-    for pid, score in zip(rec_ids, rec_scores):
-        metadata = faiss_manager.product_metadata.get(pid, {})
+    # Group recommendations by parent product_id
+    product_groups = {}  # {product_id: [(variant_id, score, metadata), ...]}
+    
+    for rec_variant_id, score in zip(rec_ids, rec_scores):
+        metadata = faiss_manager.product_metadata.get(rec_variant_id, {})
         if not metadata:
             continue
-
+        if rec_variant_id == variant_id:
+            continue
+    
+        parent_id = metadata.get("product_id")
+        if not parent_id:
+            continue
+        # Skip if same as query product (different color/size)
+        if parent_id == query_product_id:
+            continue
+        
+        if parent_id not in product_groups:
+            product_groups[parent_id] = []
+        
+        product_groups[parent_id].append((rec_variant_id, score, metadata))
+    
+    # Select best variant from each product group
+    # Criteria: highest popularity_score, or highest similarity if same popularity
+    same_gender_recs = []
+    diff_gender_recs = []
+    
+    for parent_id, variants in product_groups.items():
+        # Sort by: 1) popularity_score_normalized (desc), 2) similarity score (desc)
+        variants_sorted = sorted(
+            variants, 
+            key=lambda x: (
+                x[2].get("popularity_score_normalized", 0),  # popularity first
+                x[1]  # then similarity
+            ),
+            reverse=True
+        )
+        
+        # Take best variant
+        best_variant = variants_sorted[0]
+        rec_variant_id, score, metadata = best_variant
+        
         rec_item = RecommendationItem(
-            product_id=pid,
+            variant_id=rec_variant_id,
             similarity_score=score,
             product_name=metadata.get("product_name"),
             category_name=metadata.get("category_name"),
             price=metadata.get("price"),
             image_path=metadata.get("image_path")
         )
-
-        # filter by gender
+        
+        # Separate by gender
         if query_gender and metadata.get("gender") == query_gender:
             same_gender_recs.append(rec_item)
         else:
             diff_gender_recs.append(rec_item)
-
-    # gender balancing
+    
+    # Gender balancing: prioritize same gender
     recommendations = same_gender_recs[:k]
     if len(recommendations) < k:
-        recommendations.extend(diff_gender_recs[: (k - len(recommendations))])
+        recommendations.extend(diff_gender_recs[:(k - len(recommendations))])
+    
+    # Limit to k
+    recommendations = recommendations[:k]
 
-    # filter duplicate parent products
-    seen_products = set()
-    unique_recommendations = []
-    for r in recommendations:
-        meta = faiss_manager.product_metadata.get(r.product_id, {})
-        parent_id = meta.get("product_id") or r.product_id
-        if parent_id not in seen_products:
-            unique_recommendations.append(r)
-            seen_products.add(parent_id)
-
-    #limit to k
-    unique_recommendations = unique_recommendations[:k]
-
-    #  make response
+    # Make response
     response_time = (time.time() - start_time) * 1000
     response_data = {
-        "query_product_id": product_id,
-        "recommendations": [r.dict() for r in unique_recommendations],
+        "query_variant_id": variant_id,
+        "recommendations": [r.dict() for r in recommendations],
         "response_time_ms": response_time,
         "from_cache": False,
-        "total_results": len(unique_recommendations)
+        "total_results": len(recommendations)
     }
 
-    # cache result
-    cache_manager.set(product_id, k, response_data)
+    # Cache result
+    cache_manager.set(variant_id, k, response_data)
 
     return RecommendationResponse(**response_data)
-
 
 
 
@@ -613,15 +636,16 @@ async def get_batch_recommendations(request: BatchRecommendationRequest):
     for product_id, (rec_ids, rec_scores) in results.items():
         recommendations = []
         
-        for pid, score in zip(rec_ids, rec_scores):
-            metadata = faiss_manager.product_metadata.get(pid, {})
+        for rec_variant_id, score in zip(rec_ids, rec_scores):  
+            metadata = faiss_manager.product_metadata.get(rec_variant_id, {})
             
             recommendations.append({
-                'product_id': pid,
+                'variant_id': rec_variant_id,  
                 'similarity_score': score,
                 'product_name': metadata.get('product_name'),
                 'category_name': metadata.get('category_name'),
-                'price': metadata.get('price')
+                'price': metadata.get('price'),
+                'image_path': metadata.get('image_path') 
             })
         
         formatted_results[product_id] = {
