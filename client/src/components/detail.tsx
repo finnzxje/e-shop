@@ -5,6 +5,7 @@ import { ProductReviews } from "./productReviews";
 import { useProductDetail } from "../hooks/useProductDetail";
 import { useAppProvider } from "../context/useContex";
 import toast from "react-hot-toast";
+import { Recomender } from "./Recomender";
 interface WishlistItem {
   id: string;
   productId: string;
@@ -40,6 +41,7 @@ export default function Detail() {
 
   // State UI cho zoom
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+
   const isWishlisted =
     wishlist?.some((item: WishlistItem) => item.productId === product?.id) ||
     false;
@@ -388,6 +390,9 @@ export default function Detail() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-8 border-t border-gray-200">
           <ProductReviews productId={product.id} />
         </div>
+        <Recomender
+          productId={product.variants[0].id ? product.variants[0].id : null}
+        />
       </div>
     </>
   );
