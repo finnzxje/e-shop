@@ -35,7 +35,7 @@ WORKDIR /app
 FROM base as dependencies
 
 # Copy requirements
-COPY etl/requirements.txt .
+COPY ../requirements.txt .
 
 # Install Python packages
 RUN pip install --upgrade pip setuptools wheel && \
