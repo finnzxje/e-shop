@@ -134,7 +134,7 @@ services:
       context: ..
       dockerfile: Docker/Dockerfile
     container_name: eshop-api-cpu
-    command: uvicorn faiss_api:eshop --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn Content_Base_Model.faiss_api:eshop --host 0.0.0.0 --port 8000 --reload
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -146,7 +146,7 @@ services:
       - ../etl/data:/app/data
       - ../etl/logs:/app/logs
 
-      - ../etl/Content_Base_Model/faiss_api.py:/app/faiss_api.py
+      - ../etl/Content_Base_Model:/app/Content_Base_Model
       - ../etl/config.py:/app/config.py
     depends_on:
       redis:
