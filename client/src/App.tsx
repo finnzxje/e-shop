@@ -16,6 +16,7 @@ import NotFound from "./pages/notFoundPages";
 import ActivateAccount from "./pages/ActivateAccount";
 import SupportChat from "./pages/SupportChat";
 import MyProfile from "./pages/MyProfile";
+import AgentChatBox from "./components/AgentChatBox";
 function AppContent() {
   const location = useLocation();
   const isContactPage = location.pathname === "/contact";
@@ -38,6 +39,7 @@ function AppContent() {
         <Route path="/my-profile" element={<MyProfile />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <AgentChatBox />
       {!isContactPage && <Footer />}
     </div>
   );
