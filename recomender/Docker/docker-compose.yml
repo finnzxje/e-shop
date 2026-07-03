@@ -18,6 +18,7 @@ services:
       retries: 5
     networks:
       - eshop-network
+    restart: unless-stopped
 
   # Redis
   redis:
@@ -33,6 +34,7 @@ services:
       retries: 5
     networks:
       - eshop-network
+    restart: unless-stopped
 
   # Qdrant vector database
   qdrant:
@@ -42,8 +44,15 @@ services:
       - "${RECOM_QDRANT_GRPC_PORT:-6334}:6334"
     volumes:
       - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     networks:
       - eshop-network
+    restart: unless-stopped
 
   # SCHEDULER SERVICE
   scheduler:
@@ -193,7 +202,7 @@ services:
     build:
       context: ..
       dockerfile: Docker/Dockerfile
-    command: uvicorn Content_Base_Model.recommendation_api:eshop --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn Content_Base_Model.recommendation_api:eshop --host 0.0.0.0 --port 8000
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -213,7 +222,7 @@ services:
       redis:
         condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
       postgres:
         condition: service_healthy
     networks:

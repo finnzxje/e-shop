@@ -6,12 +6,19 @@ from typing import Any
 
 import httpx
 
+from app.services.circuit_breaker import openai_breaker
+
 
 LLM_SYSTEM_PROMPT = """You are an e-commerce assistant for an outdoor apparel shop.
 Answer only from the provided tool data and retrieved knowledge.
 Do not invent prices, stock, policies, order status, or discounts.
 Do not claim that a cart/support/order mutation was completed unless the response is an action_result.
-Keep the answer concise and helpful. Use the customer's language when it is clear."""
+Keep the answer concise and helpful. Use the customer's language when it is clear.
+If the products returned do not match the specific item the customer asked for
+(e.g. they asked for a "hoodie" and the results are sweatshirts and pullovers),
+say so explicitly: acknowledge that the exact item is not available and offer
+the closest related options instead. Never present unrelated categories
+(e.g. pants) as if they matched the request."""
 
 
 @dataclass(frozen=True)
@@ -38,6 +45,9 @@ def generate_grounded_answer(
 ) -> LlmResult:
     if not llm_enabled():
         return LlmResult(answer=current_answer, used=False)
+
+    if openai_breaker.is_open():
+        return LlmResult(answer=current_answer, used=False, error="openai_circuit_open")
 
     payload = {
         "model": os.getenv("LLM_MODEL", "gpt-4o-mini"),
@@ -66,10 +76,12 @@ def generate_grounded_answer(
             response.raise_for_status()
             body = response.json()
         answer = _extract_answer(body).strip()
+        openai_breaker.record_success()
         if not answer:
             return LlmResult(answer=current_answer, used=False, error="empty llm answer")
         return LlmResult(answer=answer, used=True)
     except Exception as exc:  # pragma: no cover - network/provider defensive path
+        openai_breaker.record_failure()
         return LlmResult(answer=current_answer, used=False, error=f"{exc.__class__.__name__}: {exc}")
 
 

@@ -110,7 +110,7 @@ class Citation(CamelModel):
 
 
 class AgentChatRequest(CamelModel):
-    message: str = Field(..., min_length=1)
+    message: str = Field(default="")
     session_id: str = Field(default="demo", min_length=1, alias="sessionId")
     trace_id: str | None = Field(default=None, alias="traceId")
     request_id: str | None = Field(default=None, alias="requestId")
@@ -119,9 +119,9 @@ class AgentChatRequest(CamelModel):
     authenticated: bool = False
     page_context: dict[str, Any] = Field(default_factory=dict, alias="pageContext")
 
-    @field_validator("message", "session_id")
+    @field_validator("session_id")
     @classmethod
-    def reject_blank_strings(cls, value: str) -> str:
+    def reject_blank_session_id(cls, value: str) -> str:
         stripped = value.strip()
         if not stripped:
             raise ValueError("must not be blank")

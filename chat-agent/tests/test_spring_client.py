@@ -551,3 +551,178 @@ def test_spring_client_falls_back_to_local_knowledge_when_backend_search_is_unau
 
     assert documents
     assert documents[0]["sourceId"] == "shipping"
+
+
+def test_recommend_by_text_enriches_missing_slug_from_backend_catalog(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Recommender by-text never returns slug; chat-agent must backfill it from BE catalog."""
+    from app.clients import spring_client as sc
+
+    sc._clear_product_slug_cache()
+    monkeypatch.setenv("RECOMMENDER_BASE_URL", "http://recommender:8000")
+
+    class DispatchClient:
+        def __init__(self, timeout):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def post(self, url, json=None, headers=None):
+            return httpx.Response(
+                200,
+                json={
+                    "query": json["query"],
+                    "recommendations": [
+                        {
+                            "variant_id": "v-abc",
+                            "product_id": "p-abc",
+                            "product_name": "Trail Crew Pant",
+                            "similarity_score": 0.91,
+                            "price": 159,
+                            "image_path": "https://img/x.jpg",
+                        },
+                    ],
+                    "response_time_ms": 1.0,
+                    "total_results": 1,
+                },
+                request=httpx.Request("POST", url),
+            )
+
+        def request(self, method, url, params=None, json=None, headers=None):
+            if "/api/catalog/products" in url:
+                return httpx.Response(
+                    200,
+                    json={
+                        "content": [
+                            {"id": "p-abc", "name": "Trail Crew Pant", "slug": "trail-crew-pant"},
+                            {"id": "p-xyz", "name": "Other Product", "slug": "other-product"},
+                        ]
+                    },
+                    request=httpx.Request(method, url),
+                )
+            return httpx.Response(404, request=httpx.Request(method, url))
+
+    monkeypatch.setattr(httpx, "Client", DispatchClient)
+    client = SpringBackendClient(base_url="http://backend", retries=0)
+
+    [result] = client.recommend_by_text(query="lightweight summer pants", limit=4)
+
+    assert result["productId"] == "p-abc"
+    assert result["slug"] == "trail-crew-pant"
+    assert result["name"] == "Trail Crew Pant"
+    assert result["recommendationScore"] == 0.91
+
+
+def test_recommend_by_text_enriches_slug_by_name_when_only_variant_id_known(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Recommender returns variant_id (not product_id); name match must still work."""
+    from app.clients import spring_client as sc
+
+    sc._clear_product_slug_cache()
+    monkeypatch.setenv("RECOMMENDER_BASE_URL", "http://recommender:8000")
+
+    class DispatchClient:
+        def __init__(self, timeout):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def post(self, url, json=None, headers=None):
+            return httpx.Response(
+                200,
+                json={
+                    "query": json["query"],
+                    "recommendations": [
+                        {
+                            # Only variant_id — no product_id (real recommender shape)
+                            "variant_id": "v-only",
+                            "product_name": "W's Wild Idea Work Boots",
+                            "similarity_score": 0.43,
+                            "price": 369,
+                        },
+                    ],
+                    "response_time_ms": 1.0,
+                    "total_results": 1,
+                },
+                request=httpx.Request("POST", url),
+            )
+
+        def request(self, method, url, params=None, json=None, headers=None):
+            if "/api/catalog/products" in url:
+                return httpx.Response(
+                    200,
+                    json={
+                        "content": [
+                            {
+                                "id": "p-boots-w",
+                                "name": "W's Wild Idea Work Boots",
+                                "slug": "womens-wild-idea-work-boots",
+                            },
+                        ]
+                    },
+                    request=httpx.Request(method, url),
+                )
+            return httpx.Response(404, request=httpx.Request(method, url))
+
+    monkeypatch.setattr(httpx, "Client", DispatchClient)
+    client = SpringBackendClient(base_url="http://backend", retries=0)
+
+    [result] = client.recommend_by_text(query="boots")
+
+    # ProductId falls back to variant_id (no match in slug_by_id map), but name
+    # match succeeds, so we still get the right slug.
+    assert result["slug"] == "womens-wild-idea-work-boots"
+
+
+def test_recommend_by_text_leaves_slug_empty_when_be_lookup_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When BE is unavailable for slug enrichment, do not crash — return without slug."""
+    from app.clients import spring_client as sc
+
+    sc._clear_product_slug_cache()
+    monkeypatch.setenv("RECOMMENDER_BASE_URL", "http://recommender:8000")
+
+    class PartiallyFailingClient:
+        def __init__(self, timeout):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+        def post(self, url, json=None, headers=None):
+            return httpx.Response(
+                200,
+                json={
+                    "query": json["query"],
+                    "recommendations": [
+                        {"variant_id": "v1", "product_id": "p1", "product_name": "Foo", "similarity_score": 0.8},
+                    ],
+                    "response_time_ms": 1.0,
+                    "total_results": 1,
+                },
+                request=httpx.Request("POST", url),
+            )
+
+        def request(self, method, url, params=None, json=None, headers=None):
+            raise httpx.ConnectError("be down", request=httpx.Request(method, url))
+
+    monkeypatch.setattr(httpx, "Client", PartiallyFailingClient)
+    client = SpringBackendClient(base_url="http://backend", retries=0)
+
+    [result] = client.recommend_by_text(query="anything")
+    assert result["productId"] == "p1"
+    assert result["slug"] == ""

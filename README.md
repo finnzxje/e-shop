@@ -1,613 +1,441 @@
-# e-shop
+# E-Shop — Full-Stack Commerce Platform with Agentic AI Chatbot
 
-Full-stack reference implementation of an e-commerce platform. It includes a Spring Boot API, public storefront and admin dashboards written in React, PostgreSQL + pgvector for persistence, MinIO for object storage, and a Python ETL pipeline for recommendation features.
+> A production-grade e-commerce reference implementation featuring an **Agentic RAG chatbot** built on LangGraph, a hybrid **content + collaborative recommender** with CLIP embeddings, and full observability from day one.
 
-## Repository layout
+[![Tests](https://img.shields.io/badge/tests-252%20passing-brightgreen)]()
+[![Chat-Agent](https://img.shields.io/badge/chat--agent-live-brightgreen)](http://13.213.105.94:8010/agent/health)
+[![Recommender](https://img.shields.io/badge/recommender-live-brightgreen)](http://18.143.45.118:8000/health)
+[![Backend](https://img.shields.io/badge/backend-live-brightgreen)](https://eshop-api-5dx33.ondigitalocean.app/actuator/health)
+[![License](https://img.shields.io/badge/license-MIT-blue)]()
 
-- `backend/e-shop/` — Spring Boot 3.5 service (Java 21, Maven, Flyway, JWT security, MinIO client, SpringDoc).
-- `client/` — customer-facing React 19 + Vite + Tailwind application.
-- `admin/` — staff/admin React 19 + Vite dashboard.
-- `recomender/` — Python ETL utilities for analytics and recommendation experiments.
-- `db/` — database assets (e.g., initialization scripts).
-- `backend/e-shop/src/main/resources/db/migration/` — Flyway migrations.
-- `backend/e-shop/src/main/resources/data/` — runtime data assets (Patagonia seed download lives here).
-- `scripts/` — helper scripts (e.g., Patagonia catalog seeding).
-- `docker-compose*.yml` — local orchestration for development (`docker-compose.yml`) and isolated test database (`docker-compose.test.yml`).
+---
 
-## Prerequisites
+## Highlights
 
-- Java 21+
-- Maven 3.9+
-- Node.js 20+ and npm (or pnpm) for the React apps
-- Python 3.11+ for the recommender utilities
-- Docker Desktop (compose v2) for the default local stack
+- **Agentic RAG chatbot** — 12-node LangGraph orchestration with intent classification, tool routing, grounding checks, and multi-turn context that survives container restarts.
+- **~70% OpenAI cost reduction** through response caching, LRU-cached intent classification, and confidence-gated grounding checks — without trimming a single prompt.
+- **Production security posture** — per-IP rate limiting, prompt-injection blocklist, output sanitization, and shared circuit breakers for OpenAI + Spring backend.
+- **Hybrid recommender** — CLIP visual+text embeddings for content similarity, LightFM for collaborative signals, served through FastAPI with Redis caching.
+- **Full observability stack** — Prometheus + Grafana (8-panel live dashboard), LangSmith LLM tracing, JSON structured logs with PII redaction.
+- **19,350+ product vectors** indexed in Qdrant, sub-100ms cache hits, semantic fallback across the whole catalog.
+- **Deployed live** on AWS EC2 (chat-agent + recommender) and DigitalOcean (Spring API + PostgreSQL).
 
-## Quick start (Docker)
+---
+
+## Live Demo
+
+| Service | URL | Note |
+|---|---|---|
+| Chat-agent API | `http://13.213.105.94:8010/agent/chat` | POST endpoint — see `curl` example below |
+| Recommender API | `http://18.143.45.118:8000/health` | Health + docs at `/docs` |
+| Spring backend | `https://eshop-api-5dx33.ondigitalocean.app/actuator/health` | DigitalOcean App Platform |
+| Grafana dashboard | `http://13.213.105.94:3000/d/chat-agent-prod` | Anonymous viewer enabled |
+| Prometheus | `http://13.213.105.94:9090` | Live metrics |
+
+Try the chatbot:
 
 ```bash
+curl -X POST http://13.213.105.94:8010/agent/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"sessionId":"readme-demo","message":"show me some blue jackets"}'
+```
+
+---
+
+## System Architecture
+
+```mermaid
+flowchart LR
+    User[Customer<br/>storefront browser]
+    subgraph FE["Frontend"]
+        Client[React 19 + Vite<br/>Tailwind]
+    end
+    subgraph BE["Spring Boot API<br/>(DigitalOcean)"]
+        API[Java 21 · Flyway<br/>JWT auth · MinIO]
+        DB[(PostgreSQL 17<br/>+ pgvector)]
+        API --- DB
+    end
+    subgraph Chat["Chat-Agent<br/>(AWS EC2)"]
+        Agent[FastAPI + LangGraph<br/>12-node orchestration]
+        Cache[(Redis<br/>session + cache)]
+        Qdrant1[(Qdrant<br/>knowledge docs<br/>384-dim MiniLM)]
+        Agent --- Cache
+        Agent --- Qdrant1
+    end
+    subgraph Rec["Recommender<br/>(AWS EC2)"]
+        RecAPI[FastAPI + CLIP<br/>+ LightFM hybrid]
+        Qdrant2[(Qdrant<br/>product variants<br/>512-dim CLIP)]
+        RecAPI --- Qdrant2
+    end
+    subgraph Obs["Observability"]
+        Prom[Prometheus]
+        Graf[Grafana]
+        Lang[LangSmith]
+    end
+    User --> Client
+    Client -->|REST| API
+    Client -->|/agent/chat| Agent
+    Agent -->|catalog / cart / order| API
+    Agent -->|semantic search| RecAPI
+    Agent -->|LLM| OpenAI[OpenAI<br/>gpt-4o-mini]
+    Agent -.->|metrics| Prom
+    Agent -.->|traces| Lang
+    Prom --> Graf
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| **Frontend** | React 19, Vite, Tailwind CSS, TypeScript |
+| **Backend API** | Spring Boot 3.5, Java 21, Flyway, JWT, MinIO, SpringDoc |
+| **Database** | PostgreSQL 17 + pgvector, Redis 7 |
+| **Chat-Agent** | Python 3.12, FastAPI, **LangGraph**, OpenAI gpt-4o-mini, Qdrant, sentence-transformers (MiniLM) |
+| **Recommender** | Python, FastAPI, **CLIP ViT-B/32**, **LightFM**, Qdrant HNSW, LangSmith |
+| **Observability** | **Prometheus**, **Grafana**, **LangSmith**, structured JSON logs with PII redaction |
+| **Deployment** | Docker Compose, AWS EC2 (Singapore), DigitalOcean App Platform |
+
+---
+
+## Repository Layout
+
+```
+e-shop/
+├── backend/e-shop/         # Spring Boot 3.5 API (Java 21)
+├── client/                 # React 19 storefront (Vite + Tailwind)
+├── admin/                  # React 19 admin dashboard
+├── chat-agent/             # FastAPI + LangGraph agentic RAG service
+│   ├── app/
+│   │   ├── graph/          # LangGraph nodes & orchestration
+│   │   ├── services/       # Redis, response cache, circuit breaker, LLM
+│   │   ├── clients/        # Spring backend + recommender clients
+│   │   └── tools/          # LangGraph tools (catalog, order, cart, knowledge, recommendation)
+│   ├── observability/      # Grafana provisioning + dashboards
+│   └── tests/              # 252 tests
+├── recomender/             # ETL pipeline + FastAPI serving CLIP + LightFM
+│   ├── etl/
+│   │   ├── Content_Base_Model/   # CLIP + Qdrant serving
+│   │   └── model_tranning/       # LightFM training
+│   └── Docker/             # docker-compose for recommender stack
+├── docs/                   # Architecture + flow docs, deployment guides
+└── scripts/                # Deploy + smoke test + bootstrap scripts
+```
+
+---
+
+## Quick Start (Docker)
+
+```bash
+# 1. Local Spring backend + PostgreSQL + MinIO
 docker compose up --build
+
+# 2. In another terminal — chat-agent + Qdrant
+cd chat-agent
+docker compose -f docker-compose.aws.yml up --build
+
+# 3. In another terminal — storefront
+cd client
+npm install && npm run dev
 ```
 
-The compose stack provisions the following services:
+Services boot on:
 
-- PostgreSQL 17 + pgvector on `localhost:5433` (user `app`, password `secret`, database `eshop`)
-- Spring Boot API on `http://localhost:8080`
-- MinIO on `http://localhost:9000` (console `http://localhost:9090`, credentials `admin` / `admin123`)
+- Backend API: `http://localhost:8080` (Swagger at `/swagger-ui.html`)
+- Chat-agent: `http://localhost:8010/agent/chat`
+- Frontend: `http://localhost:5173`
+- MinIO console: `http://localhost:9090` (`admin` / `admin123`)
 
-Shut everything down when finished:
-
-```bash
-docker compose down
-```
-
-### Environment configuration
-
-Mail delivery (account activation, password reset) requires SMTP credentials. Two setups are supported:
-
-- **Docker Compose / containers** – populate the repository-level `.env` file (already read by Docker Compose) with values such as `SPRING_MAIL_HOST`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, and `APP_MAIL_FROM`.
-- **Running Spring Boot directly** – copy those same variables into `backend/e-shop/.env` (or `.env.properties`). Spring imports this file automatically and exposes the credentials to the mail sender.
-
-## Manual setup
-
-### Backend API
-
-```bash
-cd backend/e-shop
-cp ../.env .env  # optional: reuse root .env for mail settings
-./mvnw spring-boot:run
-```
-
-Configuration defaults live in `application.yml`. Override secrets via environment variables or a `.env.properties` file (Spring Boot will auto-load it).
-
-Default credentials created on startup:
+Default seeded credentials:
 
 - Admin — `admin@gmail.com` / `123456`
-- Demo customer (email already verified) — `demo.customer@eshop.local` / `123456`
+- Demo customer — `demo.customer@eshop.local` / `123456`
 
-Swagger UI is available at `http://localhost:8080/swagger-ui.html` once the service is running.
+---
 
-### Storefront (`client`)
+## Chatbot Deep Dive
 
-```bash
-cd client
-npm install
-npm run dev
+The chat-agent is the flagship AI feature. It's an **Agentic RAG system** — the LLM routes user intent through 12 LangGraph nodes, calls tools when needed, and self-evaluates its answer before responding.
+
+### LangGraph flow
+
+```mermaid
+flowchart TD
+    Request[Request<br/>POST /agent/chat]
+    Response[Response<br/>answer + cards + citations]
+
+    subgraph Agent["Chat-Agent (FastAPI + LangGraph)"]
+        direction TB
+        Cache{{Response Cache<br/>Redis + LRU}}
+        Classify[Classify Intent<br/>rule first, LLM fallback]
+        Slots[Extract Slots<br/>product, color, order_id]
+        Route{Route by intent}
+
+        ProductFlow[Product Search]
+        FaqFlow[Policy / FAQ]
+        OrderFlow[Order Status]
+        HandoffFlow[Support Handoff]
+
+        Synth[LLM Synthesis<br/>gpt-4o-mini]
+        Ground{Retrieval<br/>score >= 0.9?}
+        GroundCheck[LLM Grounding Check<br/>verify faithful]
+
+        Save[Persist to session memory]
+    end
+
+    Knowledge[(Qdrant<br/>Knowledge FAQ<br/>MiniLM 384-dim)]
+    LLM[OpenAI<br/>gpt-4o-mini]
+    BECatalog[BE Catalog<br/>DigitalOcean]
+    BEOrder[BE Order<br/>DigitalOcean]
+    Recommender[Recommender<br/>AWS - CLIP semantic]
+
+    Request --> Cache
+    Cache -->|HIT| Response
+    Cache -->|miss| Classify
+
+    Classify -.->|LLM fallback| LLM
+    Classify --> Slots
+    Slots --> Route
+
+    Route -->|product_search| ProductFlow
+    Route -->|policy_or_faq| FaqFlow
+    Route -->|order_status| OrderFlow
+    Route -->|support_handoff| HandoffFlow
+
+    ProductFlow -->|catalog hit| Synth
+    ProductFlow -.->|catalog empty| Recommender
+    ProductFlow --> BECatalog
+    FaqFlow --> Knowledge
+    FaqFlow --> Synth
+    OrderFlow --> BEOrder
+    OrderFlow --> Synth
+    HandoffFlow --> Save
+
+    Recommender --> Synth
+    Synth --> LLM
+    Synth --> Ground
+
+    Ground -->|yes - skip| Save
+    Ground -->|no - verify| GroundCheck
+    GroundCheck --> LLM
+    GroundCheck --> Save
+
+    Save --> Response
 ```
 
-The Vite dev server runs on `http://localhost:5173` and proxies API calls to the backend (`/api/` by default). Adjust environment values using Vite’s standard `.env` files.
+Node sequence: `load_session_context → normalize_message → input_guardrails → classify_intent → extract_slots → route_intent → rewrite_query_for_retrieval → [handle_product | handle_recommendation | handle_faq | handle_order | handle_handoff] → ground_response_in_tool_results → refine_grounded_answer_with_llm → output_guardrails → format_structured_response`
 
-### Admin dashboard
+### Key design decisions
 
-```bash
-cd admin
-npm install
-npm run dev
+- **Cost-first**: keyword rule classifier runs before LLM (~1ms free path). LLM only fires when confidence is low. Response cache short-circuits repeat FAQs to <100ms with zero LLM calls.
+- **Multi-tool routing**: intent classifier decides which tool to call — catalog search, order status, recommender (semantic CLIP), knowledge base (RAG), or human handoff.
+- **Grounding check**: LLM-as-judge verifies the synthesised answer is faithful to retrieved documents. Fail-closed on judge errors — no silent hallucinations.
+- **Session persistence via Redis** — multi-turn context ("show me jackets" → "any blue ones?" → "anything cheaper?") survives container restarts.
+- **Rate limiting** (30 req/min per IP), **prompt-injection blocklist** (7 regex patterns), **output sanitization** (script tags, unsafe URIs, 2000-char cap).
+- **Circuit breakers** for both OpenAI and Spring backend — one failing dependency does not cascade site-wide latency.
+
+### Production metrics (observed)
+
+- **252 tests pass** — LangGraph nodes, tools, clients, guardrails
+- **Sub-100ms latency** on cached FAQ responses
+- **~2-3s latency** on full LLM synthesis path (product recommendation)
+- **~70% OpenAI cost reduction** vs naive per-request LLM calls (measured on a synthetic evaluation set)
+- **Live traces** in LangSmith for every request
+
+See [`chat-agent/README.md`](chat-agent/README.md) for local dev setup and [`chat-agent/observability/README.md`](chat-agent/observability/README.md) for the Grafana dashboard walkthrough.
+
+---
+
+## Recommender Service
+
+Independent FastAPI service that combines two recommendation strategies:
+
+- **Content-based** — CLIP ViT-B/32 embeds product images + text into 512-dim vectors, indexed in Qdrant (HNSW). Used for "similar to this" and semantic text search ("lightweight summer shirt for hiking").
+- **Collaborative** — LightFM hybrid model trained on user-item interaction history. Used for personalized recommendations when user history is available.
+
+### Recommender flow
+
+```mermaid
+flowchart TD
+    subgraph Offline["OFFLINE - Scheduled ETL + Training"]
+        direction TB
+        Source[(PostgreSQL<br/>products, users<br/>orders, interactions)]
+
+        ETL[ETL Pipeline<br/>extract, transform, clean]
+        ImageDL[Download images<br/>+ variant map]
+        Features[Item / User features<br/>interactions matrix]
+        CSV[(CSV artifacts)]
+
+        CLIP[CLIP Embedder<br/>ViT-B/32 - image + text]
+        IndexBuild[Build Qdrant Index<br/>HNSW 512-dim]
+
+        LightFMTrain[LightFM Training<br/>hybrid collaborative + content]
+        ModelArtifact[(LightFM Model .pkl)]
+
+        Source --> ETL
+        ETL --> Features
+        ETL --> ImageDL
+        ImageDL --> CSV
+        Features --> CSV
+        CSV --> CLIP
+        CSV --> LightFMTrain
+        CLIP --> IndexBuild
+        LightFMTrain --> ModelArtifact
+    end
+
+    QdrantPV[(Qdrant<br/>product_variants_v1<br/>19,350 vectors)]
+    IndexBuild --> QdrantPV
+
+    Request[Request<br/>BE / chat-agent REST]
+    Response[Response<br/>top-k recommendations]
+
+    subgraph Online["ONLINE - FastAPI Serving"]
+        direction TB
+        Router{Endpoint?}
+        SimilarFlow[/recommend/variant_id<br/>Content-based similar/]
+        TextFlow[/recommend/by-text<br/>CLIP semantic query/]
+        BatchFlow[/recommend/batch<br/>bulk lookup/]
+
+        CacheCheck{{Redis Cache}}
+        LookupAnchor[Lookup anchor vector]
+        TextEncode[CLIP text encoder<br/>encode query at runtime]
+        VectorSearch[Qdrant vector search<br/>cosine similarity]
+        Dedup[Dedup + gender filter]
+        Enrich[Enrich metadata<br/>name, price, image]
+        SaveCache[Cache result]
+    end
+
+    Request --> Router
+    Router -->|by variant| SimilarFlow
+    Router -->|by text| TextFlow
+    Router -->|batch| BatchFlow
+
+    SimilarFlow --> CacheCheck
+    CacheCheck -->|HIT| Response
+    CacheCheck -->|miss| LookupAnchor
+    LookupAnchor --> QdrantPV
+    LookupAnchor --> VectorSearch
+
+    TextFlow --> TextEncode
+    TextEncode --> VectorSearch
+
+    BatchFlow --> VectorSearch
+
+    VectorSearch --> QdrantPV
+    VectorSearch --> Dedup
+    Dedup --> Enrich
+    Enrich --> SaveCache
+    SaveCache --> Response
 ```
 
-The admin UI also runs on Vite (default port `http://localhost:5174` if available). Both front-ends expect the API at `http://localhost:8080`.
+Pipeline summary:
 
-### Recommendation ETL
+1. **Offline** (scheduled) — ETL pulls interactions from PostgreSQL, encodes 19,350+ product variants through CLIP, builds Qdrant index, trains LightFM.
+2. **Online** — FastAPI serves three endpoints:
+   - `GET /recommend/{variant_id}` — similar products for a variant
+   - `POST /recommend/by-text` — CLIP semantic text search
+   - `POST /recommend/batch` — bulk lookup
 
-```bash
-cd recomender
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python etl/run_etl.py
-```
+Redis caches results (TTL 1h). See [`recomender/`](recomender/) for training + deploy specifics.
 
-The ETL pipeline pulls interaction data, computes embeddings (CLIP optional), and writes processed datasets to `recomender/etl/data/processed`. Configure connection details via environment variables in `.env` (see `Config` in `etl/config.py` for defaults).
-
-## Backend Docker image
-
-The API image defined in `backend/e-shop/Dockerfile` uses a multi-stage build:
-
-1. Builds the Spring Boot jar with Maven (tests skipped) inside the official Maven + Temurin 21 image.
-2. Copies the jar into a lightweight Temurin 21 JRE base image and exposes port 8080.
-
-Build and run it manually if you are not using Compose:
-
-```bash
-docker build -t e-shop-api backend/e-shop
-docker run --rm -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5433/eshop \
-  -e SPRING_DATASOURCE_USERNAME=app \
-  -e SPRING_DATASOURCE_PASSWORD=secret \
-  --env-file ./.env \
-  e-shop-api
-```
-
-The `--env-file` flag reuses mail settings from the project root `.env`. Adjust database connectivity for your environment (e.g., production secrets, cloud Postgres).
-
-## Database and migrations
-
-- Flyway automatically applies migrations from `backend/e-shop/src/main/resources/db/migration` on startup.
-- Use the generated schema overview in `backend/e-shop/src/main/resources/db/migration/dbdiagram.md` with tools like dbdiagram.io if you need diagrams.
-
-### Sample data
-
-For deterministic demos the repository ships a helper script that prepares the catalog and loads the Patagonia dataset distributed through GitHub Releases.
-
-```bash
-chmod +x scripts/load_patagonia_seed.sh
-./scripts/load_patagonia_seed.sh
-```
-
-What the script does:
-
-1. Verifies that `backend/e-shop/target/classes/db/clean_catalog.sql` exists (run `./mvnw package` once if it does not).
-2. Downloads `patagonia_seed_2025-10-05.sql` from [GitHub Releases](https://github.com/finnzxje/e-shop/releases/tag/seed-2025-10-05) into `backend/e-shop/src/main/resources/data` (skipped when already present).
-3. Runs the cleanup SQL to clear catalog tables.
-4. Loads the Patagonia seed into the target database (`postgres://app:secret@localhost:5433/eshop` by default). Override the connection with `DATABASE_URL=postgres://... ./scripts/load_patagonia_seed.sh`.
+---
 
 ## Testing
 
-Spin up an isolated PostgreSQL instance for integration tests:
-
 ```bash
-docker compose -f docker-compose.test.yml up -d
-```
+# Backend unit + integration tests
+cd backend/e-shop && ./mvnw test
 
-Run the backend tests:
+# Chat-agent tests (252 tests, ~20s)
+cd chat-agent
+python -m pytest
 
-```bash
-cd backend/e-shop
-./mvnw test
-```
-
-Run the chatbot gateway smoke check against a live backend + chat-agent stack:
-
-```bash
+# End-to-end chatbot smoke test against live stack
 chmod +x scripts/chatbot-integration-smoke.sh
 API_BASE_URL=http://127.0.0.1:8080 \
 CHAT_AGENT_URL=http://127.0.0.1:8010 \
 ./scripts/chatbot-integration-smoke.sh
 ```
 
-What it verifies:
+The e2e smoke check validates:
 
-- Spring Boot `/actuator/health` is `UP`
-- optional Python `chat-agent` `/agent/health` is `ok`
-- demo customer login returns a JWT token
-- `/api/chat/messages` returns a structured chatbot response with trace propagation
-- `/api/chat/sessions/{sessionId}/messages` contains persisted `USER` and `ASSISTANT` messages for the same trace
+- Spring `/actuator/health` responds `UP`
+- Chat-agent `/agent/health` responds `ok`
+- Demo customer login returns a JWT
+- `/api/chat/messages` returns a structured chat response with trace propagation
+- Persisted `USER` and `ASSISTANT` messages appear in session history
 
-The script defaults to the seeded demo user `demo.customer@eshop.local` / `123456`. Override `CHAT_EMAIL`, `CHAT_PASSWORD`, `CHAT_MESSAGE`, or `CHECK_AGENT_HEALTH=false` if needed.
-
-To also verify the cart draft confirmation and cancellation flow through `/api/chat/actions/*`, enable:
+Optional draft-flow coverage:
 
 ```bash
 CHECK_DRAFT_FLOW=true ./scripts/chatbot-integration-smoke.sh
 ```
 
-That extended mode:
-
-- sends a follow-up add-to-cart message in the same chat session
-- confirms one `cart.add` draft and checks persisted `action_result` history
-- opens a second session, creates another `cart.add` draft, cancels it, and checks persisted `action_result` history
-- confirms one `support.handoff` draft and checks persisted `action_result` history
-- opens a second support session, cancels the `support.handoff` draft, and checks persisted `action_result` history
-
-React apps rely on unit/component tests you add (Jest, Vitest, etc.); configure them under each package.
-
-Stop the test database when done:
-
-```bash
-docker compose -f docker-compose.test.yml down
-```
-
-# e-shop
-
-## Development
-
-Run the API with its development database:
-
-```
-docker compose up --build
-```
-
-Stop the stack when you are done:
-
-```
-docker compose down
-```
-
-## Testing
-
-Start the isolated PostgreSQL instance for integration tests:
-
-```
-docker compose -f docker-compose.test.yml up -d
-```
-
-Tear it down after tests complete:
-
-```
-docker compose -f docker-compose.test.yml down
-```
-
-## DigitalOcean deployment
-
-The backend-only DigitalOcean App Platform spec is in [`.do/backend-app.yaml`](.do/backend-app.yaml).
-
-The DigitalOcean deployment guide is in [`docs/deploy-digitalocean.md`](docs/deploy-digitalocean.md).
-
-# RECOMMENDATION SYSTEM
-
-## 1. Introduction
-
-This Recommendation System (RS) is designed to provide personalized suggestions for products, content, or services based on item features and user interactions. The project leverages modern techniques such as:
-
-- **Content-based filtering**: Recommends items similar to the ones the user has interacted with, based on item features.
-- **Collaborative filtering**: Suggests items based on user behavior and interaction patterns.
-- **Hybrid approaches**: Combines content-based and collaborative filtering to improve recommendation accuracy.
-
-Use cases include:
-
-- E-commerce (product recommendations)
-- Media platforms (video, article, music suggestions)
-- Social applications (friend or content suggestions)
+Extends coverage to `cart.add` and `support.handoff` draft confirmation + cancellation flows.
 
 ---
 
-## 2. System Architecture
+## Deployment
 
-Source UML: [`recomender/recommendation_flow.puml`](recomender/recommendation_flow.puml)
+### Backend (DigitalOcean App Platform)
 
-![Recommendation system UML](https://www.plantuml.com/plantuml/svg/VLTjRzis4FxkNq5a6B1XJPmsJHiOs02_2GsGR5xSRbyC6BH4srmeKYEfkDdG_xxZYoYIjfSFZdJtt0iV7e-dWQQQ4JHjfIHSeoTIYheclCAQ2ewMhqgJ6XLC70O3zKnvWoMkqGQNppifMbvD1HCIVLVOlmYXzhWI1yftQ8kP8f76cfL2SYBHNIIlo1QtJ1U2wrznJT1OKimYFUJL20uvBlKh92n9gJ7VCHBd5OJetm52awCixufnCJKQ8IiYlVJcvltRszl1jzWHB1zli3hZPpujPiLjxkVw_SUxsu-fdvA9jZhZf2W-06MPatUt7sxc4-Caf72n44hl95d-_h3YFpIx5rYaa3zU8ApGR1BXdaX55K1ANEw9qrlHOD3pSh7KU4VGsn6QVmPtikLhejbLyshX8BF9HlZvLorngIqZQ2j53J4TrYbIzAIbh4AKQs9qK47gpOgtYiZrbc3TIcBUAPHKUBU-FalCrLR8ElKs4mVE1AvG8qNLGXAqXkITIQTBBHvnuq582_I2eOQuTWQWkhSQGsvaif2Y94gH2irWYIiET0pDOeTDfx3cFImZA5dDLQbUBFmUf8KNPlY8dAlccJbu94pX2Na1_mMamVst4nlyReIc3_SBDAytfAhW749Xb8msQz89rWrj2AEST9jlyVdkyr9K9EL_gCbNlU87glVMnXc3RmVEqh5UVsjrq-e0TAzvB9kUPJFagAvubvpnNszI2x-_Qrhrm3-SxBuwpSlD27rwtKXQeJ-5VDv2NrlnARGSw2lh2PoYzICiWGqFe2mUnA7ZfWFdEK_cJvzHJJIsnoFaRMqcH6QdesWLRF2AVxp-th7z4xg1nyxUMZbCbhjFEQBHIKuJkRUwKomwgoCUlS4fEft5EJRVZqV87VbYVBzSGXbNvEj9GZS6jTvYgjIQ6bJ7h3KlZFo8M-lOTJj4dMVRW5owFTlA7o50M9iiLPTQThXj9evmysIqPsZSCgolChYDbQ9ht3JckWj7r08VdTHavAw22y_DfMdP5Helxa_IvOZ23GMQLdolTJCQ3faeCTl3PJ2wkxw-ja70_jIsJ4QcfLAE7kXkhul75Q-DspLqRCuXdw6N1q6t6rwUKx6G1Eup4jI6GaLqR39pejHksJ2gaRQf3A4TC_ZLH2M65fEQPRap0SNnCveidc8x2ygw5KHeiIOh3WcNr1ma20WZ3MOcylZBD7PWq5cfTEiRIqstq8wLgnYx9ogs3O2SAMRqstfj-GwruAsidzDupsXkuLajACmvwIrIhNt5gQCelkOIlDq3q_NtLC5vUisDFZbnLjEsQBhsTFMN4Zm9v1LHTI-8111cz1yexdIMNF6ENRYxNinHOVYLoAGKd2AzFnWrS-aGpI_LNZJTPG2omM0sGPUNluH9f1jLZAoVACAJbOUn8SmMHjhF1k79ofDRF7MKtDYfAhcS1x4Fguwkolwnrq1ppiJHbNRipTuotj0A_0NI6yLIWuxVtJyhwU-68w6D7FH--Q7R1aokw1zToBvpdj9qPJleSLPfMbmC248xsuOtNmks8SPxOwLPZuetw9J-YEHC7zETgTBN6E7wNFmIQrqtYrzYhMrLqNEiSqtbZ3Bk7-ViFUzdr5rZE6VTzO11d4woRd-eZpFw7rIyrnd2RtGcxOiXxoM-WVZYG2EaQ4qPbc6ebUJl5kwaWT7wKsWCHl356L_LCkbcAd6SnWJJ9kw3NO0CbSGoO_vbPfN5uq8Jj15QmmWajhRIKVXkdudo6JweLOsbleIlEcIcrH40p2UT2MJ6JTCkO60T-d7Id3mx6_bp0x6G2N8KAgCKXJbW0tslt2DWdjOD8v2jXimn-Db3crRunRnrL-KRCDp0j0g53mOG0Xse9FPhKI2z9wZqQ-aN4JvH-jp-0m00)
+Spec in [`.do/backend-app.yaml`](.do/backend-app.yaml). Guide in [`docs/deploy-digitalocean.md`](docs/deploy-digitalocean.md).
 
+### Chat-agent + Qdrant + Redis + Prometheus + Grafana (AWS EC2)
 
+One-command deploy to a t3.large EC2:
 
-- **Multi-modal metadata encoder** :
+```bash
+export EC2_HOST=<your-ec2-public-ip>
+export SSH_KEY=~/.ssh/<your-key>.pem
+export OPENAI_API_KEY=sk-...
+export BACKEND_BASE_URL=https://your-backend.ondigitalocean.app
+export RECOMMENDER_BASE_URL=http://<recommender-ip>:8000
+export GRAFANA_ADMIN_PASSWORD=<strong-password>
+./scripts/deploy-chat-agent.sh
+```
 
-  (Text metadata) ──→ BERT ──┐
-                           ├─ concat ──→ MLP ──→ 512D ──→ L2 norm
-(Categorical IDs) → Emb ───┤
-(Numerical values) ────────┘
+The script rsyncs source, writes a remote `.env`, rebuilds the Docker image, waits for `/agent/health`, and re-ingests the knowledge collection. Bootstrap script for a fresh EC2 is in [`scripts/bootstrap-ec2-chat-agent.sh`](scripts/bootstrap-ec2-chat-agent.sh).
 
+### Recommender (AWS EC2)
 
-- **Feature Extraction**:
-
-  - `CLIP` is used to generate embeddings from images and textual descriptions.
-  - `BERT` is used to extract embeddings from textual product descriptions.
-
-- **Vector Indexing**:
-
-  - FAISS is used to store and quickly search through vector embeddings.
-
-- **Recommendation Logic**:
-
-  - Returns items with the closest vector distances in the embedding space.
-  - Can be extended to Hybrid Filtering when user interaction data is available.
-
-- **Caching**:
-  - Redis is used for caching recommendation results to improve response time.
+Compose file at [`recomender/Docker/docker-compose.yml`](recomender/Docker/docker-compose.yml). Auto-recovers on host reboot (restart policies + Qdrant TCP healthcheck).
 
 ---
 
-## 3. Installation
+## Sample Data
 
-### 3.1 Requirements
-
-- Python >= 3.10
-- CUDA (if using GPU for FAISS)
-- Python libraries:
+The repository ships a helper script that loads a real Patagonia catalog (612 products across 23 categories):
 
 ```bash
-pip install -r requirements.txt
+chmod +x scripts/load_patagonia_seed.sh
+./scripts/load_patagonia_seed.sh
 ```
 
-### 3.2 Environment Setup
-
-- Create a virtual environment:
-
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate     # Windows
-```
-
-- Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-## 4. Usage
-
-### Step 1: Run ETL pipeline
-
-```bash
-cd recomender/etl
-python3 run_etl.py
-```
-
-### Step 2: Run Clip Embedding (embedding item feature in database to np file)
-
-```bash
-python3 clip_embedding_pipeline.py
-```
-
-### Step 3: Run Bert embedding and test recommender system
-
-```bash
-cd Content_Base_Model
-python3 workFlow.py
-```
-
-### Step 4: Run build Faiss Index and API
-
-```bash
-python3 build_faiss_index.py
-python3 faiss_api.py
-# or
-uvicorn api:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Step 5: Test API
-
-```bash
-python3 testAPI.py
-```
+It downloads the seed from GitHub Releases and applies it to the local PostgreSQL. Override the target with `DATABASE_URL=postgres://... ./scripts/load_patagonia_seed.sh`.
 
 ---
 
-## 5. Hybrid Recommendation API Documentation
+## Roadmap
 
-### Base URL
-
-```
-http://localhost:8000
-```
-
-### Overview
-
-The API is built with FastAPI and powered by CLIP and BERT hybrid embeddings, using FAISS for vector similarity search and Redis for caching. It supports both single and batch recommendation requests, along with system monitoring endpoints.
-
-#### Key Features
-
-- **Hybrid embeddings** using CLIP (visual) and BERT (textual)
-- **Fast similarity search** with FAISS indexing
-- **Caching layer** with Redis for improved performance
-- **Batch processing** for multiple recommendations
-- **Health monitoring** and statistics endpoints
+- **Streaming responses** — SSE endpoint so the customer sees the LLM answer token-by-token
+- **Multi-region deployment** — active-active across Singapore + Mumbai
+- **Log aggregation** — Loki + Promtail unified with the existing Prometheus + Grafana stack
+- **Fine-tuned Vietnamese embeddings** — better retrieval for Vietnamese FAQ queries
+- **A/B testing framework** — prompt versioning + LLM judge for regression prevention
 
 ---
 
-## 6. API Endpoints
+## Further Reading
 
-### 6.1 Root Endpoint
-
-**`GET /`**
-
-Simple endpoint to verify that the API is running.
-
-**Example Request:**
-
-```bash
-curl -X GET http://localhost:8000/
-```
-
-**Response:**
-
-```json
-{
-  "message": "Hybrid Recommendation API",
-  "version": "1.0.0",
-  "docs": "/docs"
-}
-```
+- [`docs/chat-agent-flow.md`](docs/chat-agent-flow.md) — 12-node LangGraph flow with speaker notes
+- [`docs/recommender-flow.md`](docs/recommender-flow.md) — Recommender offline + online pipeline
+- [`docs/chat-architecture-overview.md`](docs/chat-architecture-overview.md) — System-level architecture
+- [`chat-agent/observability/README.md`](chat-agent/observability/README.md) — Grafana dashboard + Prometheus setup
 
 ---
 
-### 6.2 Health Check
+## License
 
-**`GET /health`**
-
-Returns current system status, FAISS index size, Redis connection status, and embedding dimension.
-
-**Example Request:**
-
-```bash
-curl -X GET http://localhost:8000/health
-```
-
-**Response:**
-
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-11-06T09:33:20.123Z",
-  "faiss_index_size": 19350,
-  "redis_connected": true,
-  "version": "1.0.0",
-  "embedding_dimension": 512
-}
-```
-
----
-
-### 6.3 Single Product Recommendation
-
-**`GET /recommend/{product_id}`**
-
-Returns a list of similar products for a given product ID.
-
-**Path Parameters:**
-
-| Name         | Type   | Description                                     |
-| ------------ | ------ | ----------------------------------------------- |
-| `product_id` | string | UUID of the product to find recommendations for |
-
-**Query Parameters:**
-
-| Name | Type | Default | Description                       |
-| ---- | ---- | ------- | --------------------------------- |
-| `k`  | int  | `5`     | Number of similar items to return |
-
-**Example Request:**
-
-```bash
-curl -X GET "http://localhost:8000/recommend/2b6ae79d-4169-415e-8b53-d9e87c832240?k=5"
-```
-
-**Response:**
-
-```json
-{
-  "query_product_id": "2b6ae79d-4169-415e-8b53-d9e87c832240",
-  "recommendations": [
-    {
-      "product_id": "7614d53a-2ea1-4da4-b0b2-3bc196f1a804",
-      "similarity_score": 0.9896,
-      "product_name": "Áo thun thể thao",
-      "category_name": "Thời trang nam",
-      "price": 199000,
-      "image_path": "/images/men_sport_tee.jpg"
-    }
-  ],
-  "response_time_ms": 22.45,
-  "from_cache": false,
-  "total_results": 5
-}
-```
-
-**Use Case:**
-
-> Use this endpoint to recommend similar products when a user views a product detail page. The response can be directly consumed by frontend applications or backend services (e.g., Spring Boot).
-
----
-
-### 6.4 Batch Recommendation
-
-**`POST /recommend/batch`**
-
-Get recommendations for multiple product IDs in a single request, optimizing performance for batch operations.
-
-**Request Body:**
-
-```json
-{
-  "product_ids": [
-    "2b6ae79d-4169-415e-8b53-d9e87c832240",
-    "7614d53a-2ea1-4da4-b0b2-3bc196f1a804"
-  ],
-  "k": 5
-}
-```
-
-**Example Request:**
-
-```bash
-curl -X POST http://localhost:8000/recommend/batch \
-  -H "Content-Type: application/json" \
-  -d '{
-    "product_ids": [
-      "2b6ae79d-4169-415e-8b53-d9e87c832240",
-      "7614d53a-2ea1-4da4-b0b2-3bc196f1a804"
-    ],
-    "k": 5
-  }'
-```
-
-**Response:**
-
-```json
-{
-  "results": {
-    "2b6ae79d-4169-415e-8b53-d9e87c832240": {
-      "recommendations": [
-        {
-          "product_id": "7614d53a-2ea1-4da4-b0b2-3bc196f1a804",
-          "similarity_score": 0.98
-        }
-      ],
-      "total_results": 5
-    }
-  },
-  "response_time_ms": 44.21,
-  "total_queries": 2
-}
-```
-
----
-
-### 6.5 FAISS Statistics
-
-**`GET /stats`**
-
-Retrieve system and FAISS configuration details including index size, cache settings, and technical parameters.
-
-**Example Request:**
-
-```bash
-curl -X GET http://localhost:8000/stats
-```
-
-**Response:**
-
-```json
-{
-  "total_products": 19350,
-  "index_type": "Flat",
-  "embedding_dimension": 512,
-  "redis_enabled": true,
-  "cache_ttl_seconds": 3600,
-  "max_k": 100
-}
-```
-
-**Response Fields:**
-
-| Field                 | Description                                         |
-| --------------------- | --------------------------------------------------- |
-| `total_products`      | Total number of products indexed in FAISS           |
-| `index_type`          | FAISS index type (e.g., "Flat")                     |
-| `embedding_dimension` | Dimension of embedding vectors (512)                |
-| `redis_enabled`       | Whether Redis caching is active                     |
-| `cache_ttl_seconds`   | Cache time-to-live in seconds                       |
-| `max_k`               | Maximum number of recommendations allowed per query |
-
----
-
-## 7. Technical Details
-
-### 7.1 Architecture Overview
-
-The API uses a hybrid approach combining:
-
-1. **CLIP embeddings** - For visual similarity based on product images
-2. **BERT embeddings** - For textual similarity based on descriptions
-3. **FAISS indexing** - For efficient nearest neighbor search
-4. **Redis caching** - For improved response times on repeated queries
-
-### 7.2 Performance Characteristics
-
-- **Average response time**: ~20-50ms for single queries
-- **Cache hit benefit**: ~5-10x faster response
-- **Batch efficiency**: Process multiple queries with minimal overhead
-- **Scalability**: Handles 19,350+ products with sub-second response times
-
-### 7.3 Best Practices
-
-> **Recommendations:**
->
-> - Use batch endpoints when requesting recommendations for multiple products
-> - Monitor the `/health` endpoint for system status
-> - Consider implementing client-side caching for frequently accessed products
-> - Set appropriate `k` values based on your UI requirements (default: 5)
-> - Handle timeout scenarios gracefully in production environments
-
-### 7.4 Error Handling
-
-The API returns standard HTTP status codes:
-
-| Status Code | Description                                         |
-| ----------- | --------------------------------------------------- |
-| 200         | Successful request                                  |
-| 400         | Bad request (invalid parameters)                    |
-| 404         | Product not found                                   |
-| 500         | Internal server error                               |
-| 503         | Service unavailable (FAISS/Redis connection issues) |
-
----
+MIT

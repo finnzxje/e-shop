@@ -40,7 +40,7 @@ class RecommendationTool(BaseTool):
             return self.unexpected_error(exc)
         return _products_to_result(products)
 
-    def by_text(self, query: str, limit: int = 4) -> ToolResult:
+    def by_text(self, query: str, limit: int | None = None) -> ToolResult:
         try:
             products = self.client.recommend_by_text(query=query, limit=limit)
         except BackendClientError as exc:

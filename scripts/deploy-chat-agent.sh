@@ -30,6 +30,29 @@ LLM_MODEL="${LLM_MODEL:-gpt-4o-mini}"
 BACKEND_BASE_URL_ENV="${BACKEND_BASE_URL:-}"
 RECOMMENDER_BASE_URL_ENV="${RECOMMENDER_BASE_URL:-http://18.143.45.118:8000}"
 
+# Pick up LangSmith config from local chat-agent/.env (gitignored) if present,
+# unless overridden by the caller. Tracing stays opt-in: if no API key, leave
+# LANGSMITH_TRACING=false so the agent never tries to ship traces.
+LOCAL_AGENT_ENV="$LOCAL_REPO/chat-agent/.env"
+if [ -z "${LANGSMITH_API_KEY:-}" ] && [ -f "$LOCAL_AGENT_ENV" ]; then
+  LANGSMITH_API_KEY="$(grep -E '^LANGSMITH_API_KEY=' "$LOCAL_AGENT_ENV" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")"
+fi
+if [ -z "${LANGSMITH_PROJECT:-}" ] && [ -f "$LOCAL_AGENT_ENV" ]; then
+  LANGSMITH_PROJECT="$(grep -E '^LANGSMITH_PROJECT=' "$LOCAL_AGENT_ENV" | head -1 | cut -d= -f2- | tr -d '"' | tr -d "'")"
+fi
+LANGSMITH_PROJECT="${LANGSMITH_PROJECT:-e-shop-chat-agent}"
+if [ -n "${LANGSMITH_API_KEY:-}" ]; then
+  LANGSMITH_TRACING="${LANGSMITH_TRACING:-true}"
+else
+  LANGSMITH_TRACING="false"
+fi
+
+GRAFANA_ADMIN_USER="${GRAFANA_ADMIN_USER:-admin}"
+GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-changeme}"
+if [ "$GRAFANA_ADMIN_PASSWORD" = "changeme" ]; then
+  echo "==> WARNING: GRAFANA_ADMIN_PASSWORD is the default 'changeme'. Export a real password before deploying to a real prod."
+fi
+
 echo "==> Local repo:        $LOCAL_REPO"
 echo "==> Remote host:       $REMOTE_USER@$EC2_HOST"
 echo "==> Remote path:       $REMOTE_PATH"
@@ -37,6 +60,8 @@ echo "==> SSH key:           $SSH_KEY"
 echo "==> LLM model:         $LLM_MODEL"
 echo "==> Recommender URL:   $RECOMMENDER_BASE_URL_ENV"
 echo "==> Backend URL:       ${BACKEND_BASE_URL_ENV:-<not set — FAQ/handoff only>}"
+echo "==> LangSmith:         tracing=$LANGSMITH_TRACING project=$LANGSMITH_PROJECT"
+echo "==> Grafana admin:     $GRAFANA_ADMIN_USER"
 echo
 
 # ---- 1. Sync chat-agent source to EC2 ---------------------------------------
@@ -50,8 +75,6 @@ rsync -avz \
   --exclude '.pytest_cache/' \
   --exclude '.codegraph/' \
   --exclude 'tests/' \
-  --exclude 'evaluation/' \
-  --exclude 'gradio_tester.py' \
   "$LOCAL_REPO/chat-agent/" \
   "$REMOTE_USER@$EC2_HOST:$REMOTE_PATH/chat-agent/"
 
@@ -64,6 +87,11 @@ LLM_ENABLED=true
 BACKEND_BASE_URL=$BACKEND_BASE_URL_ENV
 RECOMMENDER_BASE_URL=$RECOMMENDER_BASE_URL_ENV
 KNOWLEDGE_RETRIEVAL_MODE=qdrant
+LANGSMITH_TRACING=$LANGSMITH_TRACING
+LANGSMITH_API_KEY=$LANGSMITH_API_KEY
+LANGSMITH_PROJECT=$LANGSMITH_PROJECT
+GRAFANA_ADMIN_USER=$GRAFANA_ADMIN_USER
+GRAFANA_ADMIN_PASSWORD=$GRAFANA_ADMIN_PASSWORD
 EOF
 chmod 600 $REMOTE_PATH/chat-agent/.env"
 

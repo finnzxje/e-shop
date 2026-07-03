@@ -140,9 +140,12 @@ def test_variant_cart_reference_creates_draft() -> None:
     assert body["draftAction"]["payload"]["productId"] == first_body["productCards"][0]["productId"]
 
 
-def test_empty_message_rejected() -> None:
-    with pytest.raises(ValidationError):
-        AgentChatRequest(sessionId="empty-test", message="")
+def test_empty_message_accepted_at_schema_level() -> None:
+    # Empty messages used to raise ValidationError. The endpoint now handles
+    # them with a friendly prompt; see tests/test_empty_input.py for the HTTP
+    # contract.
+    request = AgentChatRequest(sessionId="empty-test", message="")
+    assert request.message == ""
 
 
 def test_recommendation_flow_uses_previous_products() -> None:
@@ -205,9 +208,14 @@ def test_recommendation_falls_back_to_catalog_cards(monkeypatch: pytest.MonkeyPa
     assert body["responseType"] == "recommendations"
     assert body["productCards"]
     assert body["fallbackCount"] == 1
-    assert [tool["toolName"] for tool in body["toolCalls"]] == ["recommend.similar", "catalog.search"]
+    # After the recommender fails, chat-agent now tries a CLIP semantic
+    # search (recommend.by_text) before the random-popular catalog fallback.
+    # The mock does not implement by_text, so call_tool records it as a
+    # backend_error and the flow proceeds to catalog.search.
+    tool_names = [tool["toolName"] for tool in body["toolCalls"]]
+    assert tool_names == ["recommend.similar", "recommend.by_text", "catalog.search"]
     assert body["toolCalls"][0]["status"] == status
-    assert body["toolCalls"][1]["status"] == "success"
+    assert body["toolCalls"][-1]["status"] == "success"
 
 
 def test_personalized_recommendation_falls_back_to_catalog_cards(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -224,9 +232,10 @@ def test_personalized_recommendation_falls_back_to_catalog_cards(monkeypatch: py
     assert body["responseType"] == "recommendations"
     assert body["productCards"]
     assert body["fallbackCount"] == 1
-    assert [tool["toolName"] for tool in body["toolCalls"]] == ["recommend.personalized", "catalog.search"]
+    tool_names = [tool["toolName"] for tool in body["toolCalls"]]
+    assert tool_names == ["recommend.personalized", "recommend.by_text", "catalog.search"]
     assert body["toolCalls"][0]["status"] == "empty_result"
-    assert body["toolCalls"][1]["status"] == "success"
+    assert body["toolCalls"][-1]["status"] == "success"
 
 
 def test_follow_up_contextual_cart_reference() -> None:
@@ -455,4 +464,6 @@ def test_recommendation_fallback_trace_includes_reason(monkeypatch: pytest.Monke
     assert fallback_tool["input"]["fallbackFor"] == "recommend.personalized"
     assert fallback_tool["input"]["fallbackReason"] == "recommend.personalized returned timeout"
     assert body["fallbackCount"] == 1
-    assert body["needsReview"] is True
+    # A single fallback with a confident intent is expected behaviour and no
+    # longer floods the review queue — see _needs_review in nodes.py.
+    assert body["needsReview"] is False

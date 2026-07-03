@@ -22,6 +22,18 @@ services:
     volumes:
       - qdrant_storage:/qdrant/storage
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --save 60 1
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+
   chat-agent:
     build:
       context: .
@@ -30,6 +42,7 @@ services:
     restart: unless-stopped
     depends_on:
       - qdrant
+      - redis
     environment:
       MOCK_BACKEND: "false"
       BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://host.docker.internal:8080}
@@ -43,6 +56,7 @@ services:
       KNOWLEDGE_QDRANT_COLLECTION: ${KNOWLEDGE_QDRANT_COLLECTION:-knowledge_documents_v1}
       QDRANT_HOST: qdrant
       QDRANT_PORT: 6333
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       LLM_ENABLED: ${LLM_ENABLED:-true}
       LLM_API_URL: ${LLM_API_URL:-https://api.openai.com/v1/chat/completions}
       LLM_API_KEY: ${LLM_API_KEY:-${OPENAI_API_KEY}}
@@ -52,10 +66,52 @@ services:
       CHAT_AGENT_JSON_LOGS: "true"
       CHAT_AGENT_LOG_LEVEL: INFO
       MIN_VECTOR_SCORE: ${MIN_VECTOR_SCORE:-0.4}
+      LANGSMITH_TRACING: ${LANGSMITH_TRACING:-false}
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT:-e-shop-chat-agent}
+      LANGSMITH_ENDPOINT: ${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       - "8010:8010"
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    restart: unless-stopped
+    depends_on:
+      - chat-agent
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-changeme}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+
 volumes:
   qdrant_storage:
+  redis_data:
+  prometheus_data:
+  grafana_data:

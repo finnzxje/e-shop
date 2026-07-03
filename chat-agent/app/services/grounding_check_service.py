@@ -5,7 +5,9 @@ from typing import Any
 
 import httpx
 
+from app.services.circuit_breaker import openai_breaker
 from app.services.llm_service import llm_enabled
+from app.services.logging_service import log_event
 
 
 SYSTEM_PROMPT = (
@@ -45,13 +47,19 @@ def is_answer_grounded(
             },
         ],
     }
+    if openai_breaker.is_open():
+        log_event("grounding_check_skipped", reason="openai_circuit_open")
+        return False, "grounding_check_unavailable"
     try:
         with httpx.Client(timeout=float(os.getenv("LLM_TIMEOUT_SECONDS", "8"))) as client:
             response = client.post(_api_url(), headers=_headers(), json=payload)
             response.raise_for_status()
             verdict = _extract_answer(response.json()).strip()
-    except Exception:  # pragma: no cover - defensive
-        return True, None
+        openai_breaker.record_success()
+    except Exception as exc:
+        openai_breaker.record_failure()
+        log_event("grounding_check_failed", error=f"{exc.__class__.__name__}: {exc}")
+        return False, "grounding_check_unavailable"
     if verdict.upper().startswith("GROUNDED"):
         return True, None
     if verdict.upper().startswith("UNGROUNDED"):

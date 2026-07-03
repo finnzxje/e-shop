@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+from collections import Counter
 from typing import Any
 
 from app.graph.state import GraphState
@@ -37,6 +39,11 @@ SPECIALIZED_INTENT_CONFIDENCE = CONFIDENCE_HIGH
 RECOMMENDATION_OR_POLICY_INTENT_CONFIDENCE = CONFIDENCE_MEDIUM
 DEFAULT_ROUTE_CONFIDENCE = CONFIDENCE_MEDIUM
 
+# Cost-saving thresholds: when the cheap classifier/retrieval is already this
+# confident, skip the expensive LLM follow-up call.
+SKIP_LLM_INTENT_RULE_CONFIDENCE = CONFIDENCE_MEDIUM
+SKIP_LLM_GROUNDING_SCORE = CONFIDENCE_HIGH
+
 
 def append_node(state: GraphState, node: str):
     return [*state.get("node_trace", [])]
@@ -60,6 +67,21 @@ def normalize_message(state: GraphState) -> dict[str, Any]:
         "normalized_message": normalize_text(state["message"]),
         "node_trace": append_node(state, "normalize_message"),
     }
+
+
+_INJECTION_PATTERNS = (
+    re.compile(r"\b(ignore|disregard|forget|override)\s+(\w+\s+){0,3}(instructions?|prompts?|rules?|directions?)\b", re.IGNORECASE),
+    re.compile(r"\b(reveal|show|tell|print|expose)\s+(\w+\s+){0,3}(system|hidden|internal)\s+(prompt|instructions?|message)\b", re.IGNORECASE),
+    re.compile(r"\bbypass\s+(the\s+)?(safety|guardrails?|rules?|filter|restrictions?)\b", re.IGNORECASE),
+    re.compile(r"\byou\s+are\s+now\s+(a|an|in)\b", re.IGNORECASE),
+    re.compile(r"\bact\s+(as|like)\s+(if\s+you\s+(are|were)\s+)?(a|an)\s+\w+", re.IGNORECASE),
+    re.compile(r"\b(jailbreak|DAN\s+mode|developer\s+mode)\b", re.IGNORECASE),
+    re.compile(r"<\|.+?\|>"),
+)
+
+
+def _looks_like_prompt_injection(message: str) -> bool:
+    return any(pattern.search(message) for pattern in _INJECTION_PATTERNS)
 
 
 def input_guardrails(state: GraphState) -> dict[str, Any]:
@@ -88,6 +110,23 @@ def input_guardrails(state: GraphState) -> dict[str, Any]:
             "fallback_count": state.get("fallback_count", 0) + 1,
             "node_trace": append_node(state, "input_guardrails"),
         }
+    if _looks_like_prompt_injection(state.get("message", "")):
+        log_event(
+            "prompt_injection_blocked",
+            sessionId=state.get("session_id"),
+            traceId=state.get("trace_id"),
+        )
+        return {
+            "intent": "fallback",
+            "intent_confidence": CONFIDENCE_CERTAIN,
+            "route": "clarification",
+            "routing_confidence": CONFIDENCE_CERTAIN,
+            "needs_review": True,
+            "answer": "I can help with shopping — products, orders, returns, or policies. How can I help?",
+            "response_type": "clarification",
+            "fallback_count": state.get("fallback_count", 0) + 1,
+            "node_trace": append_node(state, "input_guardrails"),
+        }
     return {"node_trace": append_node(state, "input_guardrails")}
 
 
@@ -99,8 +138,18 @@ def classify_intent(state: GraphState) -> dict[str, Any]:
         }
     normalized = state.get("normalized_message", "")
     original = state.get("message", "")
-    # Prefer LLM intent classification (handles paraphrasing, typos, Vietnamese,
-    # mixed-language). Falls back to keyword rules when LLM is disabled or fails.
+    # Try the keyword rule first — instant and free. When the rule already
+    # classifies the message with high confidence (clear keyword match), skip
+    # the LLM call to save cost. Only fall back to LLM for ambiguous/general
+    # messages where paraphrasing or typos might confuse the rule.
+    rule_intent = classify_intent_rule(normalized)
+    rule_confidence = _intent_confidence(rule_intent, normalized)
+    if rule_intent != "general" and rule_confidence >= SKIP_LLM_INTENT_RULE_CONFIDENCE:
+        return {
+            "intent": rule_intent,
+            "intent_confidence": rule_confidence,
+            "node_trace": append_node(state, f"classify_intent:{rule_intent}:rule"),
+        }
     llm_intent = classify_intent_with_llm(original or normalized)
     if llm_intent is not None:
         return {
@@ -108,12 +157,10 @@ def classify_intent(state: GraphState) -> dict[str, Any]:
             "intent_confidence": CONFIDENCE_HIGH,
             "node_trace": append_node(state, f"classify_intent:{llm_intent}:llm"),
         }
-    intent = classify_intent_rule(normalized)
-    confidence = _intent_confidence(intent, normalized)
     return {
-        "intent": intent,
-        "intent_confidence": confidence,
-        "node_trace": append_node(state, f"classify_intent:{intent}"),
+        "intent": rule_intent,
+        "intent_confidence": rule_confidence,
+        "node_trace": append_node(state, f"classify_intent:{rule_intent}"),
     }
 
 
@@ -208,12 +255,46 @@ def ground_response_in_tool_results(state: GraphState) -> dict[str, Any]:
     }
 
 
+ANSWER_MAX_CHARS = 2000
+_UNSAFE_URL_RE = re.compile(r"(?:javascript|data|vbscript):[^\s)\"'<>]*", re.IGNORECASE)
+_SCRIPT_TAG_RE = re.compile(r"<script[^>]*>.*?</script>", re.IGNORECASE | re.DOTALL)
+
+
+def _sanitize_answer(answer: str) -> tuple[str, list[str]]:
+    if not answer:
+        return answer, []
+    modifications: list[str] = []
+    cleaned = answer
+    if _SCRIPT_TAG_RE.search(cleaned):
+        cleaned = _SCRIPT_TAG_RE.sub("", cleaned)
+        modifications.append("stripped_script_tags")
+    if _UNSAFE_URL_RE.search(cleaned):
+        cleaned = _UNSAFE_URL_RE.sub("[link removed]", cleaned)
+        modifications.append("stripped_unsafe_url")
+    if len(cleaned) > ANSWER_MAX_CHARS:
+        cleaned = cleaned[: ANSWER_MAX_CHARS - 3].rstrip() + "..."
+        modifications.append("truncated_to_max_chars")
+    return cleaned, modifications
+
+
 def output_guardrails(state: GraphState) -> dict[str, Any]:
     draft_action = state.get("draft_action")
     needs_confirmation = bool(draft_action)
     if draft_action:
-        draft_action.needs_confirmation = True
+        draft_action = draft_action.model_copy(update={"needs_confirmation": True})
+    answer = state.get("answer", "")
+    cleaned_answer, modifications = _sanitize_answer(answer)
+    if modifications:
+        log_event(
+            "output_sanitized",
+            sessionId=state.get("session_id"),
+            traceId=state.get("trace_id"),
+            modifications=modifications,
+            originalLength=len(answer),
+            cleanedLength=len(cleaned_answer),
+        )
     return {
+        "answer": cleaned_answer,
         "draft_action": draft_action,
         "needs_confirmation": needs_confirmation,
         "node_trace": append_node(state, "output_guardrails"),
@@ -237,18 +318,26 @@ def refine_grounded_answer_with_llm(state: GraphState) -> dict[str, Any]:
     updates: dict[str, Any] = {"node_trace": append_node(state, "refine_grounded_answer_with_llm")}
     if result.used:
         updates["answer"] = result.answer
-        grounded, reason = grounding_check_service.is_answer_grounded(
-            answer=result.answer,
-            grounding_documents=state.get("grounding_documents", []),
+        grounding_documents = state.get("grounding_documents", [])
+        # Skip the LLM grounding check when retrieval was very confident — the
+        # answer is almost certainly faithful and the verifier call is wasted spend.
+        max_score = max(
+            (float(doc.get("score") or 0.0) for doc in grounding_documents),
+            default=0.0,
         )
-        if not grounded:
-            updates["needs_review"] = True
-            log_event(
-                "agent_grounding_failed",
-                traceId=state.get("trace_id"),
-                sessionId=state.get("session_id"),
-                reason=reason,
+        if max_score < SKIP_LLM_GROUNDING_SCORE:
+            grounded, reason = grounding_check_service.is_answer_grounded(
+                answer=result.answer,
+                grounding_documents=grounding_documents,
             )
+            if not grounded:
+                updates["needs_review"] = True
+                log_event(
+                    "agent_grounding_failed",
+                    traceId=state.get("trace_id"),
+                    sessionId=state.get("session_id"),
+                    reason=reason,
+                )
     elif result.error:
         updates["needs_review"] = True
     return updates
@@ -271,7 +360,7 @@ def format_structured_response(state: GraphState) -> dict[str, Any]:
 
 
 def _handle_product_search(state: GraphState) -> dict[str, Any]:
-    slots = state.get("slots", {})
+    slots = _infer_slots_from_memory(state.get("slots", {}), state)
     filters = _filters_from_slots(slots)
     query = str(slots.get("query", ""))
     result, tool_calls = call_tool(
@@ -300,7 +389,7 @@ def _handle_product_search(state: GraphState) -> dict[str, Any]:
             tool_calls,
             "recommend.by_text",
             {"query": query},
-            lambda: tools.recommendation.by_text(query=query, limit=4),
+            lambda: tools.recommendation.by_text(query=query),
             trace_id=state.get("trace_id"),
             session_id=state.get("session_id"),
             user_id=state.get("user_id"),
@@ -317,8 +406,36 @@ def _handle_product_search(state: GraphState) -> dict[str, Any]:
     return _fallback_from_tool(state, result, tool_calls, "I could not find a matching product.")
 
 
+_REFINEMENT_KEYWORDS_RE = re.compile(
+    r"\b(cheaper|cheapest|pricier|less\s+expensive|more\s+expensive|"
+    r"under|below|above|over|less\s+than|more\s+than|"
+    r"another|other|others|different|similar|any|"
+    r"smaller|larger|bigger|shorter|longer|lighter|heavier|warmer|cooler)\b",
+    re.IGNORECASE,
+)
+
+
 def _handle_recommendation(state: GraphState) -> dict[str, Any]:
-    slots = state.get("slots", {})
+    slots = _infer_slots_from_memory(state.get("slots", {}), state)
+    # Refinement of a previous search ("any blue ones?", "cheaper?", "size M only")
+    # — the recommender does not accept filter args, so a literal catalog
+    # filter-search honours the new filter while inferred-category keeps
+    # the user in the same product family as the prior turn.
+    has_filter = any(slots.get(k) for k in ("color", "size", "price_min", "price_max"))
+    query_text = str(slots.get("query") or state.get("normalized_message") or "")
+    has_refinement_language = bool(_REFINEMENT_KEYWORDS_RE.search(query_text))
+    has_product_ref = bool(slots.get("product_id") or slots.get("variant_id") or slots.get("product_slug"))
+    if (has_filter or has_refinement_language) and not has_product_ref and state.get("previous_products"):
+        log_event("recommendation_routed_to_search_refinement", sessionId=state.get("session_id"))
+        # BE /products/search ignores category filter (chat-agent nouns rarely
+        # match Spring's strict slugs), so send the category tail as the search
+        # text: "outerwear-jackets" -> "jackets", "midlayer-pullovers" ->
+        # "pullovers". The refinement query itself ("anything cheaper") would
+        # not match any product name.
+        inferred_category = str(slots.get("category") or "")
+        refined_query = inferred_category.rsplit("-", 1)[-1] if inferred_category else ""
+        refined_slots = {**slots, "query": refined_query}
+        return _handle_product_search({**state, "slots": refined_slots})
     recent_ids = [product.product_id for product in state.get("previous_products", [])]
     use_similar = _should_use_similar_recommendation(state, recent_ids)
     tool_name = "recommend.similar" if use_similar else "recommend.personalized"
@@ -362,18 +479,53 @@ def _handle_recommendation(state: GraphState) -> dict[str, Any]:
             "node_trace": append_node(state, "ground_response_in_tool_results"),
         }
     fallback_reason = f"{tool_name} returned {result.status}"
+    # Semantic step: when the customer gave a real query the recommender
+    # could not fulfil, try CLIP-based text search first. "hoodie" -> the
+    # embedding lands next to sweatshirts and pullovers, so the customer
+    # sees items that actually resemble what they asked for.
+    user_query = str(slots.get("query") or "").strip()
+    if user_query and user_query.lower() not in {"recommend", "recommendation"}:
+        semantic, tool_calls = call_tool(
+            tool_calls,
+            "recommend.by_text",
+            {"query": user_query, "fallbackFor": tool_name, "fallbackReason": fallback_reason},
+            lambda: tools.recommendation.by_text(query=user_query),
+            trace_id=state.get("trace_id"),
+            session_id=state.get("session_id"),
+            user_id=state.get("user_id"),
+        )
+        if semantic.status == "success" and semantic.data:
+            return {
+                "answer": f'Here are products related to "{user_query}".',
+                "response_type": "recommendations",
+                "product_cards": semantic.data,
+                "last_selected_product": semantic.data[0],
+                "tool_calls": tool_calls,
+                "fallback_count": state.get("fallback_count", 0) + 1,
+                "node_trace": append_node(state, "ground_response_in_tool_results"),
+            }
+    fallback_filters = {**_filters_from_slots(slots), "in_stock": True}
     fallback_result, tool_calls = call_tool(
         tool_calls,
         "catalog.search",
-        {"query": "jacket", "filters": {"in_stock": True}, "fallbackFor": tool_name, "fallbackReason": fallback_reason},
-        lambda: tools.catalog.search(query="jacket", filters={"in_stock": True}),
+        {"query": "", "filters": fallback_filters, "fallbackFor": tool_name, "fallbackReason": fallback_reason},
+        lambda: tools.catalog.search(query="", filters=fallback_filters),
         trace_id=state.get("trace_id"),
         session_id=state.get("session_id"),
         user_id=state.get("user_id"),
     )
     if fallback_result.status == "success":
+        user_query = str(slots.get("query") or "").strip()
+        if user_query and user_query.lower() not in {"recommend", "recommendation"}:
+            fallback_answer = (
+                f'I could not find items that specifically match "{user_query}", '
+                "so here are some popular in-stock alternatives — please note these "
+                "may not exactly match what you asked for."
+            )
+        else:
+            fallback_answer = "I could not get similar recommendations, so here are popular in-stock products."
         return {
-            "answer": "I could not get similar recommendations, so here are popular in-stock products.",
+            "answer": fallback_answer,
             "response_type": "recommendations",
             "product_cards": fallback_result.data,
             "last_selected_product": fallback_result.data[0] if fallback_result.data else None,
@@ -675,11 +827,30 @@ def _needs_review(
 ) -> bool:
     if state.get("needs_review"):
         return True
-    if state.get("fallback_count", 0) > 0:
+    if response_type in {"fallback", "tool_error", "empty_result"}:
         return True
-    if response_type in {"fallback", "tool_error"}:
+    if intent_confidence < REVIEW_CONFIDENCE_THRESHOLD or routing_confidence < REVIEW_CONFIDENCE_THRESHOLD:
         return True
-    return intent_confidence < REVIEW_CONFIDENCE_THRESHOLD or routing_confidence < REVIEW_CONFIDENCE_THRESHOLD
+    fallback_count = state.get("fallback_count", 0)
+    if fallback_count > 1:
+        return True
+    if fallback_count == 1 and intent_confidence < CONFIDENCE_MEDIUM:
+        return True
+    return False
+
+
+def _infer_slots_from_memory(slots: dict[str, Any], state: GraphState) -> dict[str, Any]:
+    if slots.get("category"):
+        return slots
+    categories = [
+        product.category
+        for product in state.get("previous_products", [])
+        if getattr(product, "category", None)
+    ]
+    if not categories:
+        return slots
+    inferred = Counter(categories).most_common(1)[0][0]
+    return {**slots, "category": inferred}
 
 
 def _filters_from_slots(slots: dict[str, Any]) -> dict[str, Any]:

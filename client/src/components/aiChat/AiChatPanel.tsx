@@ -62,7 +62,7 @@ export default function AiChatPanel({ onClose }: Props) {
 
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} />
+          <MessageBubble key={m.id} message={m} onNavigate={onClose} />
         ))}
         {messages.length === 1 && messages[0]?.role === "assistant" && !sending && (
           <div className="flex flex-wrap gap-2 pt-1">

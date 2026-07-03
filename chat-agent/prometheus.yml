@@ -1,8 +1,13 @@
 global:
-  scrape_interval: 5s
+  scrape_interval: 15s
+  scrape_timeout: 10s
 
 scrape_configs:
-  - job_name: "chat-agent"
-    metrics_path: "/agent/metrics"
+  - job_name: chat-agent
+    metrics_path: /agent/metrics
     static_configs:
-      - targets: ["host.docker.internal:8010"]
+      - targets:
+          - chat-agent:8010
+        labels:
+          service: chat-agent
+          env: production

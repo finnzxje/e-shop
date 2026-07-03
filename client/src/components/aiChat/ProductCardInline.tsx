@@ -3,6 +3,7 @@ import type { AiProductCard } from "../../types/aiChat";
 
 interface Props {
   product: AiProductCard;
+  onNavigate?: () => void;
 }
 
 function formatPrice(price: number, currency: string): string {
@@ -17,12 +18,24 @@ function formatPrice(price: number, currency: string): string {
   }
 }
 
-export default function ProductCardInline({ product }: Props) {
-  const href = product.slug ? `/products/${product.slug}` : "#";
+export default function ProductCardInline({ product, onNavigate }: Props) {
+  const hasSlug = Boolean(product.slug);
+  const href = hasSlug ? `/products/${product.slug}` : "#";
+  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!hasSlug) {
+      event.preventDefault();
+      return;
+    }
+    onNavigate?.();
+  };
   return (
     <Link
       to={href}
-      className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-2 transition hover:border-stone-300 hover:shadow-sm"
+      onClick={handleClick}
+      aria-disabled={!hasSlug}
+      className={`flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-2 transition hover:border-stone-300 hover:shadow-sm ${
+        hasSlug ? "" : "cursor-not-allowed opacity-70"
+      }`}
     >
       {product.imageUrl ? (
         <img

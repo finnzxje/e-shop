@@ -5,6 +5,7 @@ from typing import Any
 
 import httpx
 
+from app.services.circuit_breaker import openai_breaker
 from app.services.llm_service import llm_enabled
 
 
@@ -29,6 +30,8 @@ def rewrite_query_with_history(
         return message
     if last_intent not in ALLOWED_INTENTS:
         return message
+    if openai_breaker.is_open():
+        return message
     payload: dict[str, Any] = {
         "model": os.getenv("LLM_MODEL", "gpt-4o-mini"),
         "temperature": 0.0,
@@ -51,10 +54,12 @@ def rewrite_query_with_history(
             response.raise_for_status()
             body = response.json()
         rewritten = _extract_answer(body).strip()
+        openai_breaker.record_success()
         if not rewritten:
             return message
         return rewritten
     except Exception:  # pragma: no cover - defensive
+        openai_breaker.record_failure()
         return message
 
 

@@ -5,6 +5,7 @@ import ProductCardInline from "./ProductCardInline";
 
 interface Props {
   message: AiChatMessage;
+  onNavigate?: () => void;
 }
 
 function formatTime(isoString: string): string {
@@ -16,7 +17,7 @@ function formatTime(isoString: string): string {
   }
 }
 
-export default function MessageBubble({ message }: Props) {
+export default function MessageBubble({ message, onNavigate }: Props) {
   const isUser = message.role === "user";
   const isError = message.responseType === "tool_error";
   const hasProducts = (message.productCards?.length ?? 0) > 0;
@@ -42,8 +43,12 @@ export default function MessageBubble({ message }: Props) {
 
           {hasProducts && (
             <div className="mt-3 flex flex-col gap-1.5">
-              {message.productCards!.slice(0, 4).map((p) => (
-                <ProductCardInline key={`${p.productId}-${p.variantId ?? "v"}`} product={p} />
+              {message.productCards!.map((p) => (
+                <ProductCardInline
+                  key={`${p.productId}-${p.variantId ?? "v"}`}
+                  product={p}
+                  onNavigate={onNavigate}
+                />
               ))}
             </div>
           )}
